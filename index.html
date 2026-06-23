@@ -93,12 +93,45 @@
   .toast.show{opacity:1}
   @media(max-width:1080px){.grid{grid-template-columns:1fr 1fr}.rail{position:fixed;z-index:50;width:290px;height:100%;transform:translateX(-100%);transition:.25s}.rail.open{transform:translateX(0)}.menub{display:grid;place-items:center;width:38px;height:38px;border-radius:9px;background:var(--amber);color:#1a1207;border:none;cursor:pointer;font-size:18px}}
   @media(max-width:720px){.grid{grid-template-columns:1fr;grid-auto-rows:minmax(200px,auto);overflow:auto}body{overflow:auto}.prob{border-right:0;border-bottom:1px solid var(--border)}}
+  /* ---- mode switch + exam + stats ---- */
+  .modesw{display:flex;gap:4px;margin-left:4px}
+  .modesw button{padding:5px 11px;font-size:12px;font-family:var(--mono);background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px}
+  .modesw button.on{background:var(--surface2);color:var(--amber);border-color:var(--amber)}
+  .rail.hide{display:none}
+  .grid.examrun{grid-template-columns:1fr 1fr}
+  .overlay{position:fixed;left:0;right:0;top:50px;bottom:0;background:var(--ink);overflow:auto;display:none;z-index:40;padding:26px 30px}
+  .overlay.show{display:block}
+  .overlay h2{font-family:var(--ui);font-size:22px;margin:0 0 4px}
+  .overlay .sub{color:var(--muted);font-size:13px;margin-bottom:20px;font-family:var(--mono)}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px}
+  .field{margin:14px 0} .field:first-child{margin-top:0}
+  .field label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip2{padding:7px 12px;border:1px solid var(--border);border-radius:999px;font-size:12.5px;cursor:pointer;background:var(--surface2);color:var(--text)}
+  .chip2.on{border-color:var(--amber);color:var(--amber)}
+  .exam-bar{display:flex;align-items:center;gap:12px;width:100%;padding:0 10px;font-family:var(--mono);font-size:12px}
+  .dots{display:flex;gap:5px;flex-wrap:wrap;max-width:46%}
+  .dots i{width:9px;height:9px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:inline-block}
+  .dots i.cur{border-color:var(--amber);box-shadow:0 0 6px var(--amber)} .dots i.pass{background:var(--ok);border-color:var(--ok)} .dots i.fail{background:var(--bad);border-color:var(--bad)}
+  .gclock{font-weight:600;color:var(--ok);font-variant-numeric:tabular-nums} .gclock.warn{color:var(--amber)} .gclock.crit{color:var(--bad);animation:blink 1s infinite}
+  .score{font-size:46px;font-weight:700;font-family:var(--ui);line-height:1}
+  .scoresub{color:var(--muted);font-family:var(--mono);font-size:12px;margin-top:6px}
+  .row{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:13px}
+  .row .lab{width:210px;color:#cbd5e1;font-size:12.5px} .row .track{flex:1;height:9px;background:var(--surface2);border-radius:99px;overflow:hidden;border:1px solid var(--border)}
+  .row .fill{height:100%;background:linear-gradient(90deg,var(--amber),#ffd089)} .row .pct{width:58px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .weak{border:1px solid var(--bad);background:rgba(248,81,73,.07);border-radius:10px;padding:12px 14px;margin-top:16px;font-size:13.5px;line-height:1.5}
+  .hist .h{display:flex;gap:14px;padding:8px 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:12px;color:#cbd5e1}
 </style>
 </head>
 <body>
 <div class="top">
   <button class="menub" onclick="document.querySelector('.rail').classList.toggle('open')">☰</button>
   <div class="brand"><span class="k">DE</span> DOJO <small>entrenamiento con test cases</small></div>
+  <div class="modesw">
+    <button id="mPractice" class="on" onclick="switchMode('practice')">Práctica</button>
+    <button id="mExam" onclick="switchMode('exam')">Examen</button>
+    <button id="mStats" onclick="switchMode('stats')">Stats</button>
+  </div>
   <div class="spacer"></div>
   <div class="xpwrap">
     <span>🔥 <span id="streak">0</span></span>
@@ -122,6 +155,20 @@
     </div>
   </section>
 </div>
+<div class="overlay" id="ovSetup">
+  <h2>Examen cronometrado</h2>
+  <div class="sub">Selecciona el alcance. El tiempo total se calcula según la dificultad de las preguntas elegidas.</div>
+  <div class="card" style="max-width:780px">
+    <div class="field"><label>Categorías</label><div class="chips" id="setCats"></div></div>
+    <div class="field"><label># de preguntas</label><div class="chips" id="setCount">
+      <span class="chip2" data-n="5">5</span><span class="chip2 on" data-n="10">10</span><span class="chip2" data-n="15">15</span><span class="chip2" data-n="all">Todas</span></div></div>
+    <div class="field"><label>Dificultad</label><div class="chips" id="setDiff">
+      <span class="chip2 on" data-d="all">Todas</span><span class="chip2" data-d="e">Easy</span><span class="chip2" data-d="m">Medium</span><span class="chip2" data-d="h">Hard</span></div></div>
+    <div style="margin-top:18px"><button class="primary" onclick="startExam()">Empezar examen ▸</button></div>
+  </div>
+</div>
+<div class="overlay" id="ovReport"></div>
+<div class="overlay" id="ovStats"></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -531,10 +578,12 @@ const $=s=>document.querySelector(s);
 let state={solved:{},xp:0,streak:0,lastDay:null};
 let cur=null,editor=null,SQL=null,pyodide=null,pyLoading=null,quizSel=null,answered=false;
 let timer={remaining:0,id:null,paused:false,expired:false};
+let mode='practice',exam=null,stats={history:[]},examTimer={remaining:0,id:null},setupCfg={cats:new Set(),count:10,diff:'all'};
 
 const levelFor=xp=>Math.floor(xp/100)+1;
 function renderXP(){const xp=state.xp;$('#lvl').textContent=levelFor(xp);$('#xptxt').textContent=xp+' XP';$('#xpbar').style.width=(xp%100)+'%';$('#streak').textContent=state.streak;}
 async function award(ex){
+  if(mode==='exam')return;
   if(state.solved[ex.id]){toast('Ya resuelto ✓');return;}
   let gain=ex.xp; let note='';
   if(timer.expired){gain=Math.floor(ex.xp/2);note=' (tiempo agotado: ½ XP)';}
@@ -678,8 +727,137 @@ async function ai(mode){const e=cur,panel=$('#tutor');panel.classList.add('show'
 async function save(){try{await window.storage.set('dedojo:v2',JSON.stringify(state),false);}catch(e){}}
 async function load(){try{const r=await window.storage.get('dedojo:v2',false);if(r&&r.value)state=Object.assign(state,JSON.parse(r.value));}catch(e){}}
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
-$('#resetBtn').onclick=async()=>{if(confirm('¿Borrar progreso (XP, resueltos, streak)?')){state={solved:{},xp:0,streak:0,lastDay:null};await save();renderXP();renderRail();}};
-window.addEventListener('load',async()=>{await load();renderXP();renderRail();open(EX[0].id);});
+$('#resetBtn').onclick=async()=>{if(confirm('¿Borrar progreso (XP, resueltos, streak, historial de exámenes)?')){state={solved:{},xp:0,streak:0,lastDay:null};stats={history:[]};await save();await saveStats();renderXP();renderRail();}};
+
+/* ===== exam + stats ===== */
+async function saveStats(){try{await window.storage.set('dedojo:stats',JSON.stringify(stats),false);}catch(e){}}
+async function loadStats(){try{const r=await window.storage.get('dedojo:stats',false);if(r&&r.value)stats=Object.assign({history:[]},JSON.parse(r.value));}catch(e){}}
+
+function switchMode(m){
+  mode=m; stopTimer(); stopExamTimer();
+  $('#mPractice').classList.toggle('on',m==='practice');
+  $('#mExam').classList.toggle('on',m==='exam');
+  $('#mStats').classList.toggle('on',m==='stats');
+  ['ovSetup','ovReport','ovStats'].forEach(id=>$('#'+id).classList.remove('show'));
+  document.querySelector('.rail').classList.toggle('hide',m!=='practice');
+  document.querySelector('.grid').classList.remove('examrun');
+  if(m==='practice'){renderRail();open(cur?cur.id:EX[0].id);}
+  else if(m==='exam'){exam=null;buildSetup();$('#ovSetup').classList.add('show');}
+  else if(m==='stats'){renderStats();$('#ovStats').classList.add('show');}
+}
+
+function buildSetup(){
+  const cats=[...new Set(EX.map(e=>e.cat))];
+  setupCfg={cats:new Set(cats),count:10,diff:'all'};
+  const cc=$('#setCats');
+  cc.innerHTML=cats.map(c=>`<span class="chip2 on" data-c="${c}">${c}</span>`).join('');
+  cc.querySelectorAll('.chip2').forEach(ch=>ch.onclick=()=>{ch.classList.toggle('on');const c=ch.dataset.c;setupCfg.cats.has(c)?setupCfg.cats.delete(c):setupCfg.cats.add(c);});
+  $('#setCount').querySelectorAll('.chip2').forEach(ch=>ch.onclick=()=>{$('#setCount').querySelectorAll('.chip2').forEach(x=>x.classList.remove('on'));ch.classList.add('on');setupCfg.count=ch.dataset.n==='all'?999:+ch.dataset.n;});
+  $('#setDiff').querySelectorAll('.chip2').forEach(ch=>ch.onclick=()=>{$('#setDiff').querySelectorAll('.chip2').forEach(x=>x.classList.remove('on'));ch.classList.add('on');setupCfg.diff=ch.dataset.d;});
+  // reset visual defaults
+  $('#setCount').querySelectorAll('.chip2').forEach(x=>x.classList.toggle('on',x.dataset.n==='10'));
+  $('#setDiff').querySelectorAll('.chip2').forEach(x=>x.classList.toggle('on',x.dataset.d==='all'));
+}
+
+function startExam(){
+  let pool=EX.filter(e=>setupCfg.cats.has(e.cat));
+  if(setupCfg.diff!=='all')pool=pool.filter(e=>e.diff===setupCfg.diff);
+  if(!pool.length){toast('No hay ejercicios con esos filtros');return;}
+  pool=pool.slice().sort(()=>Math.random()-0.5);
+  const items=pool.slice(0,Math.min(setupCfg.count,pool.length));
+  const total=items.reduce((s,e)=>s+(e.timer||DT[e.diff]),0);
+  exam={items,idx:0,results:{},times:{},start:Date.now(),qStart:Date.now(),total,finished:false};
+  $('#ovSetup').classList.remove('show');
+  document.querySelector('.rail').classList.add('hide');
+  document.querySelector('.grid').classList.add('examrun');
+  startExamTimer(total);
+  loadExamQuestion(0);
+}
+
+function examDots(){return exam.items.map((e,i)=>{let cl='';if(i===exam.idx)cl='cur';else if(exam.results[e.id])cl=exam.results[e.id].ok?'pass':'fail';return `<i class="${cl}"></i>`;}).join('');}
+function paintExamClock(){const c=$('#examClock');if(!c||!exam)return;c.textContent=fmt(examTimer.remaining);c.className='gclock'+(examTimer.remaining<=30?' crit':examTimer.remaining<=120?' warn':'');}
+function startExamTimer(sec){stopExamTimer();examTimer.remaining=sec;paintExamClock();examTimer.id=setInterval(()=>{examTimer.remaining--;paintExamClock();if(examTimer.remaining<=0){stopExamTimer();toast('⏱ Tiempo del examen agotado');finishExam();}},1000);}
+function stopExamTimer(){if(examTimer.id){clearInterval(examTimer.id);examTimer.id=null;}}
+
+function loadExamQuestion(i){
+  exam.idx=i;cur=exam.items[i];answered=false;quizSel=null;exam.qStart=Date.now();
+  renderProblem();
+  const e=cur,tabs=$('#wtabs'),host=$('#edhost'),act=$('#actions');
+  tabs.innerHTML=`<div class="exam-bar"><b>Pregunta ${i+1}/${exam.items.length}</b>
+    <span class="dots">${examDots()}</span>
+    <span style="margin-left:auto" class="gclock" id="examClock">--:--</span>
+    <button id="examFinish" style="padding:4px 9px;font-size:11px">Finalizar</button></div>`;
+  $('#examFinish').onclick=()=>{if(confirm('¿Finalizar ahora? Las preguntas sin enviar cuentan como falladas.'))finishExam();};
+  if(e.kind==='quiz'){host.innerHTML=`<div style="padding:18px;color:var(--muted);font-family:var(--mono);font-size:12.5px">Elige una opción a la izquierda y envía.</div>`;editor=null;}
+  else{host.innerHTML='';editor=CodeMirror(host,{value:e.starter,mode:e.kind==='sql'?'text/x-sql':'python',theme:'material-darker',lineNumbers:true,lineWrapping:true,indentUnit:e.kind==='python'?4:2});setTimeout(()=>editor.refresh(),40);}
+  act.innerHTML=`<button class="primary" id="examNext">Enviar y siguiente ▸</button><button class="ghost" id="examSkip">Saltar</button>`;
+  $('#examNext').onclick=examSubmit;$('#examSkip').onclick=examSkip;
+  $('#cases').innerHTML='<div class="console">Resuelve y pulsa <b>Enviar y siguiente</b>.</div>';
+  $('#verdict').textContent='';$('#tutor').classList.remove('show');
+  paintExamClock();
+}
+async function examSubmit(){
+  const e=cur;let ok=false;
+  if(e.kind==='quiz'){if(quizSel==null){toast('Elige una opción');return;}ok=!!e.options[quizSel].ok;showConsole(ok?'✓ respuesta registrada':'✗ respuesta registrada');}
+  else{ok=await(e.kind==='sql'?runSQL():runPy());}
+  exam.results[e.id]={ok,cat:e.cat,diff:e.diff,kind:e.kind};
+  exam.times[e.id]=Math.round((Date.now()-exam.qStart)/1000);
+  advanceExam();
+}
+function examSkip(){const e=cur;exam.results[e.id]={ok:false,skipped:true,cat:e.cat,diff:e.diff,kind:e.kind};exam.times[e.id]=Math.round((Date.now()-exam.qStart)/1000);advanceExam();}
+function advanceExam(){if(exam.idx<exam.items.length-1)loadExamQuestion(exam.idx+1);else finishExam();}
+
+function finishExam(){
+  if(!exam||exam.finished)return;
+  exam.finished=true;stopExamTimer();
+  exam.items.forEach(e=>{if(!exam.results[e.id])exam.results[e.id]={ok:false,skipped:true,cat:e.cat,diff:e.diff,kind:e.kind};});
+  const total=exam.items.length,pass=exam.items.filter(e=>exam.results[e.id].ok).length;
+  const byCat={},byDiff={};
+  exam.items.forEach(e=>{const r=exam.results[e.id];
+    (byCat[e.cat]=byCat[e.cat]||{p:0,t:0}).t++;if(r.ok)byCat[e.cat].p++;
+    (byDiff[e.diff]=byDiff[e.diff]||{p:0,t:0}).t++;if(r.ok)byDiff[e.diff].p++;});
+  const dur=Math.round((Date.now()-exam.start)/1000);
+  const a={date:new Date().toISOString(),score:pass,total,pct:Math.round(pass/total*100),dur,byCat,byDiff};
+  stats.history.unshift(a);saveStats();
+  renderReport(a);
+}
+function renderReport(a){
+  const cats=Object.entries(a.byCat).sort((x,y)=>(x[1].p/x[1].t)-(y[1].p/y[1].t));
+  const weak=cats.filter(([c,o])=>o.p/o.t<0.6);
+  const catRows=cats.map(([c,o])=>{const pct=Math.round(o.p/o.t*100);return `<div class="row"><span class="lab">${c}</span><span class="track"><span class="fill" style="width:${pct}%"></span></span><span class="pct">${o.p}/${o.t}</span></div>`}).join('');
+  const diffRows=['e','m','h'].filter(d=>a.byDiff[d]).map(d=>{const o=a.byDiff[d],pct=Math.round(o.p/o.t*100);return `<div class="row"><span class="lab">${({e:'easy',m:'medium',h:'hard'})[d]}</span><span class="track"><span class="fill" style="width:${pct}%"></span></span><span class="pct">${o.p}/${o.t}</span></div>`}).join('');
+  const qlist=exam.items.map((e,i)=>{const r=exam.results[e.id];return `<div class="case ${r.ok?'pass':'fail'}"><span class="s">${r.ok?'✓':'✗'}</span><span class="d">${i+1}. ${e.title} <small>· ${e.cat} · ${e.kind.toUpperCase()} · ${exam.times[e.id]||0}s${r.skipped?' · saltada':''}</small></span></div>`}).join('');
+  const col=a.pct>=70?'var(--ok)':a.pct>=50?'var(--amber)':'var(--bad)';
+  $('#ovReport').innerHTML=`
+    <h2>Resultado del examen</h2><div class="sub">${new Date(a.date).toLocaleString()} · duración ${fmt(a.dur)}</div>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+      <div class="card" style="min-width:190px;text-align:center"><div class="score" style="color:${col}">${a.pct}%</div><div class="scoresub">${a.score} de ${a.total} correctas</div></div>
+      <div class="card" style="flex:1;min-width:330px"><div class="field"><label>Por categoría</label>${catRows}</div><div class="field"><label>Por dificultad</label>${diffRows}</div></div>
+    </div>
+    ${weak.length?`<div class="weak"><b>A reforzar:</b> ${weak.map(([c])=>c).join(' · ')}.<br>Practica estos temas en modo Práctica antes del próximo intento.</div>`:`<div class="weak" style="border-color:var(--ok);background:rgba(63,185,80,.07)"><b>Sólido en todas las categorías evaluadas.</b> Sube la dificultad o el número de preguntas.</div>`}
+    <div class="card" style="margin-top:16px"><div class="field"><label>Detalle por pregunta</label><div style="font-family:var(--mono)">${qlist}</div></div></div>
+    <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap"><button class="primary" onclick="switchMode('exam')">Nuevo examen</button><button onclick="switchMode('stats')">Ver progreso</button><button class="ghost" onclick="switchMode('practice')">Ir a práctica</button></div>`;
+  document.querySelector('.grid').classList.remove('examrun');
+  $('#ovReport').classList.add('show');
+}
+
+function renderStats(){
+  const h=stats.history,cats=[...new Set(EX.map(e=>e.cat))];
+  const m={};cats.forEach(c=>m[c]={s:0,t:0});EX.forEach(e=>{m[e.cat].t++;if(state.solved[e.id])m[e.cat].s++;});
+  const mastery=cats.map(c=>{const o=m[c],pct=o.t?Math.round(o.s/o.t*100):0;return `<div class="row"><span class="lab">${c}</span><span class="track"><span class="fill" style="width:${pct}%"></span></span><span class="pct">${o.s}/${o.t}</span></div>`}).join('');
+  const best=h.length?Math.max(...h.map(a=>a.pct)):0;
+  const rows=h.slice(0,15).map(a=>`<div class="h"><span style="width:170px">${new Date(a.date).toLocaleString()}</span><span style="width:54px;color:${a.pct>=70?'var(--ok)':a.pct>=50?'var(--amber)':'var(--bad)'}">${a.pct}%</span><span style="width:60px">${a.score}/${a.total}</span><span>${fmt(a.dur)}</span></div>`).join('')||'<div class="console">Sin exámenes aún. Inicia uno para registrar tu progreso.</div>';
+  $('#ovStats').innerHTML=`
+    <h2>Progreso</h2><div class="sub">Dominio en práctica + historial de exámenes</div>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+      <div class="card" style="min-width:180px;text-align:center"><div class="score">Lv ${levelFor(state.xp)}</div><div class="scoresub">${state.xp} XP · 🔥 ${state.streak}<br>mejor examen: ${best}%</div></div>
+      <div class="card" style="flex:1;min-width:340px"><div class="field"><label>Dominio por categoría (práctica)</label>${mastery}</div></div>
+    </div>
+    <div class="card" style="margin-top:16px"><div class="field"><label>Historial de exámenes</label><div class="hist">${rows}</div></div></div>
+    <div style="margin-top:16px;display:flex;gap:10px"><button class="primary" onclick="switchMode('exam')">Iniciar examen</button><button class="ghost" onclick="switchMode('practice')">Práctica</button></div>`;
+}
+
+window.addEventListener('load',async()=>{await load();await loadStats();renderXP();renderRail();open(EX[0].id);});
 </script>
 </body>
 </html>

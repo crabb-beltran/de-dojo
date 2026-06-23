@@ -14,6 +14,11 @@ A browser-based training platform to **practice and self-assess Data Engineering
 - **AI tutor** — optional hint / senior-level code review (only when hosted where the Anthropic API is reachable).
 - **Gamification** — XP, levels, streaks; progress persisted locally.
 
+### Training modes
+- **Practice** — free navigation, per-exercise countdown, instant grading and XP.
+- **Exam** — timed assessment: random set filtered by category/difficulty, single global countdown, sequential submit, then a score report with per-topic and per-difficulty accuracy, detected weaknesses, and per-question timing.
+- **Stats** — category mastery and a history of past exam attempts to track improvement over time.
+
 ## Exercise coverage
 
 | Track | Examples |
@@ -48,9 +53,9 @@ Pushing to `main` triggers `.github/workflows/pages.yml`, which publishes the si
 
 ## Roadmap
 
-- Timed **exam mode** (random set, single countdown, score report).
 - Per-exercise **extra hidden datasets** for stronger grading.
 - Author exercises from JSON files + a contribution flow (see `docs/AUTHORING.md`).
+- Spaced-repetition: resurface weak categories automatically.
 - Optional backend for accounts/leaderboards and a secure AI-tutor proxy.
 
 ## Tech
