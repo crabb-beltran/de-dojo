@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DE Dojo — entrenamiento DE con test cases</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.min.js"></script>
+<style>
+  :root{--ink:#0D1117;--surface:#161B22;--surface2:#1B222B;--border:#222A33;--text:#E6EDF3;--muted:#8B98A5;
+    --amber:#FFB454;--ok:#3FB950;--bad:#F85149;--blue:#58A6FF;--violet:#BC8CFF;
+    --ui:'Space Grotesk',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;}
+  *{box-sizing:border-box}html,body{height:100%;margin:0}
+  body{background:var(--ink);color:var(--text);font-family:var(--ui);display:grid;grid-template-rows:auto 1fr;overflow:hidden}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+  .top{display:flex;align-items:center;gap:14px;padding:9px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+  .brand{font-weight:700;letter-spacing:.5px;display:flex;align-items:center;gap:9px}
+  .brand .k{color:var(--amber)} .brand small{font-family:var(--mono);font-weight:500;color:var(--muted);font-size:11px}
+  .spacer{flex:1}
+  .xpwrap{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .lvl{color:var(--amber);font-weight:600}
+  .pbar{width:130px;height:7px;background:var(--surface2);border-radius:99px;overflow:hidden;border:1px solid var(--border)}
+  .pbar i{display:block;height:100%;background:linear-gradient(90deg,var(--amber),#ffd089);width:0;transition:width .4s}
+  .menub{display:none}
+  .grid{display:grid;grid-template-columns:290px 1fr 1fr;min-height:0;overflow:hidden}
+  .rail{border-right:1px solid var(--border);background:var(--surface);overflow:auto;min-height:0}
+  .cat{padding:13px 16px 6px;font-family:var(--mono);font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);position:sticky;top:0;background:var(--surface);z-index:1}
+  .ex{padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;gap:10px;align-items:flex-start;transition:.12s}
+  .ex:hover{background:var(--surface2)}
+  .ex.active{background:var(--surface2);box-shadow:inset 3px 0 0 var(--amber)}
+  .ex .ico{font-family:var(--mono);font-size:9.5px;font-weight:600;padding:2px 5px;border-radius:5px;border:1px solid var(--border);color:var(--muted);flex:none;margin-top:1px}
+  .ex .ico.sql{color:var(--blue);border-color:#23405e}.ex .ico.python{color:var(--amber);border-color:#5e4a23}.ex .ico.quiz{color:var(--violet);border-color:#4a3a5e}
+  .ex .tt{font-size:13px;font-weight:600;line-height:1.25}
+  .ex .mt{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px}
+  .ex .chk{margin-left:auto;color:var(--ok);flex:none}
+  .diff{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muted);margin-right:3px}
+  .diff.e{background:var(--ok)}.diff.m{background:var(--amber)}.diff.h{background:var(--bad)}
+  .prob{border-right:1px solid var(--border);overflow:auto;min-height:0;padding:18px 22px 40px}
+  .prob h1{font-size:19px;margin:0 0 4px;line-height:1.2}
+  .ptag{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-bottom:14px}
+  .prob h3{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--amber);font-family:var(--mono);margin:18px 0 7px}
+  .prob p{font-size:13.5px;line-height:1.6;color:#cdd6df;margin:0 0 10px}
+  .prob ul{font-size:13px;line-height:1.5;color:#cdd6df;padding-left:18px;margin:0}
+  .prob li{margin:3px 0}
+  .prob code{font-family:var(--mono);background:var(--surface2);padding:1px 5px;border-radius:4px;color:var(--amber);font-size:12px}
+  .src{margin:10px 0}
+  .src .nm{font-family:var(--mono);font-size:11.5px;color:var(--blue);margin-bottom:4px}
+  .src .nm b{color:var(--text)}
+  table.dt{border-collapse:collapse;font-family:var(--mono);font-size:11.5px;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  table.dt th{background:var(--surface2);color:var(--muted);text-align:left;padding:5px 9px;border-bottom:1px solid var(--border);font-weight:600}
+  table.dt td{padding:4px 9px;border-bottom:1px solid var(--border);color:#cbd5e1}
+  table.dt tr:last-child td{border-bottom:0}
+  .srcnote{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:3px}
+  .exp{font-family:var(--mono);font-size:11.5px;background:var(--surface);border:1px dashed var(--border);border-radius:8px;padding:9px 11px;color:#9fb;white-space:pre;overflow:auto}
+  .opt{display:block;border:1px solid var(--border);border-radius:9px;padding:10px 13px;margin:7px 0;cursor:pointer;font-size:13px;transition:.12s;background:var(--surface)}
+  .opt:hover{border-color:var(--amber)} .opt.sel{border-color:var(--amber);background:var(--surface2)}
+  .opt.correct{border-color:var(--ok);background:rgba(63,185,80,.08)} .opt.wrong{border-color:var(--bad);background:rgba(248,81,73,.08)}
+  .opt .mk{font-family:var(--mono);color:var(--muted);margin-right:8px}
+  .work{display:flex;flex-direction:column;min-height:0;min-width:0}
+  .wtabs{display:flex;align-items:center;background:var(--surface);border-bottom:1px solid var(--border)}
+  .wtab{font-family:var(--mono);font-size:11.5px;padding:9px 14px;color:var(--muted);cursor:pointer;border-right:1px solid var(--border)}
+  .wtab.active{color:var(--text);background:var(--ink);box-shadow:inset 0 -2px 0 var(--amber)}
+  .timer{margin-left:auto;display:flex;align-items:center;gap:7px;padding:0 12px;font-family:var(--mono);font-size:13px}
+  .timer .clock{font-weight:600;color:var(--ok);font-variant-numeric:tabular-nums}
+  .timer .clock.warn{color:var(--amber)} .timer .clock.crit{color:var(--bad);animation:blink 1s infinite}
+  @keyframes blink{50%{opacity:.45}}
+  .timer button{padding:3px 8px;font-size:11px}
+  .edhost{flex:1;min-height:120px;position:relative}
+  .CodeMirror{height:100%!important;font-family:var(--mono)!important;font-size:13px;background:var(--ink)!important}
+  .actions{display:flex;gap:8px;padding:9px 12px;background:var(--surface);border-top:1px solid var(--border);flex-wrap:wrap}
+  button{font-family:var(--ui);font-weight:600;font-size:13px;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text);padding:8px 13px;transition:.12s}
+  button:hover{border-color:var(--amber);color:#fff} button.primary{background:var(--amber);color:#1a1207;border-color:var(--amber)}
+  button.primary:hover{filter:brightness(1.07)} button.ghost{background:transparent} button:disabled{opacity:.5;cursor:not-allowed}
+  .results{height:40%;min-height:130px;overflow:auto;background:var(--surface);border-top:1px solid var(--border);font-family:var(--mono);font-size:12px}
+  .rhd{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;position:sticky;top:0;background:var(--surface)}
+  .verdict{margin-left:auto;font-weight:600} .verdict.pass{color:var(--ok)} .verdict.fail{color:var(--bad)}
+  .case{display:flex;gap:9px;padding:8px 12px;border-bottom:1px solid var(--border);align-items:flex-start}
+  .case .s{flex:none;font-weight:700} .case.pass .s{color:var(--ok)} .case.fail .s{color:var(--bad)}
+  .case .d{color:#cbd5e1;line-height:1.45;white-space:pre-wrap;word-break:break-word}
+  .case .d small{color:var(--muted)}
+  .console{padding:10px 12px;color:var(--muted);white-space:pre-wrap;line-height:1.45}
+  .tutor{padding:12px;border-top:1px solid var(--border);background:var(--surface2);white-space:pre-wrap;font-family:var(--ui);font-size:13.5px;line-height:1.6;display:none}
+  .tutor.show{display:block} .tutor code{font-family:var(--mono);background:var(--ink);padding:1px 5px;border-radius:4px;color:var(--amber)}
+  .pulse{animation:pulse 1s infinite}@keyframes pulse{50%{opacity:.45}}
+  .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--amber);padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:60}
+  .toast.show{opacity:1}
+  @media(max-width:1080px){.grid{grid-template-columns:1fr 1fr}.rail{position:fixed;z-index:50;width:290px;height:100%;transform:translateX(-100%);transition:.25s}.rail.open{transform:translateX(0)}.menub{display:grid;place-items:center;width:38px;height:38px;border-radius:9px;background:var(--amber);color:#1a1207;border:none;cursor:pointer;font-size:18px}}
+  @media(max-width:720px){.grid{grid-template-columns:1fr;grid-auto-rows:minmax(200px,auto);overflow:auto}body{overflow:auto}.prob{border-right:0;border-bottom:1px solid var(--border)}}
+</style>
+</head>
+<body>
+<div class="top">
+  <button class="menub" onclick="document.querySelector('.rail').classList.toggle('open')">☰</button>
+  <div class="brand"><span class="k">DE</span> DOJO <small>entrenamiento con test cases</small></div>
+  <div class="spacer"></div>
+  <div class="xpwrap">
+    <span>🔥 <span id="streak">0</span></span>
+    <span class="lvl">Lv <span id="lvl">1</span></span>
+    <span class="pbar"><i id="xpbar"></i></span>
+    <span id="xptxt">0 XP</span>
+    <button class="ghost" id="resetBtn" style="padding:5px 9px;font-size:11px">reset</button>
+  </div>
+</div>
+<div class="grid">
+  <aside class="rail" id="rail"></aside>
+  <section class="prob" id="prob"></section>
+  <section class="work">
+    <div class="wtabs" id="wtabs"></div>
+    <div class="edhost" id="edhost"></div>
+    <div class="actions" id="actions"></div>
+    <div class="results" id="results">
+      <div class="rhd">test cases <span class="verdict" id="verdict"></span></div>
+      <div id="cases"><div class="console">Pulsa <b>Run tests</b> para evaluar.</div></div>
+      <div class="tutor" id="tutor"></div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const DT={e:480,m:900,h:1500}; // default timer seconds by difficulty
+/* ===== helper to build source tables compactly ===== */
+function S(name,cols,rows,note){return {name,cols,rows,note};}
+
+const EX=[
+/* ============================ SQL ============================ */
+{
+ id:'sql_topn',cat:'D · SQL avanzado',kind:'sql',diff:'m',xp:20,
+ title:'2.º salario más alto por departamento',tags:'window · DENSE_RANK',
+ context:'RR.HH. pide, por equipo, el segundo salario más alto para una banda salarial. Si dos personas ganan lo mismo, cuenta como un solo nivel.',
+ task:'Devuelve por <code>dept</code> el <b>segundo salario más alto distinto</b>.',
+ bullets:['Salida: <code>dept</code>, <code>second_salary</code>.','Salarios repetidos = un solo nivel (usa <code>DENSE_RANK</code> sobre valores distintos).','Si un dept no tiene 2.º distinto, se omite. Orden libre.'],
+ sources:[S('employees',['id','name','dept','salary'],[[1,'A','data',100],[2,'B','data',100],[3,'C','data',90],[4,'D','data',80],['…','…','plat / ml','…']])],
+ expected:'dept   second_salary\ndata   90\nml     55',
+ datasets:[`CREATE TABLE employees(id INT,name TEXT,dept TEXT,salary INT);INSERT INTO employees VALUES (1,'A','data',100),(2,'B','data',100),(3,'C','data',90),(4,'D','data',80),(5,'E','plat',70),(6,'F','plat',70),(7,'G','ml',50),(8,'H','ml',60),(9,'I','ml',55);`,
+           `CREATE TABLE employees(id INT,name TEXT,dept TEXT,salary INT);INSERT INTO employees VALUES (1,'X','x',10),(2,'Y','x',20),(3,'Z','y',5);`],
+ ref:`WITH r AS (SELECT dept,salary,DENSE_RANK() OVER(PARTITION BY dept ORDER BY salary DESC) rk FROM (SELECT DISTINCT dept,salary FROM employees)) SELECT dept, salary AS second_salary FROM r WHERE rk=2`,
+ starter:`-- second highest DISTINCT salary per dept\nSELECT\n  dept,\n  -- ...\nFROM employees\n;`
+},
+{
+ id:'sql_dedup',cat:'C · Transformación y DQ',kind:'sql',diff:'m',xp:20,
+ title:'Deduplicación idempotente: quedarse con el más reciente',tags:'idempotencia · ROW_NUMBER',
+ context:'Un loader reintentó y escribió duplicados por <code>event_id</code>. Antes de hacer MERGE a Silver necesitas una sola fila por evento: la última versión.',
+ task:'Por cada <code>event_id</code> conserva solo la fila con <code>updated_at</code> mayor.',
+ bullets:['Salida: <code>event_id</code>, <code>user_id</code>, <code>status</code>, <code>updated_at</code>.','Empate en <code>updated_at</code> → desempata por <code>rowid</code> mayor.','SQLite no tiene <code>QUALIFY</code>: usa CTE + filtro <code>rn=1</code>.'],
+ sources:[S('events',['event_id','user_id','status','updated_at'],[[1,10,'pending',100],[1,10,'paid',200],[2,11,'pending',150],[3,12,'paid',300],[3,12,'refunded',400]],'updated_at = epoch seconds')],
+ expected:'1 10 paid 200\n2 11 pending 150\n3 12 refunded 400',
+ datasets:[`CREATE TABLE events(event_id INT,user_id INT,status TEXT,updated_at INT);INSERT INTO events VALUES (1,10,'pending',100),(1,10,'paid',200),(2,11,'pending',150),(3,12,'paid',300),(3,12,'refunded',400),(3,12,'refunded',400);`],
+ ref:`WITH r AS (SELECT *,ROW_NUMBER() OVER(PARTITION BY event_id ORDER BY updated_at DESC, rowid DESC) rn FROM events) SELECT event_id,user_id,status,updated_at FROM r WHERE rn=1`,
+ starter:`WITH ranked AS (\n  SELECT *,\n    ROW_NUMBER() OVER (/* ... */) AS rn\n  FROM events\n)\nSELECT event_id, user_id, status, updated_at\nFROM ranked\nWHERE rn = 1;`
+},
+{
+ id:'sql_runtot',cat:'D · SQL avanzado',kind:'sql',diff:'e',xp:15,
+ title:'Saldo acumulado por cuenta',tags:'window · SUM OVER',
+ context:'Finanzas quiere el saldo corriente por cuenta para un extracto. Cada movimiento suma o resta.',
+ task:'Calcula el <b>running balance</b> por cuenta ordenado por fecha.',
+ bullets:['Salida: <code>account_id</code>, <code>txn_date</code>, <code>running_balance</code>.','Ordena el frame por <code>txn_date, txn_id</code>.'],
+ sources:[S('txns',['txn_id','account_id','amount','txn_date'],[[1,1,100,'2024-01-01'],[2,1,-30,'2024-01-02'],[3,1,50,'2024-01-03'],[4,2,200,'2024-01-01']])],
+ expected:'1 2024-01-01 100\n1 2024-01-02 70\n1 2024-01-03 120 …',
+ datasets:[`CREATE TABLE txns(txn_id INT,account_id INT,amount INT,txn_date TEXT);INSERT INTO txns VALUES (1,1,100,'2024-01-01'),(2,1,-30,'2024-01-02'),(3,1,50,'2024-01-03'),(4,2,200,'2024-01-01'),(5,2,-200,'2024-01-05');`],
+ ref:`SELECT account_id,txn_date,SUM(amount) OVER(PARTITION BY account_id ORDER BY txn_date,txn_id) AS running_balance FROM txns`,
+ starter:`SELECT\n  account_id,\n  txn_date,\n  -- running_balance ...\nFROM txns;`
+},
+{
+ id:'sql_sessions',cat:'E · Arquitectura Moderna',kind:'sql',diff:'h',xp:30,
+ title:'Sessionización con LAG (gap > 30 min)',tags:'window · LAG · gap&island',
+ context:'Analytics necesita agrupar clicks en sesiones. Una sesión nueva empieza si pasan más de 30 min (1800s) entre eventos del mismo usuario.',
+ task:'Asigna <code>session_id</code> incremental (1,2,3…) por usuario.',
+ bullets:['Salida: <code>user_id</code>, <code>ts</code>, <code>session_id</code>.','Primer evento del usuario = sesión 1.','Patrón: flag de quiebre con <code>LAG</code> + <code>SUM() OVER</code> acumulado.'],
+ sources:[S('hits',['user_id','ts'],[[1,1000],[1,1200],[1,5000],[1,5500],[2,2000],[2,9000]],'ts = epoch seconds')],
+ expected:'1 1000 1 | 1 1200 1 | 1 5000 2 | 1 5500 2 | 2 2000 1 | 2 9000 2',
+ datasets:[`CREATE TABLE hits(user_id INT,ts INT);INSERT INTO hits VALUES (1,1000),(1,1200),(1,5000),(1,5500),(2,2000),(2,9000);`],
+ ref:`WITH f AS (SELECT user_id,ts,CASE WHEN ts - LAG(ts) OVER(PARTITION BY user_id ORDER BY ts) > 1800 OR LAG(ts) OVER(PARTITION BY user_id ORDER BY ts) IS NULL THEN 1 ELSE 0 END AS brk FROM hits) SELECT user_id,ts,SUM(brk) OVER(PARTITION BY user_id ORDER BY ts) AS session_id FROM f`,
+ starter:`WITH flagged AS (\n  SELECT user_id, ts,\n    CASE WHEN /* gap>1800 or first */ THEN 1 ELSE 0 END AS brk\n  FROM hits\n)\nSELECT user_id, ts,\n  -- cumulative session_id\nFROM flagged;`
+},
+{
+ id:'sql_orphan',cat:'F · Governance / DQ',kind:'sql',diff:'e',xp:15,
+ title:'Integridad referencial: orphan rows',tags:'DQ · anti-join',
+ context:'Un test dbt <code>relationships</code> debe devolver 0 filas. Hay órdenes apuntando a clientes inexistentes (FK rota).',
+ task:'Encuentra las <code>orders</code> cuyo <code>customer_id</code> no existe en <code>customers</code>.',
+ bullets:['Salida: <code>order_id</code>, <code>customer_id</code>.','Solo filas huérfanas.'],
+ sources:[S('customers',['customer_id'],[[1],[2],[3]]),S('orders',['order_id','customer_id'],[[10,1],[11,9],[12,2],[13,99]])],
+ expected:'11 9\n13 99',
+ datasets:[`CREATE TABLE customers(customer_id INT);INSERT INTO customers VALUES (1),(2),(3);CREATE TABLE orders(order_id INT,customer_id INT);INSERT INTO orders VALUES (10,1),(11,9),(12,2),(13,99);`],
+ ref:`SELECT o.order_id,o.customer_id FROM orders o LEFT JOIN customers c ON c.customer_id=o.customer_id WHERE c.customer_id IS NULL`,
+ starter:`SELECT o.order_id, o.customer_id\nFROM orders o\n-- anti-join contra customers\n;`
+},
+{
+ id:'sql_streak',cat:'D · SQL avanzado',kind:'sql',diff:'h',xp:30,
+ title:'Racha de logins consecutivos (gap-and-island)',tags:'gap&island · ROW_NUMBER',
+ context:'Producto quiere la racha más larga de días consecutivos con login por usuario (engagement).',
+ task:'Devuelve por usuario la <b>longitud de su racha consecutiva más larga</b>.',
+ bullets:['Salida: <code>user_id</code>, <code>longest_streak</code>.','Días duplicados cuentan una vez.','Truco islas: <code>julianday(d) - ROW_NUMBER()</code> es constante dentro de una racha.'],
+ sources:[S('logins',['user_id','d'],[[1,'2024-01-01'],[1,'2024-01-02'],[1,'2024-01-03'],[1,'2024-01-05'],[2,'2024-01-01'],[2,'2024-01-03']])],
+ expected:'1 → 3 | 2 → 1 | 3 → 2',
+ datasets:[`CREATE TABLE logins(user_id INT,d TEXT);INSERT INTO logins VALUES (1,'2024-01-01'),(1,'2024-01-02'),(1,'2024-01-03'),(1,'2024-01-05'),(2,'2024-01-01'),(2,'2024-01-03'),(3,'2024-01-10'),(3,'2024-01-11');`],
+ ref:`WITH g AS (SELECT user_id,d, julianday(d)-ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY d) AS grp FROM (SELECT DISTINCT user_id,d FROM logins)) SELECT user_id, MAX(c) AS longest_streak FROM (SELECT user_id,grp,COUNT(*) c FROM g GROUP BY user_id,grp) GROUP BY user_id`,
+ starter:`WITH g AS (\n  SELECT user_id, d,\n    julianday(d) - ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY d) AS grp\n  FROM (SELECT DISTINCT user_id, d FROM logins)\n)\n-- agrupa por (user_id, grp), cuenta, toma el MAX por usuario\n;`
+},
+{
+ id:'sql_scd2',cat:'B · Modelado de Datos',kind:'sql',diff:'h',xp:35,
+ title:'Construir SCD Type 2 desde snapshots',tags:'SCD2 · islands · valid_from/to',
+ context:'Recibes snapshots diarios de precios. Para Silver necesitas una fila por periodo contiguo de precio, con vigencia.',
+ task:'Colapsa snapshots en periodos: una fila por cambio de precio.',
+ bullets:['Salida: <code>product_id</code>, <code>price</code>, <code>valid_from</code>, <code>valid_to</code>, <code>is_current</code>.','<code>valid_from/to</code> = primer/último día del periodo.','<code>is_current=1</code> si el periodo incluye el último snapshot del producto.','Detecta cambios con <code>LAG</code> + suma acumulada (islands).'],
+ sources:[S('snaps',['product_id','price','snapshot_date'],[[1,100,'2024-01-01'],[1,100,'2024-01-02'],[1,120,'2024-01-03'],[1,90,'2024-01-05'],[2,50,'2024-01-01']])],
+ expected:'1 100 01-01 01-02 0\n1 120 01-03 01-04 0\n1 90  01-05 01-05 1\n2 50  01-01 01-02 1',
+ datasets:[`CREATE TABLE snaps(product_id INT,price INT,snapshot_date TEXT);INSERT INTO snaps VALUES (1,100,'2024-01-01'),(1,100,'2024-01-02'),(1,120,'2024-01-03'),(1,120,'2024-01-04'),(1,90,'2024-01-05'),(2,50,'2024-01-01'),(2,50,'2024-01-02');`],
+ ref:`WITH chg AS (SELECT product_id,price,snapshot_date,CASE WHEN price=LAG(price) OVER(PARTITION BY product_id ORDER BY snapshot_date) THEN 0 ELSE 1 END AS isnew FROM snaps), grp AS (SELECT *,SUM(isnew) OVER(PARTITION BY product_id ORDER BY snapshot_date) AS g FROM chg) SELECT product_id,price,MIN(snapshot_date) AS valid_from,MAX(snapshot_date) AS valid_to, CASE WHEN MAX(snapshot_date)=(SELECT MAX(snapshot_date) FROM snaps s WHERE s.product_id=grp.product_id) THEN 1 ELSE 0 END AS is_current FROM grp GROUP BY product_id,g ORDER BY product_id,valid_from`,
+ starter:`WITH chg AS (\n  SELECT product_id, price, snapshot_date,\n    CASE WHEN price = LAG(price) OVER (PARTITION BY product_id ORDER BY snapshot_date)\n         THEN 0 ELSE 1 END AS isnew\n  FROM snaps\n)\n-- suma acumulada de isnew = id de periodo; agrupa y arma valid_from/to + is_current\n;`
+},
+{
+ id:'sql_funnel',cat:'E · Arquitectura Moderna',kind:'sql',diff:'m',xp:20,
+ title:'Funnel de conversión',tags:'agregación condicional',
+ context:'Growth quiere el embudo view → cart → purchase: cuántos usuarios distintos llegan a cada paso.',
+ task:'Cuenta usuarios distintos en cada paso, en una sola fila.',
+ bullets:['Salida: <code>views</code>, <code>carts</code>, <code>purchases</code>.','Usa <code>COUNT(DISTINCT CASE WHEN …)</code>.'],
+ sources:[S('ev',['user_id','step'],[[1,'view'],[1,'cart'],[1,'purchase'],[2,'view'],[2,'cart'],[3,'view'],[4,'view'],[4,'purchase']])],
+ expected:'views=4  carts=2  purchases=2',
+ datasets:[`CREATE TABLE ev(user_id INT,step TEXT);INSERT INTO ev VALUES (1,'view'),(1,'cart'),(1,'purchase'),(2,'view'),(2,'cart'),(3,'view'),(4,'view'),(4,'purchase');`],
+ ref:`SELECT COUNT(DISTINCT CASE WHEN step='view' THEN user_id END) AS views, COUNT(DISTINCT CASE WHEN step='cart' THEN user_id END) AS carts, COUNT(DISTINCT CASE WHEN step='purchase' THEN user_id END) AS purchases FROM ev`,
+ starter:`SELECT\n  COUNT(DISTINCT CASE WHEN step='view' THEN user_id END) AS views,\n  -- carts, purchases ...\nFROM ev;`
+},
+{
+ id:'sql_median',cat:'D · SQL avanzado',kind:'sql',diff:'h',xp:30,
+ title:'Mediana por grupo (sin PERCENTILE_CONT)',tags:'window · percentiles',
+ context:'SQLite no tiene <code>PERCENTILE_CONT</code>. Necesitas la mediana de latencias por grupo para un SLA.',
+ task:'Calcula la <b>mediana</b> de <code>val</code> por <code>grp</code>.',
+ bullets:['Salida: <code>grp</code>, <code>median</code>.','Par → promedio de los dos centrales.','Truco: <code>ROW_NUMBER</code> + <code>COUNT() OVER</code>, toma filas <code>(c+1)/2</code> y <code>(c+2)/2</code>.'],
+ sources:[S('m',['grp','val'],[['a',1],['a',2],['a',3],['a',4],['b',10],['b',20],['b',30]])],
+ expected:'a → 2.5 | b → 20.0',
+ datasets:[`CREATE TABLE m(grp TEXT,val INT);INSERT INTO m VALUES ('a',1),('a',2),('a',3),('a',4),('b',10),('b',20),('b',30);`],
+ ref:`WITH r AS (SELECT grp,val,ROW_NUMBER() OVER(PARTITION BY grp ORDER BY val) rn, COUNT(*) OVER(PARTITION BY grp) c FROM m) SELECT grp, AVG(val) AS median FROM r WHERE rn IN ((c+1)/2,(c+2)/2) GROUP BY grp ORDER BY grp`,
+ starter:`WITH r AS (\n  SELECT grp, val,\n    ROW_NUMBER() OVER (PARTITION BY grp ORDER BY val) rn,\n    COUNT(*)     OVER (PARTITION BY grp) c\n  FROM m\n)\nSELECT grp, AVG(val) AS median\nFROM r\nWHERE rn IN ( /* posiciones centrales */ )\nGROUP BY grp ORDER BY grp;`
+},
+{
+ id:'sql_pivot',cat:'D · SQL avanzado',kind:'sql',diff:'m',xp:20,
+ title:'Pivot long → wide',tags:'pivot · CASE',
+ context:'BI necesita ventas por región con columnas Q1 y Q2 (formato wide) a partir de filas long.',
+ task:'Pivotea: una fila por región con columnas <code>q1</code> y <code>q2</code>.',
+ bullets:['Salida: <code>region</code>, <code>q1</code>, <code>q2</code>.','Usa <code>SUM(CASE WHEN q=… )</code>.'],
+ sources:[S('s',['region','q','amt'],[['north','Q1',10],['north','Q2',20],['south','Q1',5],['south','Q2',7]])],
+ expected:'north 10 20 | south 5 7',
+ datasets:[`CREATE TABLE s(region TEXT,q TEXT,amt INT);INSERT INTO s VALUES ('north','Q1',10),('north','Q2',20),('south','Q1',5),('south','Q2',7);`],
+ ref:`SELECT region, SUM(CASE WHEN q='Q1' THEN amt ELSE 0 END) AS q1, SUM(CASE WHEN q='Q2' THEN amt ELSE 0 END) AS q2 FROM s GROUP BY region ORDER BY region`,
+ starter:`SELECT region,\n  SUM(CASE WHEN q='Q1' THEN amt ELSE 0 END) AS q1,\n  -- q2 ...\nFROM s GROUP BY region ORDER BY region;`
+},
+
+/* ============================ PYTHON ============================ */
+{
+ id:'py_dedup',cat:'C · Transformación y DQ',kind:'python',diff:'m',xp:20,
+ title:'Loader idempotente: dedup por hash de contenido',tags:'idempotencia · hashing',
+ context:'Un loader puede recibir el mismo registro dos veces por reintentos. Debe ser idempotente: misma entrada → misma salida sin duplicar.',
+ task:'Implementa <code>dedupe(records)</code> que quite duplicados de contenido conservando el primer orden.',
+ bullets:['Firma: <code>def dedupe(records: list[dict]) -> list[dict]</code>.','Dos records son iguales si todos sus campos coinciden (orden de campos irrelevante).','Estable y sin mutar la entrada.'],
+ sources:[S('records (entrada)',['ejemplo'],[['{"id":1,"v":"x"}'],['{"id":1,"v":"x"}  ← duplicado'],['{"id":2,"v":"y"}']],'lista de dicts')],
+ expected:'[{"id":1,"v":"x"}, {"id":2,"v":"y"}]',
+ starter:`import json\n\ndef dedupe(records):\n    seen = set()\n    out = []\n    for r in records:\n        key = json.dumps(r, sort_keys=True)  # clave estable de contenido\n        # ...\n    return out\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+a=[{"id":1,"v":"x"},{"id":1,"v":"x"},{"id":2,"v":"y"}]
+chk("quita duplicado exacto", dedupe(a), [{"id":1,"v":"x"},{"id":2,"v":"y"}])
+chk("orden de campos no importa", len(dedupe([{"a":1,"b":2},{"b":2,"a":1}])), 1)
+chk("preserva primer orden", [r["id"] for r in dedupe([{"id":3},{"id":1},{"id":3},{"id":2}])], [3,1,2])
+src=[{"id":1}]; dedupe(src); chk("no muta entrada", src, [{"id":1}])
+`
+},
+{
+ id:'py_zscore',cat:'J · Estadística para DE',kind:'python',diff:'m',xp:20,
+ title:'Detección de anomalías por z-score',tags:'estadística · DQ',
+ context:'Un control de DQ debe marcar valores anómalos en una métrica (ej. filas cargadas por día) usando desviaciones estándar.',
+ task:'Implementa <code>flag_anomalies(values, z=3.0)</code> que devuelva los <b>índices</b> con |z-score| &gt; umbral.',
+ bullets:['Firma: <code>flag_anomalies(values: list[float], z: float=3.0) -> list[int]</code>.','Usa media μ y desviación estándar <b>poblacional</b> σ. z=(x−μ)/σ.','Si σ==0 → devuelve <code>[]</code>.'],
+ sources:[S('entrada',['values','z'],[['[10,10,10,10,100]','1.9 → [4]'],['[5,5,5,6,4]','3.0 → []']])],
+ expected:'índices de los outliers, p.ej. [4]',
+ starter:`def flag_anomalies(values, z=3.0):\n    mu = sum(values) / len(values)\n    # sigma poblacional, luego filtra por |zscore| > z\n    ...\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("outlier alto", flag_anomalies([10,10,10,10,100], 1.9), [4])
+chk("sin anomalías", flag_anomalies([5,5,5,6,4], 3.0), [])
+chk("stdev 0 -> vacío", flag_anomalies([7,7,7], 3.0), [])
+chk("umbral configurable", flag_anomalies([1,2,3,4,50], 1.5), [4])
+`
+},
+{
+ id:'py_contract',cat:'C · Transformación y DQ',kind:'python',diff:'h',xp:30,
+ title:'Validación de contrato de datos (schema)',tags:'data contract · nullability',
+ context:'Antes de cargar a Bronze validas cada record contra un contrato: tipos y nullability. Es la primera línea de defensa de DQ.',
+ task:'Implementa <code>validate(record, schema)</code> que devuelva la lista de errores (vacía si OK).',
+ bullets:['Falta campo requerido → <code>"missing:&lt;campo&gt;"</code>.','<code>None</code> y no nullable → <code>"null:&lt;campo&gt;"</code>.','Tipo incorrecto (no None) → <code>"type:&lt;campo&gt;"</code>.','Orden: por orden de campos del schema.'],
+ sources:[S('schema',['field','rule'],[['id','{"type":"int","nullable":false}'],['name','{"type":"str","nullable":true}']]),S('record (ejemplos)',['valor','→'],[['{"id":1,"name":"a"}','[]'],['{"name":"a"}','["missing:id"]']])],
+ expected:'lista de errores en orden de schema',
+ starter:`def validate(record, schema):\n    errors = []\n    type_map = {"int": int, "str": str, "float": float}\n    for field, rule in schema.items():\n        # missing -> null -> type\n        ...\n    return errors\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+sch={"id":{"type":"int","nullable":False},"name":{"type":"str","nullable":True}}
+chk("válido", validate({"id":1,"name":"a"}, sch), [])
+chk("null ok si nullable", validate({"id":1,"name":None}, sch), [])
+chk("missing requerido", validate({"name":"a"}, sch), ["missing:id"])
+chk("null no permitido", validate({"id":None,"name":"a"}, sch), ["null:id"])
+chk("tipo malo", validate({"id":"x","name":"a"}, sch), ["type:id"])
+`
+},
+{
+ id:'py_pandas_clean',cat:'P · pandas / DataFrames',kind:'python',diff:'m',xp:25,pyPackages:['pandas'],
+ title:'Limpieza de DataFrame: dedupe + fillna + cast',tags:'pandas · cleaning',
+ context:'Silver recibe un DataFrame con órdenes duplicadas y montos nulos. Hay que limpiarlo de forma determinística.',
+ task:'Implementa <code>clean_orders(df)</code> y devuelve un DataFrame limpio.',
+ bullets:['Quita duplicados por <code>order_id</code>, conservando la <b>última</b> aparición.','<code>amount</code> nulo → 0, y castea a <code>int</code>.','Ordena por <code>order_id</code> ascendente, índice reseteado.'],
+ sources:[S('df (entrada)',['order_id','amount'],[[1,100.0],[1,120.0],[2,'NaN'],[3,50.0]],'pandas.DataFrame')],
+ expected:'order_id  amount\n1         120\n2         0\n3         50',
+ starter:`import pandas as pd\n\ndef clean_orders(df):\n    # drop_duplicates(keep='last') por order_id, fillna(0).astype(int), sort + reset_index\n    ...\n    return df\n`,
+ pytests:`
+import json, pandas as pd
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+norm=lambda d: json.loads(d.to_json(orient="records"))
+raw=pd.DataFrame([{"order_id":1,"amount":100.0},{"order_id":1,"amount":120.0},{"order_id":2,"amount":None},{"order_id":3,"amount":50.0}])
+chk("limpieza correcta", norm(clean_orders(raw.copy())), [{"order_id":1,"amount":120},{"order_id":2,"amount":0},{"order_id":3,"amount":50}])
+`
+},
+{
+ id:'py_pandas_groupby',cat:'P · pandas / DataFrames',kind:'python',diff:'e',xp:15,pyPackages:['pandas'],
+ title:'Agregación por grupo con pandas',tags:'pandas · groupby',
+ context:'Gold necesita revenue total por región a partir de un DataFrame de ventas.',
+ task:'Implementa <code>revenue_by_region(df)</code> → DataFrame con suma por región.',
+ bullets:['Salida: columnas <code>region</code>, <code>amount</code> (suma).','Ordena por <code>region</code> asc, índice reseteado.','Usa <code>groupby(..., as_index=False)</code>.'],
+ sources:[S('df (entrada)',['region','amount'],[['north',10],['south',5],['north',20],['south',7]])],
+ expected:'north 30 | south 12',
+ starter:`import pandas as pd\n\ndef revenue_by_region(df):\n    ...\n`,
+ pytests:`
+import json, pandas as pd
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+norm=lambda d: json.loads(d.to_json(orient="records"))
+sales=pd.DataFrame([{"region":"north","amount":10},{"region":"south","amount":5},{"region":"north","amount":20},{"region":"south","amount":7}])
+chk("suma por región", norm(revenue_by_region(sales.copy())), [{"region":"north","amount":30},{"region":"south","amount":12}])
+`
+},
+{
+ id:'py_pandas_recon',cat:'P · pandas / DataFrames',kind:'python',diff:'h',xp:30,pyPackages:['pandas'],
+ title:'Reconciliación de dos fuentes',tags:'pandas · merge · reconciliation',
+ context:'Migraste una tabla a un nuevo sistema. Debes reconciliar source vs target y reportar discrepancias (montos distintos o ids faltantes en cualquier lado).',
+ task:'Implementa <code>reconcile(src, tgt)</code> → lista ordenada de <code>id</code> con discrepancia.',
+ bullets:['Discrepancia = id en un solo lado, o <code>amount</code> distinto.','Usa <code>merge(..., how="outer", indicator=True)</code>.','Devuelve <code>sorted(list_of_ids)</code>.'],
+ sources:[S('src',['id','amount'],[[1,100],[2,50],[3,30]]),S('tgt',['id','amount'],[[1,100],[2,55],[4,10]])],
+ expected:'[2, 3, 4]   (2=monto distinto, 3=falta en tgt, 4=falta en src)',
+ starter:`import pandas as pd\n\ndef reconcile(src, tgt):\n    m = src.merge(tgt, on="id", how="outer", suffixes=("_src","_tgt"), indicator=True)\n    # filtra _merge != both  OR  amount_src != amount_tgt\n    ...\n`,
+ pytests:`
+import pandas as pd
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+src=pd.DataFrame([{"id":1,"amount":100},{"id":2,"amount":50},{"id":3,"amount":30}])
+tgt=pd.DataFrame([{"id":1,"amount":100},{"id":2,"amount":55},{"id":4,"amount":10}])
+chk("discrepancias", reconcile(src.copy(),tgt.copy()), [2,3,4])
+`
+},
+{
+ id:'py_db_upsert',cat:'Q · Python + Bases de Datos',kind:'python',diff:'m',xp:25,
+ title:'Upsert idempotente con sqlite3',tags:'sqlite3 · MERGE · idempotencia',
+ context:'Un job carga balances. Si se reejecuta, no debe duplicar ni romper: debe hacer upsert (insert o update por PK).',
+ task:'Implementa <code>upsert(conn, batch)</code> usando <code>ON CONFLICT</code>.',
+ bullets:['<code>batch</code> = lista de tuplas <code>(id, balance)</code>.','Inserta nuevos; actualiza balance si el id existe.','Reejecutar el mismo batch deja el mismo estado (idempotente).'],
+ sources:[S('accounts (estado inicial)',['id','balance'],[[1,100],[2,200]],'PK = id'),S('batch',['id','balance'],[[2,250],[3,300]])],
+ expected:'(1,100) (2,250) (3,300)  — sin duplicados tras reejecutar',
+ starter:`def upsert(conn, batch):\n    conn.executemany(\n        "INSERT INTO accounts(id,balance) VALUES(?,?) "\n        "ON CONFLICT(id) DO UPDATE SET balance=excluded.balance",\n        batch)\n    conn.commit()\n`,
+ pytests:`
+import sqlite3
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+conn=sqlite3.connect(":memory:")
+conn.execute("CREATE TABLE accounts(id INTEGER PRIMARY KEY, balance INT)")
+conn.execute("INSERT INTO accounts VALUES (1,100),(2,200)")
+upsert(conn,[(2,250),(3,300)])
+upsert(conn,[(2,250),(3,300)])
+got=conn.execute("SELECT id,balance FROM accounts ORDER BY id").fetchall()
+chk("upsert idempotente", got, [(1,100),(2,250),(3,300)])
+`
+},
+{
+ id:'py_db_param',cat:'Q · Python + Bases de Datos',kind:'python',diff:'e',xp:20,
+ title:'Query parametrizada (anti SQL-injection)',tags:'sqlite3 · seguridad',
+ context:'Filtras jobs por status con input externo. Concatenar strings abre SQL injection; hay que parametrizar.',
+ task:'Implementa <code>find_by_status(conn, status)</code> con placeholders, no concatenación.',
+ bullets:['Devuelve lista de <code>id</code> con ese <code>status</code>, ordenada asc.','Usa <code>?</code> y pasa <code>status</code> como parámetro.','Un input malicioso debe tratarse como literal (no inyectar).'],
+ sources:[S('jobs',['id','status'],[[1,'ok'],[2,'fail'],[3,'ok']])],
+ expected:"find_by_status(conn,'ok') → [1,3] ; input malicioso → []",
+ starter:`def find_by_status(conn, status):\n    cur = conn.execute("SELECT id FROM jobs WHERE status = ? ORDER BY id", (status,))\n    return [r[0] for r in cur.fetchall()]\n`,
+ pytests:`
+import sqlite3
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+conn=sqlite3.connect(":memory:")
+conn.execute("CREATE TABLE jobs(id INT, status TEXT)")
+conn.executemany("INSERT INTO jobs VALUES(?,?)",[(1,"ok"),(2,"fail"),(3,"ok")])
+chk("filtra ok", find_by_status(conn,"ok"), [1,3])
+chk("seguro ante injection", find_by_status(conn,"ok' OR '1'='1"), [])
+`
+},
+{
+ id:'py_intervals',cat:'L · Lógica / Algoritmos DE',kind:'python',diff:'m',xp:25,
+ title:'Merge de intervalos solapados',tags:'algoritmos · intervalos',
+ context:'Tienes ventanas de mantenimiento que se solapan y debes consolidarlas en periodos limpios (también aplica a deduplicar rangos de vigencia).',
+ task:'Implementa <code>merge_intervals(intervals)</code> → lista de tuplas fusionadas y ordenadas.',
+ bullets:['Entrada: lista de <code>(start, end)</code>.','Fusiona los que se tocan o solapan.','Salida ordenada por inicio, tuplas <code>(start, end)</code>.'],
+ sources:[S('intervals',['(start, end)'],[['(1, 3)'],['(2, 5)'],['(7, 9)'],['(8, 10)']])],
+ expected:'[(1, 5), (7, 10)]',
+ starter:`def merge_intervals(intervals):\n    intervals = sorted(intervals)\n    out = []\n    for s, e in intervals:\n        # si solapa con el último en out, extiende; si no, agrega\n        ...\n    return out\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("solapados", merge_intervals([(1,3),(2,5),(7,9),(8,10)]), [(1,5),(7,10)])
+chk("disjuntos", merge_intervals([(5,6),(1,2)]), [(1,2),(5,6)])
+chk("contiguos tocan", merge_intervals([(1,2),(2,3)]), [(1,3)])
+`
+},
+{
+ id:'py_flatten',cat:'L · Lógica / Algoritmos DE',kind:'python',diff:'m',xp:20,
+ title:'Aplanar JSON anidado',tags:'algoritmos · JSON · ingest',
+ context:'Una API devuelve JSON anidado y tu warehouse es tabular. Hay que aplanar a claves con notación de punto antes de cargar.',
+ task:'Implementa <code>flatten(d)</code> que aplane dicts anidados a un solo nivel.',
+ bullets:['Clave anidada → <code>"padre.hijo"</code>.','Solo dicts se aplanan (asume valores escalares en las hojas).','Recursivo.'],
+ sources:[S('entrada',['ejemplo'],[['{"a":1, "b":{"c":2, "d":{"e":3}}}']])],
+ expected:'{"a":1, "b.c":2, "b.d.e":3}',
+ starter:`def flatten(d, prefix=""):\n    out = {}\n    for k, v in d.items():\n        key = f"{prefix}.{k}" if prefix else k\n        # si v es dict -> recursión; si no -> asigna\n        ...\n    return out\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("anidado", flatten({"a":1,"b":{"c":2,"d":{"e":3}}}), {"a":1,"b.c":2,"b.d.e":3})
+chk("plano", flatten({"x":1,"y":2}), {"x":1,"y":2})
+`
+},
+{
+ id:'py_topk',cat:'L · Lógica / Algoritmos DE',kind:'python',diff:'e',xp:15,
+ title:'Top-K elementos frecuentes (heavy hitters)',tags:'algoritmos · Counter',
+ context:'Para detectar claves calientes (skew) necesitas los K valores más frecuentes en una columna.',
+ task:'Implementa <code>top_k(items, k)</code> → los K más frecuentes, de mayor a menor.',
+ bullets:['Entrada: lista de valores + entero k.','Devuelve solo los valores (sin conteos), ordenados por frecuencia desc.','Pista: <code>collections.Counter.most_common</code>.'],
+ sources:[S('entrada',['items','k'],[['["a","b","a","c","a","b"]','2 → ["a","b"]']])],
+ expected:'["a", "b"]',
+ starter:`from collections import Counter\n\ndef top_k(items, k):\n    ...\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("top2", top_k(["a","b","a","c","a","b"], 2), ["a","b"])
+chk("k>distintos", top_k(["x","x","y"], 5), ["x","y"])
+`
+},
+
+/* ============================ QUIZ ============================ */
+{
+ id:'q_medallion',cat:'E · Arquitectura Moderna',kind:'quiz',diff:'e',xp:10,timer:120,
+ title:'Capas Medallion: ¿qué es Silver?',tags:'medallion',
+ context:'Arquitectura Bronze → Silver → Gold.',
+ task:'¿Cuál describe mejor la capa <b>Silver</b>?',
+ options:[{t:'Ingesta cruda 1:1 de la fuente, sin transformar, append-only.',ok:false},
+   {t:'Datos limpios, tipados, deduplicados y conformados; aún no orientados a negocio.',ok:true},
+   {t:'Agregados finales y métricas listas para BI.',ok:false},
+   {t:'Backups comprimidos para retención GDPR.',ok:false}],
+ explain:'Bronze=raw/append-only; Silver=limpio/conformado/dedup; Gold=agregados de negocio. Reprocesar Gold desde Silver hace el debugging determinístico.'
+},
+{
+ id:'q_skew',cat:'J · Estadística para DE',kind:'quiz',diff:'m',xp:15,timer:150,
+ title:'¿Skew o falta de cómputo?',tags:'estadística · skew',
+ context:'Un join distribuido va lento. El p99 de filas por clave es ~100× la mediana.',
+ task:'Diagnóstico y acción senior:',
+ options:[{t:'Falta cómputo: subir el tamaño del cluster/warehouse.',ok:false},
+   {t:'Data skew por claves calientes: salting (o broadcast si la otra tabla es chica).',ok:true},
+   {t:'Problema de red: reintentar el job.',ok:false},
+   {t:'Índice faltante: crear B-tree sobre la clave de join.',ok:false}],
+ explain:'Mediana baja + p99 enorme = distribución sesgada; unas pocas claves concentran filas. Más cómputo no arregla skew; salting redistribuye la clave caliente.'
+},
+{
+ id:'q_kafka',cat:'A · Infraestructura Cloud',kind:'quiz',diff:'m',xp:15,timer:120,
+ title:'Kafka vs Kinesis',tags:'trade-off · streaming',
+ context:'Equipo pequeño, stack 100% AWS, sin apetito por operar brokers.',
+ task:'Elección defendible y por qué:',
+ options:[{t:'Kafka self-managed: control total del cluster.',ok:false},
+   {t:'Kinesis: managed AWS-native, cero ops de brokers; el ahorro operativo justifica el menor control.',ok:true},
+   {t:'Kinesis porque siempre es más barato a cualquier escala.',ok:false},
+   {t:'Kafka porque Kinesis no soporta múltiples consumidores.',ok:false}],
+ explain:'La respuesta senior nombra el trade-off real: managed vs control/ops. El costo no es universalmente menor y ambos soportan multi-consumer.'
+},
+{
+ id:'q_scd',cat:'B · Modelado de Datos',kind:'quiz',diff:'e',xp:10,timer:120,
+ title:'SCD Tipo 1 vs Tipo 2',tags:'modelado · SCD',
+ context:'Necesitas análisis histórico punto-en-tiempo (precio del producto en cada fecha).',
+ task:'¿Qué SCD?',
+ options:[{t:'Tipo 1: sobrescribir; no importa el historial.',ok:false},
+   {t:'Tipo 2: versionar filas con valid_from/valid_to e is_current.',ok:true},
+   {t:'Truncate & reload diario.',ok:false},
+   {t:'CDC sin almacenamiento histórico.',ok:false}],
+ explain:'Tipo 2 preserva versiones → reconstruyes el estado en cualquier fecha. Tipo 1 destruye el historial.'
+},
+{
+ id:'q_spark',cat:'D · SQL avanzado',kind:'quiz',diff:'m',xp:15,timer:150,
+ title:'PySpark: ¿cuándo broadcast join?',tags:'pyspark · join',
+ context:'Join de hechos (TB) con dimensión (~80MB). El plan hace shuffle de ambas.',
+ task:'Acción correcta:',
+ options:[{t:'Forzar broadcast de la dim: cabe en memoria de cada worker y evita el shuffle del lado grande.',ok:true},
+   {t:'Repartir la tabla de hechos en 10000 particiones.',ok:false},
+   {t:'Convertir todo a pandas y unir en el driver.',ok:false},
+   {t:'Subir shuffle.partitions a 20000.',ok:false}],
+ explain:'Dim de ~80MB es candidata clara a broadcast: se replica a cada executor y el lado grande no se baraja. Pandas en el driver no escala a TB.'
+},
+{
+ id:'q_cap',cat:'K · NoSQL',kind:'quiz',diff:'h',xp:20,timer:150,
+ title:'CAP y elección de store',tags:'nosql · CAP',
+ context:'Lookups de baja latencia por clave conocida, alta escritura, tolerante a consistencia eventual.',
+ task:'¿Modelo NoSQL y por qué?',
+ options:[{t:'Documental con joins server-side para queries ad-hoc.',ok:false},
+   {t:'Key-value / wide-column (DynamoDB/Cassandra): acceso por clave, escala horizontal, consistencia tunable.',ok:true},
+   {t:'Relacional normalizado con FKs.',ok:false},
+   {t:'Grafo, por la baja latencia de lookups por clave.',ok:false}],
+ explain:'Patrón de acceso fijo por clave + escala + eventual = key-value/wide-column. NoSQL se elige por patrón de acceso, no por "anti-SQL".'
+},
+];
+
+/* =========================================================  ENGINE  ========================================================= */
+const $=s=>document.querySelector(s);
+let state={solved:{},xp:0,streak:0,lastDay:null};
+let cur=null,editor=null,SQL=null,pyodide=null,pyLoading=null,quizSel=null,answered=false;
+let timer={remaining:0,id:null,paused:false,expired:false};
+
+const levelFor=xp=>Math.floor(xp/100)+1;
+function renderXP(){const xp=state.xp;$('#lvl').textContent=levelFor(xp);$('#xptxt').textContent=xp+' XP';$('#xpbar').style.width=(xp%100)+'%';$('#streak').textContent=state.streak;}
+async function award(ex){
+  if(state.solved[ex.id]){toast('Ya resuelto ✓');return;}
+  let gain=ex.xp; let note='';
+  if(timer.expired){gain=Math.floor(ex.xp/2);note=' (tiempo agotado: ½ XP)';}
+  state.solved[ex.id]=true; state.xp+=gain;
+  if(!timer.expired){const t=new Date().toISOString().slice(0,10);
+    if(state.lastDay!==t){state.streak=(state.lastDay&&(new Date(t)-new Date(state.lastDay))===86400000)?state.streak+1:1;state.lastDay=t;}}
+  stopTimer(); renderXP(); renderRail(); await save();
+  toast(`✓ +${gain} XP · ${ex.title}${note}`);
+}
+
+/* ---- timer ---- */
+function fmt(s){const m=Math.floor(s/60),x=s%60;return m+':'+String(x).padStart(2,'0');}
+function paintClock(){const c=$('#clock');if(!c)return;c.textContent=fmt(timer.remaining);
+  c.className='clock'+(timer.remaining<=15?' crit':timer.remaining<=60?' warn':'');}
+function startTimer(sec){stopTimer();timer={remaining:sec,id:null,paused:false,expired:false};paintClock();
+  timer.id=setInterval(()=>{if(timer.paused)return;timer.remaining--;paintClock();
+    if(timer.remaining<=0){clearInterval(timer.id);timer.id=null;timer.expired=true;paintClock();toast('⏱ Tiempo agotado — puedes seguir, pero rinde ½ XP');}},1000);}
+function stopTimer(){if(timer.id){clearInterval(timer.id);timer.id=null;}}
+function toggleTimer(){timer.paused=!timer.paused;const b=$('#tpause');if(b)b.textContent=timer.paused?'▶':'⏸';}
+function resetTimer(){if(!cur)return;startTimer(cur.timer||DT[cur.diff]);const b=$('#tpause');if(b)b.textContent='⏸';}
+
+/* ---- rail ---- */
+function renderRail(){
+  const cats=[...new Set(EX.map(e=>e.cat))];let html='';
+  for(const c of cats){html+=`<div class="cat">${c}</div>`;
+    for(const e of EX.filter(x=>x.cat===c)){const done=state.solved[e.id];
+      html+=`<div class="ex ${cur&&cur.id===e.id?'active':''}" data-id="${e.id}">
+        <span class="ico ${e.kind}">${e.kind.toUpperCase()}</span>
+        <span><span class="tt">${e.title}</span>
+        <span class="mt"><span class="diff ${e.diff}"></span>${({e:'easy',m:'medium',h:'hard'})[e.diff]} · ${e.tags}</span></span>
+        ${done?'<span class="chk">✓</span>':''}</div>`;}}
+  $('#rail').innerHTML=html;
+  document.querySelectorAll('.ex').forEach(el=>el.onclick=()=>{open(el.dataset.id);document.querySelector('.rail').classList.remove('open');});
+}
+
+/* ---- open ---- */
+function open(id){
+  cur=EX.find(e=>e.id===id);answered=false;quizSel=null;
+  renderRail();renderProblem();renderWork();
+  $('#cases').innerHTML='<div class="console">Pulsa <b>Run tests</b> para evaluar.</div>';
+  $('#verdict').textContent='';$('#verdict').className='verdict';$('#tutor').classList.remove('show');
+  startTimer(cur.timer||DT[cur.diff]);
+}
+function srcTable(s){
+  let h=`<div class="src"><div class="nm">📄 <b>${s.name}</b></div><table class="dt"><tr>${s.cols.map(c=>`<th>${c}</th>`).join('')}</tr>`;
+  h+=s.rows.map(r=>`<tr>${r.map(v=>`<td>${v}</td>`).join('')}</tr>`).join('');
+  h+=`</table>${s.note?`<div class="srcnote">${s.note}</div>`:''}</div>`;return h;
+}
+function renderProblem(){
+  const e=cur;let h=`<h1>${e.title}</h1><div class="ptag">${e.cat} · ${e.kind.toUpperCase()} · ${({e:'easy',m:'medium',h:'hard'})[e.diff]} · ${e.xp} XP</div>`;
+  if(e.context)h+=`<h3>Contexto</h3><p>${e.context}</p>`;
+  if(e.task)h+=`<h3>Tarea</h3><p>${e.task}</p>`;
+  if(e.bullets)h+=`<h3>Requisitos</h3><ul>${e.bullets.map(b=>`<li>${b}</li>`).join('')}</ul>`;
+  if(e.sources)h+=`<h3>Fuentes / datos disponibles</h3>${e.sources.map(srcTable).join('')}`;
+  if(e.expected)h+=`<h3>Salida esperada (muestra)</h3><div class="exp">${e.expected}</div>`;
+  if(e.kind==='quiz')h+=`<h3>Selecciona</h3><div id="opts">`+e.options.map((o,i)=>`<label class="opt" data-i="${i}"><span class="mk">${String.fromCharCode(65+i)}</span>${o.t}</label>`).join('')+`</div>`;
+  $('#prob').innerHTML=h;
+  if(e.kind==='quiz')document.querySelectorAll('.opt').forEach(o=>o.onclick=()=>{if(answered)return;document.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));o.classList.add('sel');quizSel=+o.dataset.i;});
+}
+function renderWork(){
+  const e=cur,tabs=$('#wtabs'),host=$('#edhost'),act=$('#actions');
+  const tlabel=e.kind==='quiz'?'respuesta':(e.kind==='sql'?'query.sql':'solution.py');
+  tabs.innerHTML=`<div class="wtab active">${tlabel}</div>
+    <div class="timer"><span class="clock" id="clock">--:--</span>
+      <button id="tpause">⏸</button><button id="treset">⟳</button></div>`;
+  $('#tpause').onclick=toggleTimer;$('#treset').onclick=resetTimer;
+  if(e.kind==='quiz'){
+    host.innerHTML=`<div style="padding:18px;color:var(--muted);font-family:var(--mono);font-size:12.5px;line-height:1.6">Ejercicio conceptual.<br>Elige una opción en el panel izquierdo y pulsa <b>Comprobar</b>.</div>`;editor=null;
+    act.innerHTML=`<button class="primary" id="run">Comprobar</button><button id="hint">Pista IA</button>`;
+  }else{
+    host.innerHTML='';editor=CodeMirror(host,{value:e.starter,mode:e.kind==='sql'?'text/x-sql':'python',theme:'material-darker',lineNumbers:true,lineWrapping:true,indentUnit:e.kind==='python'?4:2});
+    setTimeout(()=>editor.refresh(),40);
+    act.innerHTML=`<button class="primary" id="run">Run tests ▸</button><button id="hint">Pista IA</button><button id="review">Review IA</button><button class="ghost" id="reveal">Ver solución</button>`;
+    $('#reveal').onclick=()=>{if(confirm('¿Mostrar una solución de referencia?'))editor.setValue(e.ref?('-- referencia:\n'+e.ref+';'):'# (referencia no disponible para este ejercicio)');};
+    $('#review').onclick=()=>ai('review');
+  }
+  $('#run').onclick=runTests;$('#hint').onclick=()=>ai('hint');
+  paintClock();
+}
+
+/* ---- results ---- */
+function showCases(list){const pass=list.filter(c=>c.ok).length,all=pass===list.length&&list.length>0;
+  $('#verdict').textContent=`${pass}/${list.length}`;$('#verdict').className='verdict '+(all?'pass':'fail');
+  $('#cases').innerHTML=list.map(c=>`<div class="case ${c.ok?'pass':'fail'}"><span class="s">${c.ok?'✓':'✗'}</span><span class="d">${c.name}${c.detail?`<br><small>${c.detail}</small>`:''}</span></div>`).join('');return all;}
+function showConsole(m){$('#cases').innerHTML=`<div class="console">${m}</div>`;$('#verdict').textContent='';}
+
+/* ---- SQL ---- */
+async function ensureSQL(){if(SQL)return SQL;SQL=await initSqlJs({locateFile:f=>`https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${f}`});return SQL;}
+function rowsEq(a,b,ordered){const n=r=>JSON.stringify(r);if(a.length!==b.length)return false;if(ordered)return a.every((r,i)=>n(r)===n(b[i]));const sa=a.map(n).sort(),sb=b.map(n).sort();return sa.every((v,i)=>v===sb[i]);}
+function exec(db,sql){const r=db.exec(sql);return r.length?{cols:r[0].columns,rows:r[0].values}:{cols:[],rows:[]};}
+function preview(r){const x=r.rows.slice(0,3).map(row=>'['+row.join(',')+']').join(' ');return (x||'∅')+(r.rows.length>3?' …':'');}
+async function runSQL(){
+  const e=cur,userSQL=editor.getValue().trim().replace(/;+\s*$/,'');
+  if(!userSQL){showConsole('Escribe una query.');return false;}
+  let lib;try{lib=await ensureSQL();}catch(err){showConsole('No se pudo cargar sql.js: '+err);return false;}
+  const cases=[],ordered=/order\s+by/i.test(e.ref);
+  for(let i=0;i<e.datasets.length;i++){const db=new lib.Database();
+    try{db.run(e.datasets[i]);let exp;try{exp=exec(db,e.ref);}catch(err){cases.push({name:`dataset ${i+1}`,ok:false,detail:'error en referencia: '+err});db.close();continue;}
+      let got;try{got=exec(db,userSQL);}catch(err){cases.push({name:`dataset ${i+1}`,ok:false,detail:'SQL error: '+err});db.close();continue;}
+      const ok=rowsEq(got.rows,exp.rows,ordered);
+      cases.push({name:`dataset ${i+1} · ${exp.rows.length} fila(s) esperadas`,ok,detail:ok?'':`tu salida: ${got.rows.length} fila(s) — ${preview(got)} | esperado: ${preview(exp)}`});
+    }finally{db.close();}}
+  const all=showCases(cases);if(all)await award(e);return all;
+}
+
+/* ---- Python (Pyodide) ---- */
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('no se pudo cargar '+src));document.head.appendChild(s);});}
+async function ensurePy(){if(pyodide)return pyodide;if(pyLoading)return pyLoading;
+  showConsole('Cargando runtime de Python (Pyodide, ~una vez)… <span class="pulse">●</span>');
+  pyLoading=(async()=>{await loadScript('https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js');pyodide=await loadPyodide({indexURL:'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/'});return pyodide;})();
+  return pyLoading;}
+async function runPy(){
+  const e=cur;let py;
+  try{py=await ensurePy();}catch(err){showConsole('No se pudo cargar Python en este entorno (el sandbox bloqueó el runtime).<br>Usa <b>Ver solución</b> o <b>Review IA</b>.<br><small>'+err.message+'</small>');return false;}
+  if(e.pyPackages){try{showConsole('Cargando paquetes: '+e.pyPackages.join(', ')+'… <span class="pulse">●</span>');await py.loadPackage(e.pyPackages);}catch(err){showConsole('No se pudieron cargar paquetes ('+e.pyPackages.join(',')+'): '+err);return false;}}
+  const code=editor.getValue()+'\n'+e.pytests+'\nimport json\nprint("__RESULTS__"+json.dumps(cases))';
+  let out='';py.setStdout({batched:s=>out+=s+'\n'});
+  try{await py.runPythonAsync(code);}catch(err){showConsole('Error de ejecución:\n'+(err.message||err));return false;}
+  const m=out.indexOf('__RESULTS__');if(m<0){showConsole('Sin resultados. Salida:\n'+out);return false;}
+  let list;try{list=JSON.parse(out.slice(m+11));}catch(err){showConsole('Resultados ilegibles.\n'+out);return false;}
+  const cases=list.map(c=>({name:c.name,ok:c.ok,detail:c.ok?'':`obtuvo ${c.got} · esperaba ${c.expected}`}));
+  const all=showCases(cases);if(all)await award(e);return all;
+}
+
+/* ---- quiz ---- */
+function runQuiz(){const e=cur;if(quizSel==null){showConsole('Selecciona una opción primero.');return;}
+  answered=true;document.querySelectorAll('.opt').forEach((o,i)=>{o.classList.remove('sel');if(e.options[i].ok)o.classList.add('correct');if(i===quizSel&&!e.options[i].ok)o.classList.add('wrong');});
+  const ok=e.options[quizSel].ok;showCases([{name:ok?'Correcto':'Incorrecto',ok,detail:e.explain}]);if(ok)award(e);}
+function runTests(){if(!cur)return;if(cur.kind==='sql')return runSQL();if(cur.kind==='python')return runPy();if(cur.kind==='quiz')return runQuiz();}
+
+/* ---- AI tutor ---- */
+async function ai(mode){const e=cur,panel=$('#tutor');panel.classList.add('show','pulse');panel.textContent=mode==='hint'?'Generando pista…':'Revisando tu código…';
+  const code=e.kind==='quiz'?'(conceptual)':(editor?editor.getValue():'');
+  const sys=mode==='hint'?`Da UNA pista breve (máx 3 líneas) que oriente sin resolver.`:`Eres un Senior Data Engineer revisando código de un colega senior. Feedback directo, máx 8 líneas: correctitud, edge cases, idempotencia/coste/rendimiento, estilo de producción. Señala líneas concretas. No reescribas todo.`;
+  const prompt=`${sys}\n\nEjercicio (${e.kind}): ${e.title}\nObjetivo: ${(e.task||e.context||'').replace(/<[^>]+>/g,'')}\n\nCódigo del usuario:\n${code}`;
+  try{const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
+    const d=await r.json();const txt=(d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();panel.classList.remove('pulse');panel.textContent=txt||'Sin respuesta.';
+  }catch(err){panel.classList.remove('pulse');panel.textContent='Tutor IA no disponible aquí: '+err.message;}}
+
+/* ---- persistence ---- */
+async function save(){try{await window.storage.set('dedojo:v2',JSON.stringify(state),false);}catch(e){}}
+async function load(){try{const r=await window.storage.get('dedojo:v2',false);if(r&&r.value)state=Object.assign(state,JSON.parse(r.value));}catch(e){}}
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
+$('#resetBtn').onclick=async()=>{if(confirm('¿Borrar progreso (XP, resueltos, streak)?')){state={solved:{},xp:0,streak:0,lastDay:null};await save();renderXP();renderRail();}};
+window.addEventListener('load',async()=>{await load();renderXP();renderRail();open(EX[0].id);});
+</script>
+</body>
+</html>
