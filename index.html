@@ -15,15 +15,24 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.min.js"></script>
 <style>
   :root{
-    --ink:#0B1012;--surface:#121A1C;--surface2:#18242620;--panel:#13201F;--border:#23312F;
-    --text:#E8EEEC;--muted:#8AA0A0;--coral:#FF6B5B;--mint:#5EEAD4;--gold:#F4C95D;--violet:#C3A6FF;--bad:#FF5C77;
-    --amber:#FF6B5B;--ok:#5EEAD4;--blue:#5EEAD4;
+    --ink:#0B192C;--surface:#1E3E62;--panel:#16314F;--border:#2C5480;
+    --text:#F1F1F1;--muted:#9FB3C8;
+    --coral:#00D2C4;--mint:#00D2C4;--ok:#00D2C4;--blue:#00D2C4;
+    --gold:#FF9F29;--amber:#FF9F29;--bad:#FF5252;--violet:#C3A6FF;
+    --onprimary:#04201E;--glow:#123157;--editorbg:#0B192C;
     --ui:'Manrope',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;--display:'Fraunces',Georgia,serif;
   }
+  [data-theme="light"]{
+    --ink:#FAFAFA;--surface:#ECEFF1;--panel:#FFFFFF;--border:#D4DCE2;
+    --text:#1A237E;--muted:#5A6B8C;
+    --coral:#1A237E;--mint:#00A99D;--ok:#00A99D;--blue:#1A237E;
+    --gold:#FF9900;--amber:#FF9900;--bad:#FF5252;--violet:#5E35B1;
+    --onprimary:#FFFFFF;--glow:#E8EEF5;
+  }
   *{box-sizing:border-box}html,body{height:100%;margin:0}
-  body{background:radial-gradient(1200px 600px at 80% -10%,#10201d 0%,var(--ink) 55%) fixed,var(--ink);color:var(--text);font-family:var(--ui);display:grid;grid-template-rows:auto 1fr;overflow:hidden}
+  body{background:radial-gradient(1200px 600px at 80% -10%,var(--glow) 0%,var(--ink) 55%) fixed,var(--ink);color:var(--text);font-family:var(--ui);display:grid;grid-template-rows:auto 1fr;overflow:hidden}
   @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-  ::selection{background:var(--coral);color:#1a0d0a}
+  ::selection{background:var(--coral);color:var(--onprimary)}
   /* top */
   .top{display:flex;align-items:center;gap:14px;padding:10px 18px;border-bottom:1px solid var(--border);background:rgba(11,16,18,.7);backdrop-filter:blur(8px)}
   .brand{font-family:var(--display);font-weight:900;font-size:18px;letter-spacing:.3px;display:flex;align-items:center;gap:8px;cursor:pointer}
@@ -35,7 +44,7 @@
   .spacer{flex:1}
   .lang{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
   .lang button{font-family:var(--mono);font-size:11px;padding:5px 9px;background:transparent;color:var(--muted);border:0;cursor:pointer}
-  .lang button.on{background:var(--coral);color:#1a0d0a;font-weight:600}
+  .lang button.on{background:var(--coral);color:var(--onprimary);font-weight:600}
   .xpmini{font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;gap:8px;align-items:center}
   .xpmini b{color:var(--gold)}
   .ghostbtn{font-family:var(--mono);font-size:11px;padding:5px 9px;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--muted);cursor:pointer}
@@ -80,7 +89,7 @@
   .ex .mt{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px}
   .ex .chk{margin-left:auto;color:var(--mint);flex:none}
   .diff{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muted);margin-right:3px}
-  .diff.e{background:var(--mint)}.diff.m{background:var(--gold)}.diff.h{background:var(--coral)}
+  .diff.e{background:var(--ok)}.diff.m{background:var(--gold)}.diff.h{background:var(--bad)}
   .prob{border-right:1px solid var(--border);overflow:auto;min-height:0;padding:20px 24px 44px}
   .prob h1{font-family:var(--display);font-weight:700;font-size:23px;margin:0 0 4px;line-height:1.15}
   .ptag{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-bottom:16px}
@@ -107,11 +116,11 @@
   @keyframes blink{50%{opacity:.45}}
   .timer button,.exam-bar button{padding:3px 8px;font-size:11px}
   .edhost{flex:1;min-height:120px;position:relative}
-  .CodeMirror{height:100%!important;font-family:var(--mono)!important;font-size:13px;background:var(--ink)!important}
+  .CodeMirror{height:100%!important;font-family:var(--mono)!important;font-size:13px;background:var(--editorbg)!important}
   .actions{display:flex;gap:8px;padding:9px 12px;background:var(--surface);border-top:1px solid var(--border);flex-wrap:wrap}
   button{font-family:var(--ui);font-weight:600;font-size:13px;border-radius:9px;cursor:pointer;border:1px solid var(--border);background:var(--panel);color:var(--text);padding:8px 13px;transition:.12s}
   button:hover{border-color:var(--coral);color:#fff}
-  button.primary{background:var(--coral);color:#1a0d0a;border-color:var(--coral)}button.primary:hover{filter:brightness(1.07)}
+  button.primary{background:var(--coral);color:var(--onprimary);border-color:var(--coral)}button.primary:hover{filter:brightness(1.07)}
   button.ghost{background:transparent}button:disabled{opacity:.5;cursor:not-allowed}
   .results{height:40%;min-height:130px;overflow:auto;background:var(--surface);border-top:1px solid var(--border);font-family:var(--mono);font-size:12px}
   .rhd{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;position:sticky;top:0;background:var(--surface)}
@@ -145,11 +154,11 @@
   .scoresub{color:var(--muted);font-family:var(--mono);font-size:12px;margin-top:6px}
   .row{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:13px}
   .row .lab{width:210px;color:#c8d6d3;font-size:12.5px}.row .track{flex:1;height:9px;background:var(--panel);border-radius:99px;overflow:hidden;border:1px solid var(--border)}
-  .row .fill{height:100%;background:linear-gradient(90deg,var(--coral),var(--gold))}.row .pct{width:58px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .row .fill{display:block;height:100%;background:linear-gradient(90deg,var(--coral),var(--gold))}.row .pct{width:58px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--muted)}
   .weak{border:1px solid var(--bad);background:rgba(255,92,119,.07);border-radius:10px;padding:12px 14px;margin-top:16px;font-size:13.5px;line-height:1.5}
   .hist .h{display:flex;gap:14px;padding:8px 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:12px;color:#c8d6d3}
   .menub{display:none}
-  @media(max-width:1080px){.grid{grid-template-columns:1fr 1fr}.rail{position:fixed;z-index:50;width:288px;height:100%;transform:translateX(-100%);transition:.25s}.rail.open{transform:translateX(0)}.menub{display:grid;place-items:center;width:36px;height:36px;border-radius:9px;background:var(--coral);color:#1a0d0a;border:none;cursor:pointer;font-size:17px}.rail.hide{display:none}.grid.examrun{grid-template-columns:1fr 1fr}}
+  @media(max-width:1080px){.grid{grid-template-columns:1fr 1fr}.rail{position:fixed;z-index:50;width:288px;height:100%;transform:translateX(-100%);transition:.25s}.rail.open{transform:translateX(0)}.menub{display:grid;place-items:center;width:36px;height:36px;border-radius:9px;background:var(--coral);color:var(--onprimary);border:none;cursor:pointer;font-size:17px}.rail.hide{display:none}.grid.examrun{grid-template-columns:1fr 1fr}}
   @media(min-width:1081px){.rail.hide{display:none}.grid.examrun{grid-template-columns:1fr 1fr}}
   @media(max-width:720px){.gridview.show{grid-template-columns:1fr;grid-auto-rows:minmax(200px,auto);overflow:auto}.prob{border-right:0;border-bottom:1px solid var(--border)}.nav{display:none}}
 </style>
@@ -168,6 +177,7 @@
   <div class="spacer"></div>
   <div class="lang"><button id="langEs" class="on" onclick="setLang('es')">ES</button><button id="langEn" onclick="setLang('en')">EN</button></div>
   <div class="xpmini">Lv <b id="lvl">1</b> · <span id="xptxt">0 XP</span></div>
+  <button class="ghostbtn" id="themeBtn" title="theme">🌙</button>
   <button class="ghostbtn" id="resetBtn">reset</button>
 </div>
 
@@ -750,7 +760,356 @@ chk("ids correctos", conn.execute("SELECT id FROM events ORDER BY id").fetchall(
    {t:{es:'Dropear y recrear todos los índices cada hora.',en:'Drop and recreate all indexes hourly.'},ok:false}],
  explain:{es:'Dead tuples → bloat + estadísticas desactualizadas → planes malos. <code>VACUUM (ANALYZE)</code> es la respuesta; autovacuum debería estar afinado.',en:'Dead tuples → bloat + stale statistics → bad plans. <code>VACUUM (ANALYZE)</code> is the fix; autovacuum should be tuned.'}
 },
+/* ===== SQL Joins & CTEs ===== */
+{
+ id:'sql_join_basic',cat:'joins',kind:'sql',diff:'e',xp:15,
+ title:{es:'Revenue por cliente (INNER JOIN)',en:'Revenue per customer (INNER JOIN)'},tags:'JOIN · GROUP BY',
+ context:{es:'Dos tablas: <code>customers</code> y <code>orders</code>. Marketing quiere el gasto total por cliente, solo región <code>LATAM</code>.',en:'Two tables: <code>customers</code> and <code>orders</code>. Marketing wants total spend per customer, region <code>LATAM</code> only.'},
+ task:{es:'Une ambas tablas y suma el monto por cliente.',en:'Join both tables and sum the amount per customer.'},
+ bullets:{es:['Salida: <code>name</code>, <code>total</code>.','Solo <code>region=\'LATAM\'</code>; orden <code>total DESC, name</code>.','Clientes sin orden no aparecen (INNER JOIN).'],en:['Output: <code>name</code>, <code>total</code>.','Only <code>region=\'LATAM\'</code>; order <code>total DESC, name</code>.','Customers without orders are excluded (INNER JOIN).']},
+ sources:[S('customers',['id','name','region'],[[1,'Ana','LATAM'],[2,'Beto','LATAM'],[3,'Cara','EU'],[4,'Dan','LATAM']]),S('orders',['id','cust_id','amount'],[[10,1,100],[11,1,50],[12,2,200],[13,3,80]])],
+ expected:'Beto 200 · Ana 150',
+ datasets:[`CREATE TABLE customers(id INT,name TEXT,region TEXT);INSERT INTO customers VALUES (1,'Ana','LATAM'),(2,'Beto','LATAM'),(3,'Cara','EU'),(4,'Dan','LATAM');CREATE TABLE orders(id INT,cust_id INT,amount INT);INSERT INTO orders VALUES (10,1,100),(11,1,50),(12,2,200),(13,3,80);`],
+ ref:`SELECT c.name, SUM(o.amount) total FROM customers c JOIN orders o ON o.cust_id=c.id WHERE c.region='LATAM' GROUP BY c.name ORDER BY total DESC, c.name`,
+ starter:`SELECT c.name, SUM(o.amount) AS total\nFROM customers c\n-- JOIN orders o ON ...\nWHERE c.region = 'LATAM'\nGROUP BY c.name\nORDER BY total DESC, c.name;`
+},
+{
+ id:'sql_join_anti',cat:'joins',kind:'sql',diff:'e',xp:15,
+ title:{es:'Clientes sin órdenes (LEFT JOIN)',en:'Customers with no orders (LEFT JOIN)'},tags:'LEFT JOIN · IS NULL',
+ context:{es:'Para una campaña de reactivación necesitas los clientes que nunca han comprado.',en:'For a re-activation campaign you need customers who never purchased.'},
+ task:{es:'Devuelve los clientes sin ninguna orden.',en:'Return the customers without any order.'},
+ bullets:{es:['Salida: <code>name</code>; orden alfabético.','Patrón anti-join: <code>LEFT JOIN ... WHERE o.id IS NULL</code>.'],en:['Output: <code>name</code>; alphabetical.','Anti-join pattern: <code>LEFT JOIN ... WHERE o.id IS NULL</code>.']},
+ sources:[S('customers',['id','name','region'],[[1,'Ana','LATAM'],[2,'Beto','LATAM'],[3,'Cara','EU'],[4,'Dan','LATAM']]),S('orders',['id','cust_id','amount'],[[10,1,100],[12,2,200],[13,3,80]])],
+ expected:'Dan',
+ datasets:[`CREATE TABLE customers(id INT,name TEXT,region TEXT);INSERT INTO customers VALUES (1,'Ana','LATAM'),(2,'Beto','LATAM'),(3,'Cara','EU'),(4,'Dan','LATAM');CREATE TABLE orders(id INT,cust_id INT,amount INT);INSERT INTO orders VALUES (10,1,100),(12,2,200),(13,3,80);`],
+ ref:`SELECT c.name FROM customers c LEFT JOIN orders o ON o.cust_id=c.id WHERE o.id IS NULL ORDER BY c.name`,
+ starter:`SELECT c.name\nFROM customers c\nLEFT JOIN orders o ON o.cust_id = c.id\n-- WHERE ...\nORDER BY c.name;`
+},
+{
+ id:'sql_cte_multi',cat:'joins',kind:'sql',diff:'h',xp:30,
+ title:{es:'Revenue con CTE sobre 3 tablas',en:'Revenue via CTE across 3 tables'},tags:'CTE · multi-join',
+ context:{es:'Tres tablas: <code>customers</code>, <code>orders</code>, <code>items</code>. El revenue de una orden = Σ(<code>qty·price</code>) de sus items.',en:'Three tables: <code>customers</code>, <code>orders</code>, <code>items</code>. Order revenue = Σ(<code>qty·price</code>) of its items.'},
+ task:{es:'Con un CTE, calcula el revenue por cliente y devuélvelo con su nombre.',en:'Using a CTE, compute revenue per customer and return it with their name.'},
+ bullets:{es:['Salida: <code>name</code>, <code>revenue</code>.','CTE de revenue por <code>cust_id</code>, luego join a <code>customers</code>.','Orden <code>revenue DESC, name</code>.'],en:['Output: <code>name</code>, <code>revenue</code>.','Revenue CTE per <code>cust_id</code>, then join to <code>customers</code>.','Order <code>revenue DESC, name</code>.']},
+ sources:[S('customers',['id','name','region'],[[1,'Ana','LATAM'],[2,'Beto','LATAM']]),S('orders',['id','cust_id'],[[10,1],[11,1],[12,2]]),S('items',['order_id','qty','price'],[[10,2,10],[10,1,5],[11,3,4],[12,1,200]])],
+ expected:'Beto 200 · Ana 37',
+ datasets:[`CREATE TABLE customers(id INT,name TEXT,region TEXT);INSERT INTO customers VALUES (1,'Ana','LATAM'),(2,'Beto','LATAM');CREATE TABLE orders(id INT,cust_id INT);INSERT INTO orders VALUES (10,1),(11,1),(12,2);CREATE TABLE items(order_id INT,qty INT,price INT);INSERT INTO items VALUES (10,2,10),(10,1,5),(11,3,4),(12,1,200);`],
+ ref:`WITH rev AS (SELECT o.cust_id, SUM(i.qty*i.price) r FROM orders o JOIN items i ON i.order_id=o.id GROUP BY o.cust_id) SELECT c.name, rev.r AS revenue FROM rev JOIN customers c ON c.id=rev.cust_id ORDER BY revenue DESC, c.name`,
+ starter:`WITH rev AS (\n  SELECT o.cust_id, SUM(i.qty * i.price) AS r\n  FROM orders o\n  JOIN items i ON i.order_id = o.id\n  GROUP BY o.cust_id\n)\nSELECT c.name, rev.r AS revenue\nFROM rev\nJOIN customers c ON c.id = rev.cust_id\nORDER BY revenue DESC, c.name;`
+},
+{
+ id:'sql_incremental',cat:'joins',kind:'sql',diff:'m',xp:25,
+ title:{es:'Extracción incremental (high-watermark)',en:'Incremental extract (high-watermark)'},tags:'incremental · watermark',
+ context:{es:'Patrón de carga incremental: una tabla <code>control</code> guarda el último <code>updated_at</code> cargado. Solo debes traer filas nuevas.',en:'Incremental load pattern: a <code>control</code> table holds the last loaded <code>updated_at</code>. Pull only new rows.'},
+ task:{es:'Extrae las filas de <code>source</code> con <code>updated_at</code> mayor al watermark de <code>control</code>.',en:'Extract rows from <code>source</code> with <code>updated_at</code> greater than the <code>control</code> watermark.'},
+ bullets:{es:['Salida: <code>id</code>, <code>val</code>; orden por <code>id</code>.','Watermark = <code>control.last_loaded</code> donde <code>table_name=\'source\'</code>.'],en:['Output: <code>id</code>, <code>val</code>; order by <code>id</code>.','Watermark = <code>control.last_loaded</code> where <code>table_name=\'source\'</code>.']},
+ sources:[S('source',['id','updated_at','val'],[[1,100,'a'],[2,200,'b'],[3,300,'c'],[4,400,'d']]),S('control',['table_name','last_loaded'],[['source',200]])],
+ expected:'3 c · 4 d',
+ datasets:[`CREATE TABLE source(id INT,updated_at INT,val TEXT);INSERT INTO source VALUES (1,100,'a'),(2,200,'b'),(3,300,'c'),(4,400,'d');CREATE TABLE control(table_name TEXT,last_loaded INT);INSERT INTO control VALUES ('source',200);`],
+ ref:`SELECT s.id, s.val FROM source s JOIN control ctl ON ctl.table_name='source' WHERE s.updated_at > ctl.last_loaded ORDER BY s.id`,
+ starter:`SELECT s.id, s.val\nFROM source s\nJOIN control ctl ON ctl.table_name = 'source'\nWHERE s.updated_at > ctl.last_loaded\nORDER BY s.id;`
+},
+/* ===== Math / Logic (hackathon) ===== */
+{
+ id:'py_sieve',cat:'comp',kind:'python',diff:'m',xp:20,
+ title:{es:'Criba de Eratóstenes',en:'Sieve of Eratosthenes'},tags:'math · primes',
+ context:{es:'Genera todos los primos ≤ n de forma eficiente (criba clásica de hackathon).',en:'Generate all primes ≤ n efficiently (classic hackathon sieve).'},
+ task:{es:'Implementa <code>sieve(n)</code> → lista ascendente de primos ≤ n.',en:'Implement <code>sieve(n)</code> → ascending list of primes ≤ n.'},
+ bullets:{es:['<code>n &lt; 2</code> → <code>[]</code>.','Marca múltiplos desde <code>i*i</code>.'],en:['<code>n &lt; 2</code> → <code>[]</code>.','Mark multiples starting at <code>i*i</code>.']},
+ sources:[S('cases',['n','→'],[['20','[2,3,5,7,11,13,17,19]'],['1','[]']])],
+ expected:'[2, 3, 5, 7, 11, 13, 17, 19]',
+ starter:`def sieve(n):\n    if n < 2:\n        return []\n    is_p = [True] * (n + 1)\n    is_p[0] = is_p[1] = False\n    # for i in 2..sqrt(n): if is_p[i]: mark i*i, i*i+i, ...\n    ...\n    return [i for i in range(2, n + 1) if is_p[i]]\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("hasta 20", sieve(20), [2,3,5,7,11,13,17,19])
+chk("n<2", sieve(1), [])
+chk("hasta 2", sieve(2), [2])
+`
+},
+{
+ id:'py_digital_root',cat:'comp',kind:'python',diff:'e',xp:15,
+ title:{es:'Raíz digital',en:'Digital root'},tags:'math · digits',
+ context:{es:'Suma los dígitos repetidamente hasta quedar un solo dígito (problema típico de calentamiento).',en:'Repeatedly sum digits until a single digit remains (typical warm-up problem).'},
+ task:{es:'Implementa <code>digital_root(n)</code> para <code>n ≥ 0</code>.',en:'Implement <code>digital_root(n)</code> for <code>n ≥ 0</code>.'},
+ bullets:{es:['<code>digital_root(9875)=2</code>.','<code>digital_root(0)=0</code>.'],en:['<code>digital_root(9875)=2</code>.','<code>digital_root(0)=0</code>.']},
+ sources:[S('cases',['n','→'],[['9875','2'],['0','0'],['38','2']])],
+ expected:'2',
+ starter:`def digital_root(n):\n    while n >= 10:\n        n = sum(int(d) for d in str(n))\n    return n\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("9875", digital_root(9875), 2)
+chk("cero", digital_root(0), 0)
+chk("38", digital_root(38), 2)
+`
+},
+{
+ id:'py_fib',cat:'comp',kind:'python',diff:'e',xp:15,
+ title:{es:'Fibonacci iterativo',en:'Iterative Fibonacci'},tags:'math · DP',
+ context:{es:'Calcula el n-ésimo Fibonacci en O(n) sin recursión (0-indexado: fib(0)=0, fib(1)=1).',en:'Compute the n-th Fibonacci in O(n) without recursion (0-indexed: fib(0)=0, fib(1)=1).'},
+ task:{es:'Implementa <code>fib(n)</code>.',en:'Implement <code>fib(n)</code>.'},
+ bullets:{es:['<code>fib(10)=55</code>.','Sin recursión (evita stack overflow para n grande).'],en:['<code>fib(10)=55</code>.','No recursion (avoid stack overflow for large n).']},
+ sources:[S('cases',['n','→'],[['0','0'],['1','1'],['10','55']])],
+ expected:'55',
+ starter:`def fib(n):\n    a, b = 0, 1\n    for _ in range(n):\n        a, b = b, a + b\n    return a\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("fib(0)", fib(0), 0)
+chk("fib(1)", fib(1), 1)
+chk("fib(10)", fib(10), 55)
+chk("fib(20)", fib(20), 6765)
+`
+},
+{
+ id:'py_count_paths',cat:'comp',kind:'python',diff:'m',xp:20,
+ title:{es:'Caminos en una grilla',en:'Unique paths in a grid'},tags:'combinatorics',
+ context:{es:'En una grilla <code>m×n</code> solo puedes moverte derecha o abajo. ¿Cuántos caminos únicos hay de esquina a esquina?',en:'In an <code>m×n</code> grid you can only move right or down. How many unique corner-to-corner paths exist?'},
+ task:{es:'Implementa <code>count_paths(m, n)</code>.',en:'Implement <code>count_paths(m, n)</code>.'},
+ bullets:{es:['Es combinatoria: <code>C(m+n-2, m-1)</code>.','<code>count_paths(3,3)=6</code>.'],en:['It is combinatorics: <code>C(m+n-2, m-1)</code>.','<code>count_paths(3,3)=6</code>.']},
+ sources:[S('cases',['m','n','→'],[['3','3','6'],['2','2','2'],['1','5','1']])],
+ expected:'6',
+ starter:`from math import comb\n\ndef count_paths(m, n):\n    # right/down only -> choose which steps go down\n    ...\n`,
+ pytests:`
+from math import comb
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("3x3", count_paths(3,3), 6)
+chk("2x2", count_paths(2,2), 2)
+chk("1x5", count_paths(1,5), 1)
+chk("3x7", count_paths(3,7), 28)
+`
+},
+/* ===== From the DE interview guide ===== */
+{
+ id:'q_partition',cat:'arch',kind:'quiz',diff:'m',xp:15,timer:150,
+ title:{es:'Partition pruning (A3)',en:'Partition pruning (A3)'},tags:'cloud · particionamiento',
+ context:{es:'Una tabla en S3/Parquet de 5 TB se consulta casi siempre filtrando por fecha.',en:'A 5 TB S3/Parquet table is almost always queried filtering by date.'},
+ task:{es:'¿Cómo minimizas datos escaneados (y costo)?',en:'How do you minimize scanned data (and cost)?'},
+ options:[{t:{es:'Particionar por <code>event_date</code>: el motor hace pruning y lee solo las particiones del filtro.',en:'Partition by <code>event_date</code>: the engine prunes and reads only the filtered partitions.'},ok:true},
+   {t:{es:'Un único archivo gigante ordenado por fecha.',en:'A single giant file sorted by date.'},ok:false},
+   {t:{es:'Particionar por <code>user_id</code> (alta cardinalidad).',en:'Partition by <code>user_id</code> (high cardinality).'},ok:false},
+   {t:{es:'Convertir todo a CSV para simplicidad.',en:'Convert everything to CSV for simplicity.'},ok:false}],
+ explain:{es:'Particionar por la columna de filtro frecuente habilita partition pruning. Trade-off: cuidado con sobre-particionar (muchos archivos chicos = small-files problem).',en:'Partitioning by the frequent filter column enables pruning. Trade-off: avoid over-partitioning (too many small files = small-files problem).'}
+},
+{
+ id:'q_incremental',cat:'arch',kind:'quiz',diff:'m',xp:15,timer:150,
+ title:{es:'Incremental vs full reload (E4)',en:'Incremental vs full reload (E4)'},tags:'pipelines · incremental',
+ context:{es:'Una tabla fuente de 800 M filas crece ~2 M/día. El pipeline diario hace full reload y se está pasando de SLA.',en:'An 800 M-row source grows ~2 M/day. The daily pipeline does a full reload and is breaching SLA.'},
+ task:{es:'Mejor estrategia:',en:'Best strategy:'},
+ options:[{t:{es:'Carga incremental con high-watermark (<code>updated_at</code>) + MERGE/upsert idempotente.',en:'Incremental load with a high-watermark (<code>updated_at</code>) + idempotent MERGE/upsert.'},ok:true},
+   {t:{es:'Seguir con full reload pero en un cluster más grande.',en:'Keep full reload but on a bigger cluster.'},ok:false},
+   {t:{es:'Borrar y reinsertar solo los últimos 7 días siempre.',en:'Always delete and re-insert only the last 7 days.'},ok:false},
+   {t:{es:'Cargar todo a memoria con pandas.',en:'Load everything into memory with pandas.'},ok:false}],
+ explain:{es:'Incremental por watermark procesa solo lo nuevo/cambiado; el MERGE garantiza idempotencia ante reintentos. Trade-off: necesitas una columna confiable de cambio y manejar late-arriving data.',en:'Watermark-based incremental processes only new/changed rows; MERGE guarantees idempotency on retries. Trade-off: you need a reliable change column and must handle late-arriving data.'}
+},
+{
+ id:'q_snowflake',cat:'arch',kind:'quiz',diff:'h',xp:20,timer:150,
+ title:{es:'Snowflake: clustering (I3)',en:'Snowflake: clustering (I3)'},tags:'snowflake · micro-partitions',
+ context:{es:'Consultas lentas en una tabla Snowflake enorme filtrada por <code>region</code>; el pruning de micro-particiones es pobre.',en:'Slow queries on a huge Snowflake table filtered by <code>region</code>; micro-partition pruning is poor.'},
+ task:{es:'Acción recomendada:',en:'Recommended action:'},
+ options:[{t:{es:'Definir una <i>clustering key</i> por <code>region</code> para mejorar el pruning de micro-particiones.',en:'Define a <i>clustering key</i> on <code>region</code> to improve micro-partition pruning.'},ok:true},
+   {t:{es:'Crear índices B-tree como en Postgres.',en:'Create B-tree indexes like in Postgres.'},ok:false},
+   {t:{es:'Aumentar el warehouse a 6XL permanentemente.',en:'Permanently scale the warehouse to 6XL.'},ok:false},
+   {t:{es:'Desactivar el result cache.',en:'Disable the result cache.'},ok:false}],
+ explain:{es:'Snowflake no usa índices tradicionales; el pruning depende de metadatos de micro-particiones. Una clustering key alinea los datos con el patrón de filtro. Trade-off: el reclustering consume créditos.',en:'Snowflake has no traditional indexes; pruning relies on micro-partition metadata. A clustering key aligns data with the filter pattern. Trade-off: reclustering consumes credits.'}
+},
+{
+ id:'q_datavault',cat:'model',kind:'quiz',diff:'h',xp:20,timer:150,
+ title:{es:'Data Vault: componentes (B4)',en:'Data Vault: components (B4)'},tags:'modelado · data vault',
+ context:{es:'En Data Vault 2.0 separas claves de negocio, relaciones y atributos descriptivos.',en:'In Data Vault 2.0 you separate business keys, relationships and descriptive attributes.'},
+ task:{es:'¿Qué guarda un <b>satellite</b>?',en:'What does a <b>satellite</b> store?'},
+ options:[{t:{es:'Atributos descriptivos e histórico de cambios de un hub o link.',en:'Descriptive attributes and change history of a hub or link.'},ok:true},
+   {t:{es:'Solo la clave de negocio.',en:'Only the business key.'},ok:false},
+   {t:{es:'Solo relaciones N:M entre hubs.',en:'Only N:M relationships between hubs.'},ok:false},
+   {t:{es:'Métricas agregadas para BI.',en:'Aggregated metrics for BI.'},ok:false}],
+ explain:{es:'Hub = clave de negocio; Link = relación; Satellite = atributos + historial. Trade-off: gran trazabilidad/auditoría a costa de muchos joins para consumo.',en:'Hub = business key; Link = relationship; Satellite = attributes + history. Trade-off: strong traceability/audit at the cost of many joins for consumption.'}
+},
+{
+ id:'q_normalization',cat:'model',kind:'quiz',diff:'m',xp:15,timer:120,
+ title:{es:'Normalización (B2)',en:'Normalization (B2)'},tags:'modelado · normal forms',
+ context:{es:'Una tabla tiene columnas no clave que dependen de otra columna no clave (dependencia transitiva).',en:'A table has non-key columns depending on another non-key column (transitive dependency).'},
+ task:{es:'¿Qué forma normal lo resuelve?',en:'Which normal form fixes it?'},
+ options:[{t:{es:'3FN: elimina dependencias transitivas de atributos no clave.',en:'3NF: removes transitive dependencies of non-key attributes.'},ok:true},
+   {t:{es:'1FN: solo exige atomicidad.',en:'1NF: only requires atomicity.'},ok:false},
+   {t:{es:'2FN: elimina dependencias parciales de la clave compuesta.',en:'2NF: removes partial dependencies on a composite key.'},ok:false},
+   {t:{es:'Desnormalizar siempre es mejor.',en:'Denormalizing is always better.'},ok:false}],
+ explain:{es:'3FN ataca dependencias transitivas. Trade-off DE: en analítica a menudo se desnormaliza (star schema) para evitar joins costosos.',en:'3NF targets transitive dependencies. DE trade-off: analytics often denormalizes (star schema) to avoid costly joins.'}
+},
+{
+ id:'q_lakehouse',cat:'arch',kind:'quiz',diff:'e',xp:15,timer:120,
+ title:{es:'Lake vs Warehouse vs Lakehouse (E3)',en:'Lake vs Warehouse vs Lakehouse (E3)'},tags:'arquitectura',
+ context:{es:'Quieres almacenamiento barato y abierto pero con transacciones ACID y schema enforcement sobre los mismos archivos.',en:'You want cheap, open storage but with ACID transactions and schema enforcement over the same files.'},
+ task:{es:'¿Qué arquitectura encaja?',en:'Which architecture fits?'},
+ options:[{t:{es:'Lakehouse (p. ej. Iceberg/Delta sobre object storage): ACID + esquema sobre un data lake.',en:'Lakehouse (e.g. Iceberg/Delta on object storage): ACID + schema on a data lake.'},ok:true},
+   {t:{es:'Data lake crudo: sin ACID ni enforcement.',en:'Raw data lake: no ACID or enforcement.'},ok:false},
+   {t:{es:'Data warehouse clásico: cerrado y caro para datos crudos masivos.',en:'Classic warehouse: closed and costly for massive raw data.'},ok:false},
+   {t:{es:'Una base OLTP.',en:'An OLTP database.'},ok:false}],
+ explain:{es:'El lakehouse añade una capa transaccional (Iceberg/Delta/Hudi) sobre archivos en object storage. Trade-off: menos maduro que un warehouse puro en algunas optimizaciones.',en:'The lakehouse adds a transactional layer (Iceberg/Delta/Hudi) over object-storage files. Trade-off: less mature than a pure warehouse in some optimizations.'}
+},
+{
+ id:'q_probstruct',cat:'stats',kind:'quiz',diff:'h',xp:20,timer:150,
+ title:{es:'Estructuras probabilísticas (J3)',en:'Probabilistic structures (J3)'},tags:'estadística · HLL',
+ context:{es:'Necesitas conteo de usuarios únicos sobre miles de millones de eventos sin guardar cada id.',en:'You need a unique-user count over billions of events without storing every id.'},
+ task:{es:'Estructura adecuada:',en:'Suitable structure:'},
+ options:[{t:{es:'HyperLogLog: cardinalidad aproximada con memoria fija (~error 2%).',en:'HyperLogLog: approximate cardinality with fixed memory (~2% error).'},ok:true},
+   {t:{es:'Un <code>SELECT COUNT(DISTINCT id)</code> exacto en memoria.',en:'An exact in-memory <code>SELECT COUNT(DISTINCT id)</code>.'},ok:false},
+   {t:{es:'Bloom filter (responde pertenencia, no cardinalidad).',en:'Bloom filter (answers membership, not cardinality).'},ok:false},
+   {t:{es:'Count-Min Sketch (frecuencias, no únicos).',en:'Count-Min Sketch (frequencies, not uniques).'},ok:false}],
+ explain:{es:'HLL estima cardinalidad con memoria sublineal. Trade-off: resultado aproximado; úsalo cuando ~2% de error es aceptable y el exacto es prohibitivo.',en:'HLL estimates cardinality with sublinear memory. Trade-off: approximate; use it when ~2% error is acceptable and exact is prohibitive.'}
+},
+{
+ id:'q_engine_choice',cat:'comp',kind:'quiz',diff:'m',xp:15,timer:120,
+ title:{es:'pandas vs SQL vs PySpark (C3)',en:'pandas vs SQL vs PySpark (C3)'},tags:'decisión · cómputo',
+ context:{es:'Debes transformar 4 TB de logs distribuidos; no caben en una sola máquina.',en:'You must transform 4 TB of distributed logs; they do not fit on one machine.'},
+ task:{es:'Herramienta correcta:',en:'Correct tool:'},
+ options:[{t:{es:'PySpark: cómputo distribuido para volúmenes que exceden una máquina.',en:'PySpark: distributed compute for volumes exceeding one machine.'},ok:true},
+   {t:{es:'pandas en una EC2 grande.',en:'pandas on a large EC2.'},ok:false},
+   {t:{es:'SQL en SQLite local.',en:'SQL on local SQLite.'},ok:false},
+   {t:{es:'Un bucle de Python fila por fila.',en:'A row-by-row Python loop.'},ok:false}],
+ explain:{es:'A escala que no cabe en RAM, PySpark (o SQL distribuido en el warehouse) es la opción. Trade-off: overhead/coste; para datos chicos pandas o SQL puro son más simples y rápidos.',en:'At scale beyond RAM, PySpark (or distributed SQL in the warehouse) is the choice. Trade-off: overhead/cost; for small data pandas or plain SQL are simpler and faster.'}
+},
 ];
+/* English overlay for legacy (Spanish-authored) exercises. Resolver: fld() prefers EN[id][field] when lang==='en'. */
+const EN={
+ sql_topn:{title:'2nd highest salary per department',
+  context:'HR asks, per team, for the second-highest salary for a pay band. If two people earn the same, it counts as one level.',
+  task:'Return per <code>dept</code> the <b>second-highest distinct salary</b>.',
+  bullets:['Output: <code>dept</code>, <code>second_salary</code>.','Tied salaries = one level (use <code>DENSE_RANK</code> over distinct values).','If a dept has no distinct 2nd, skip it. Any order.'],
+  expected:'dept   second_salary\ndata   90\nml     55'},
+ sql_dedup:{title:'Idempotent dedup: keep the most recent',
+  context:'A loader retried and wrote duplicates per <code>event_id</code>. Before MERGE into Silver you need one row per event: the latest version.',
+  task:'For each <code>event_id</code> keep only the row with the greatest <code>updated_at</code>.',
+  bullets:['Output: <code>event_id</code>, <code>user_id</code>, <code>status</code>, <code>updated_at</code>.','Tie on <code>updated_at</code> → break by greater <code>rowid</code>.','SQLite has no <code>QUALIFY</code>: use a CTE + <code>rn=1</code> filter.'],
+  expected:'1 10 paid 200\n2 11 pending 150\n3 12 refunded 400'},
+ sql_runtot:{title:'Running balance per account',
+  context:'Finance wants the running balance per account for a statement. Each movement adds or subtracts.',
+  task:'Compute the <b>running balance</b> per account ordered by date.',
+  bullets:['Output: <code>account_id</code>, <code>txn_date</code>, <code>running_balance</code>.','Order the frame by <code>txn_date, txn_id</code>.'],
+  expected:'1 2024-01-01 100\n1 2024-01-02 70\n1 2024-01-03 120 …'},
+ sql_sessions:{title:'Sessionization with LAG (gap > 30 min)',
+  context:'Analytics needs to group clicks into sessions. A new session starts when more than 30 min (1800s) pass between events of the same user.',
+  task:'Assign an incremental <code>session_id</code> (1,2,3…) per user.',
+  bullets:['Output: <code>user_id</code>, <code>ts</code>, <code>session_id</code>.','First event of the user = session 1.','Pattern: break flag with <code>LAG</code> + cumulative <code>SUM() OVER</code>.'],
+  expected:'1 1000 1 | 1 1200 1 | 1 5000 2 | 1 5500 2 | 2 2000 1 | 2 9000 2'},
+ sql_orphan:{title:'Referential integrity: orphan rows',
+  context:'A dbt <code>relationships</code> test must return 0 rows. Some orders point to non-existent customers (broken FK).',
+  task:'Find the <code>orders</code> whose <code>customer_id</code> does not exist in <code>customers</code>.',
+  bullets:['Output: <code>order_id</code>, <code>customer_id</code>.','Orphan rows only.'],
+  expected:'11 9\n13 99'},
+ sql_streak:{title:'Consecutive-login streak (gap-and-island)',
+  context:'Product wants the longest streak of consecutive login days per user (engagement).',
+  task:'Return per user the <b>length of their longest consecutive streak</b>.',
+  bullets:['Output: <code>user_id</code>, <code>longest_streak</code>.','Duplicate days count once.','Islands trick: <code>julianday(d) - ROW_NUMBER()</code> is constant within a streak.'],
+  expected:'1 → 3 | 2 → 1 | 3 → 2'},
+ sql_scd2:{title:'Build SCD Type 2 from snapshots',
+  context:'You receive daily price snapshots. For Silver you need one row per contiguous price period, with validity.',
+  task:'Collapse snapshots into periods: one row per price change.',
+  bullets:['Output: <code>product_id</code>, <code>price</code>, <code>valid_from</code>, <code>valid_to</code>, <code>is_current</code>.','<code>valid_from/to</code> = first/last day of the period.','<code>is_current=1</code> if the period includes the product\'s last snapshot.','Detect changes with <code>LAG</code> + cumulative sum (islands).'],
+  expected:'1 100 01-01 01-02 0\n1 120 01-03 01-04 0\n1 90  01-05 01-05 1\n2 50  01-01 01-02 1'},
+ sql_funnel:{title:'Conversion funnel',
+  context:'Growth wants the view → cart → purchase funnel: how many distinct users reach each step.',
+  task:'Count distinct users at each step, in a single row.',
+  bullets:['Output: <code>views</code>, <code>carts</code>, <code>purchases</code>.','Use <code>COUNT(DISTINCT CASE WHEN …)</code>.'],
+  expected:'views=4  carts=2  purchases=2'},
+ sql_median:{title:'Median per group (no PERCENTILE_CONT)',
+  context:'SQLite has no <code>PERCENTILE_CONT</code>. You need the median latency per group for an SLA.',
+  task:'Compute the <b>median</b> of <code>val</code> per <code>grp</code>.',
+  bullets:['Output: <code>grp</code>, <code>median</code>.','Even count → average of the two middle values.','Trick: <code>ROW_NUMBER</code> + <code>COUNT() OVER</code>, take rows <code>(c+1)/2</code> and <code>(c+2)/2</code>.'],
+  expected:'a → 2.5 | b → 20.0'},
+ sql_pivot:{title:'Pivot long → wide',
+  context:'BI needs sales per region with Q1 and Q2 columns (wide format) from long rows.',
+  task:'Pivot: one row per region with columns <code>q1</code> and <code>q2</code>.',
+  bullets:['Output: <code>region</code>, <code>q1</code>, <code>q2</code>.','Use <code>SUM(CASE WHEN q=… )</code>.'],
+  expected:'north 10 20 | south 5 7'},
+ py_dedup:{title:'Idempotent loader: dedup by content hash',
+  context:'A loader may receive the same record twice due to retries. It must be idempotent: same input → same output with no duplicates.',
+  task:'Implement <code>dedupe(records)</code> that removes content duplicates preserving first order.',
+  bullets:['Signature: <code>def dedupe(records: list[dict]) -> list[dict]</code>.','Two records are equal if all fields match (field order irrelevant).','Stable and without mutating the input.'],
+  expected:'[{"id":1,"v":"x"}, {"id":2,"v":"y"}]'},
+ py_zscore:{title:'Anomaly detection via z-score',
+  context:'A DQ check must flag anomalous values in a metric (e.g. rows loaded per day) using standard deviations.',
+  task:'Implement <code>flag_anomalies(values, z=3.0)</code> returning the <b>indices</b> with |z-score| &gt; threshold.',
+  bullets:['Signature: <code>flag_anomalies(values: list[float], z: float=3.0) -> list[int]</code>.','Use mean μ and <b>population</b> standard deviation σ. z=(x−μ)/σ.','If σ==0 → return <code>[]</code>.'],
+  expected:'indices of the outliers, e.g. [4]'},
+ py_contract:{title:'Data-contract validation (schema)',
+  context:'Before loading to Bronze you validate each record against a contract: types and nullability. The first DQ line of defense.',
+  task:'Implement <code>validate(record, schema)</code> returning the list of errors (empty if OK).',
+  bullets:['Missing required field → <code>"missing:&lt;field&gt;"</code>.','<code>None</code> and not nullable → <code>"null:&lt;field&gt;"</code>.','Wrong type (not None) → <code>"type:&lt;field&gt;"</code>.','Order: by schema field order.'],
+  expected:'list of errors in schema order'},
+ py_pandas_clean:{title:'DataFrame cleaning: dedupe + fillna + cast',
+  context:'Silver receives a DataFrame with duplicate orders and null amounts. It must be cleaned deterministically.',
+  task:'Implement <code>clean_orders(df)</code> and return a clean DataFrame.',
+  bullets:['Drop duplicates by <code>order_id</code>, keeping the <b>last</b> occurrence.','Null <code>amount</code> → 0, and cast to <code>int</code>.','Sort by <code>order_id</code> ascending, index reset.'],
+  expected:'order_id  amount\n1         120\n2         0\n3         50'},
+ py_pandas_groupby:{title:'Group aggregation with pandas',
+  context:'Gold needs total revenue per region from a sales DataFrame.',
+  task:'Implement <code>revenue_by_region(df)</code> → DataFrame with the sum per region.',
+  bullets:['Output: columns <code>region</code>, <code>amount</code> (sum).','Sort by <code>region</code> asc, index reset.','Use <code>groupby(..., as_index=False)</code>.'],
+  expected:'north 30 | south 12'},
+ py_pandas_recon:{title:'Reconciling two sources',
+  context:'You migrated a table to a new system. You must reconcile source vs target and report discrepancies (different amounts or ids missing on either side).',
+  task:'Implement <code>reconcile(src, tgt)</code> → sorted list of <code>id</code> with a discrepancy.',
+  bullets:['Discrepancy = id on only one side, or different <code>amount</code>.','Use <code>merge(..., how="outer", indicator=True)</code>.','Return <code>sorted(list_of_ids)</code>.'],
+  expected:'[2, 3, 4]   (2=different amount, 3=missing in tgt, 4=missing in src)'},
+ py_db_upsert:{title:'Idempotent upsert with sqlite3',
+  context:'A job loads balances. If re-run, it must not duplicate or break: it must upsert (insert or update by PK).',
+  task:'Implement <code>upsert(conn, batch)</code> using <code>ON CONFLICT</code>.',
+  bullets:['<code>batch</code> = list of tuples <code>(id, balance)</code>.','Insert new ones; update balance if the id exists.','Re-running the same batch leaves the same state (idempotent).'],
+  expected:'(1,100) (2,250) (3,300)  — no duplicates after re-run'},
+ py_db_param:{title:'Parametrized query (anti SQL-injection)',
+  context:'You filter jobs by status with external input. String concatenation opens SQL injection; you must parametrize.',
+  task:'Implement <code>find_by_status(conn, status)</code> with placeholders, not concatenation.',
+  bullets:['Return a list of <code>id</code> with that <code>status</code>, sorted asc.','Use <code>?</code> and pass <code>status</code> as a parameter.','A malicious input must be treated as a literal (no injection).'],
+  expected:'find_by_status(conn,\'ok\') → [1,3] ; malicious input → []'},
+ py_intervals:{title:'Merge overlapping intervals',
+  context:'You have overlapping maintenance windows and must consolidate them into clean periods (also applies to deduping validity ranges).',
+  task:'Implement <code>merge_intervals(intervals)</code> → list of merged, sorted tuples.',
+  bullets:['Input: list of <code>(start, end)</code>.','Merge those that touch or overlap.','Output sorted by start, tuples <code>(start, end)</code>.'],
+  expected:'[(1, 5), (7, 10)]'},
+ py_flatten:{title:'Flatten nested JSON',
+  context:'An API returns nested JSON and your warehouse is tabular. You must flatten to dot-notation keys before loading.',
+  task:'Implement <code>flatten(d)</code> that flattens nested dicts to a single level.',
+  bullets:['Nested key → <code>"parent.child"</code>.','Only dicts are flattened (assume scalar values at leaves).','Recursive.'],
+  expected:'{"a":1, "b.c":2, "b.d.e":3}'},
+ py_topk:{title:'Top-K frequent elements (heavy hitters)',
+  context:'To detect hot keys (skew) you need the K most frequent values in a column.',
+  task:'Implement <code>top_k(items, k)</code> → the K most frequent, highest to lowest.',
+  bullets:['Input: list of values + integer k.','Return only the values (no counts), ordered by frequency desc.','Hint: <code>collections.Counter.most_common</code>.'],
+  expected:'["a", "b"]'},
+ q_medallion:{title:'Medallion layers: what is Silver?',
+  context:'Bronze → Silver → Gold architecture.',
+  task:'Which best describes the <b>Silver</b> layer?',
+  options:['Raw 1:1 ingestion from the source, untransformed, append-only.','Clean, typed, deduplicated and conformed data; not yet business-oriented.','Final aggregates and metrics ready for BI.','Compressed backups for GDPR retention.'],
+  explain:'Bronze=raw/append-only; Silver=clean/conformed/dedup; Gold=business aggregates. Reprocessing Gold from Silver makes debugging deterministic.'},
+ q_skew:{title:'Skew or lack of compute?',
+  context:'A distributed join is slow. The p99 of rows per key is ~100× the median.',
+  task:'Senior diagnosis and action:',
+  options:['Lack of compute: scale up the cluster/warehouse.','Data skew from hot keys: salting (or broadcast if the other table is small).','Network issue: retry the job.','Missing index: create a B-tree on the join key.'],
+  explain:'Low median + huge p99 = skewed distribution; a few keys concentrate rows. More compute does not fix skew; salting redistributes the hot key.'},
+ q_kafka:{title:'Kafka vs Kinesis',
+  context:'Small team, 100% AWS stack, no appetite to operate brokers.',
+  task:'Defensible choice and why:',
+  options:['Self-managed Kafka: full cluster control.','Kinesis: managed AWS-native, zero broker ops; the operational savings justify the lower control.','Kinesis because it is always cheaper at any scale.','Kafka because Kinesis does not support multiple consumers.'],
+  explain:'The senior answer names the real trade-off: managed vs control/ops. Cost is not universally lower and both support multi-consumer.'},
+ q_scd:{title:'SCD Type 1 vs Type 2',
+  context:'You need point-in-time historical analysis (product price at each date).',
+  task:'Which SCD?',
+  options:['Type 1: overwrite; history does not matter.','Type 2: version rows with valid_from/valid_to and is_current.','Daily truncate & reload.','CDC without historical storage.'],
+  explain:'Type 2 preserves versions → you can reconstruct the state at any date. Type 1 destroys history.'},
+ q_spark:{title:'PySpark: when to broadcast join?',
+  context:'Fact join (TB) with a dimension (~80MB). The plan shuffles both.',
+  task:'Correct action:',
+  options:['Force a broadcast of the dim: it fits in each worker\'s memory and avoids shuffling the large side.','Repartition the fact table into 10000 partitions.','Convert everything to pandas and join on the driver.','Raise shuffle.partitions to 20000.'],
+  explain:'A ~80MB dim is a clear broadcast candidate: replicated to each executor so the large side is not shuffled. pandas on the driver does not scale to TB.'},
+ q_cap:{title:'CAP and store choice',
+  context:'Low-latency lookups by known key, high write volume, tolerant of eventual consistency.',
+  task:'Which NoSQL model and why?',
+  options:['Document store with server-side joins for ad-hoc queries.','Key-value / wide-column (DynamoDB/Cassandra): key access, horizontal scale, tunable consistency.','Normalized relational with FKs.','Graph, for low-latency key lookups.'],
+  explain:'Fixed key-access pattern + scale + eventual = key-value/wide-column. NoSQL is chosen by access pattern, not by being "anti-SQL".'}
+};
+
 /* ===========================  i18n  =========================== */
 let lang='es';
 const T={
@@ -767,7 +1126,7 @@ const T={
   p_context:'Contexto',p_task:'Tarea',p_req:'Requisitos',p_sources:'Fuentes / datos disponibles',p_expected:'Salida esperada (muestra)',p_select:'Selecciona',
   w_answer:'respuesta',w_runtests:'Run tests ▸',w_check:'Comprobar',w_hint:'Pista IA',w_review:'Review IA',w_reveal:'Ver solución',w_reveal_c:'¿Mostrar una solución de referencia?',w_noref:'# (referencia no disponible)',
   res_label:'test cases',res_prompt:'Pulsa <b>Run tests</b> para evaluar.',correct:'Correcto',incorrect:'Incorrecto',choose:'Selecciona una opción primero.',already:'Ya resuelto ✓',
-  exam_q:'Pregunta',exam_finish:'Finalizar',exam_finish_c:'¿Finalizar ahora? Las preguntas sin enviar cuentan como falladas.',exam_next:'Enviar y siguiente ▸',exam_skip:'Saltar',exam_choose:'Elige una opción',
+  exam_q:'Pregunta',exam_finish:'Finalizar',exam_finish_c:'¿Finalizar ahora? Las preguntas sin enviar cuentan como falladas.',exam_run:'Probar',exam_next:'Enviar y siguiente ▸',exam_skip:'Saltar',exam_choose:'Elige una opción',
   exam_quiz_note:'Elige una opción a la izquierda y envía.',exam_prompt:'Resuelve y pulsa <b>Enviar y siguiente</b>.',registered:'respuesta registrada',
   setup_t:'Examen cronometrado',setup_sub:'Selecciona el alcance. El tiempo total se calcula según la dificultad.',f_cats:'Categorías',f_count:'# de preguntas',f_diff:'Dificultad',all:'Todas',start:'Empezar examen ▸',nofilter:'No hay ejercicios con esos filtros',
   rep_title:'Resultado del examen',rep_dur:'duración',rep_bycat:'Por categoría',rep_bydiff:'Por dificultad',rep_detail:'Detalle por pregunta',rep_correct:'correctas',
@@ -792,7 +1151,7 @@ const T={
   p_context:'Context',p_task:'Task',p_req:'Requirements',p_sources:'Sources / available data',p_expected:'Expected output (sample)',p_select:'Select',
   w_answer:'answer',w_runtests:'Run tests ▸',w_check:'Check',w_hint:'AI hint',w_review:'AI review',w_reveal:'Reveal solution',w_reveal_c:'Show a reference solution?',w_noref:'# (no reference available)',
   res_label:'test cases',res_prompt:'Press <b>Run tests</b> to evaluate.',correct:'Correct',incorrect:'Incorrect',choose:'Select an option first.',already:'Already solved ✓',
-  exam_q:'Question',exam_finish:'Finish',exam_finish_c:'Finish now? Unsubmitted questions count as failed.',exam_next:'Submit & next ▸',exam_skip:'Skip',exam_choose:'Pick an option',
+  exam_q:'Question',exam_finish:'Finish',exam_finish_c:'Finish now? Unsubmitted questions count as failed.',exam_run:'Run',exam_next:'Submit & next ▸',exam_skip:'Skip',exam_choose:'Pick an option',
   exam_quiz_note:'Pick an option on the left and submit.',exam_prompt:'Solve and press <b>Submit & next</b>.',registered:'answer recorded',
   setup_t:'Timed exam',setup_sub:'Choose the scope. Total time is computed from difficulty.',f_cats:'Categories',f_count:'# of questions',f_diff:'Difficulty',all:'All',start:'Start exam ▸',nofilter:'No exercises match those filters',
   rep_title:'Exam result',rep_dur:'duration',rep_bycat:'By category',rep_bydiff:'By difficulty',rep_detail:'Per-question detail',rep_correct:'correct',
@@ -809,6 +1168,16 @@ function t(k){return (T[lang]&&T[lang][k])||T.es[k]||k;}
 function L(v){if(v&&typeof v==='object'&&!Array.isArray(v)&&('es'in v||'en'in v))return v[lang]!=null?v[lang]:v.es;return v;}
 const DIFFL={es:{e:'easy',m:'medium',h:'hard'},en:{e:'easy',m:'medium',h:'hard'}};
 function dl(d){return DIFFL[lang][d];}
+/* clean category taxonomy (data keeps legacy cat strings; map at runtime) */
+const CATMAP={'D · SQL avanzado':'sql','C · Transformación y DQ':'dq','E · Arquitectura Moderna':'arch','F · Governance / DQ':'dq','B · Modelado de Datos':'model','J · Estadística para DE':'stats','P · pandas / DataFrames':'pandas','Q · Python + Bases de Datos':'pydb','L · Lógica / Algoritmos DE':'logic','A · Infraestructura Cloud':'arch','K · NoSQL':'nosql','X · Competitive':'comp','Y · DBA / Administración':'dba'};
+const CAT=[{k:'sql',es:'SQL Avanzado',en:'Advanced SQL'},{k:'joins',es:'SQL · Joins y CTEs',en:'SQL · Joins & CTEs'},{k:'pandas',es:'pandas',en:'pandas'},{k:'pydb',es:'Python + Bases de Datos',en:'Python + Databases'},{k:'logic',es:'Lógica y Algoritmos',en:'Logic & Algorithms'},{k:'comp',es:'Competitivo (Hackathon)',en:'Competitive (Hackathon)'},{k:'dq',es:'Calidad de Datos',en:'Data Quality'},{k:'model',es:'Modelado',en:'Data Modeling'},{k:'arch',es:'Arquitectura y Cloud',en:'Architecture & Cloud'},{k:'stats',es:'Estadística',en:'Statistics'},{k:'nosql',es:'NoSQL',en:'NoSQL'},{k:'dba',es:'DBA / Administración',en:'DBA / Administration'}];
+function catKey(e){return CATMAP[e.cat]||e.cat;}
+function catLabel(k){const c=CAT.find(x=>x.k===k);return c?c[lang]:k;}
+function orderedCats(){const present=[...new Set(EX.map(catKey))];const ord=CAT.map(c=>c.k).filter(k=>present.includes(k));present.forEach(k=>{if(!ord.includes(k))ord.push(k);});return ord;}
+/* field resolver: EN overlay > inline {es,en} > raw */
+function fld(e,key){if(lang==='en'&&typeof EN!=='undefined'&&EN[e.id]&&EN[e.id][key]!=null)return EN[e.id][key];return L(e[key]);}
+function optText(e,i){if(lang==='en'&&typeof EN!=='undefined'&&EN[e.id]&&EN[e.id].options)return EN[e.id].options[i];return L(e.options[i].t);}
+function explainText(e){if(lang==='en'&&typeof EN!=='undefined'&&EN[e.id]&&EN[e.id].explain!=null)return EN[e.id].explain;return L(e.explain);}
 
 /* ===========================  state  =========================== */
 const $=s=>document.querySelector(s);
@@ -816,7 +1185,7 @@ let state={solved:{},xp:0,streak:0,lastDay:null};
 let stats={history:[]};
 let mode='home',cur=null,editor=null,SQL=null,pyodide=null,pyLoading=null,quizSel=null,answered=false;
 let timer={remaining:0,id:null,paused:false,expired:false};
-let exam=null,examTimer={remaining:0,id:null},setupCfg={cats:new Set(),count:10,diff:'all'};
+let exam=null,examTimer={remaining:0,id:null},setupCfg={cats:new Set(),count:10,diff:'all',spaced:false};
 
 const levelFor=xp=>Math.floor(xp/100)+1;
 function renderXP(){$('#lvl').textContent=levelFor(state.xp);$('#xptxt').textContent=state.xp+' XP';}
@@ -887,23 +1256,24 @@ function resetTimer(){if(!cur)return;startTimer(cur.timer||DT[cur.diff]);const b
 
 const DTk={e:480,m:900,h:1500};
 function renderRail(){
-  const cats=[...new Set(EX.map(e=>e.cat))];let html='';
-  for(const c of cats){html+=`<div class="cat">${c}</div>`;
-    for(const e of EX.filter(x=>x.cat===c)){const done=state.solved[e.id];
-      html+=`<div class="ex ${cur&&cur.id===e.id?'active':''}" data-id="${e.id}"><span class="ico ${e.kind}">${e.kind.toUpperCase()}</span><span><span class="tt">${L(e.title)}</span><span class="mt"><span class="diff ${e.diff}"></span>${dl(e.diff)} · ${e.tags}</span></span>${done?'<span class="chk">✓</span>':''}</div>`;}}
+  let html='';
+  for(const k of orderedCats()){const items=EX.filter(e=>catKey(e)===k);if(!items.length)continue;
+    html+=`<div class="cat">${catLabel(k)}</div>`;
+    for(const e of items){const done=state.solved[e.id];
+      html+=`<div class="ex ${cur&&cur.id===e.id?'active':''}" data-id="${e.id}"><span class="ico ${e.kind}">${e.kind.toUpperCase()}</span><span><span class="tt">${fld(e,'title')}</span><span class="mt"><span class="diff ${e.diff}"></span>${dl(e.diff)} · ${e.tags}</span></span>${done?'<span class="chk">✓</span>':''}</div>`;}}
   $('#rail').innerHTML=html;
   document.querySelectorAll('.ex').forEach(el=>el.onclick=()=>{open(el.dataset.id);document.querySelector('.rail').classList.remove('open');});
 }
 function open(id){cur=EX.find(e=>e.id===id);answered=false;quizSel=null;renderRail();renderProblem();renderWork();$('#cases').innerHTML=`<div class="console">${t('res_prompt')}</div>`;$('#verdict').textContent='';$('#verdict').className='verdict';$('#tutor').classList.remove('show');startTimer(cur.timer||DT[cur.diff]);}
 function srcTable(s){let h=`<div class="src"><div class="nm">📄 <b>${s.name}</b></div><table class="dt"><tr>${s.cols.map(c=>`<th>${c}</th>`).join('')}</tr>`;h+=s.rows.map(r=>`<tr>${r.map(v=>`<td>${v}</td>`).join('')}</tr>`).join('');h+=`</table>${s.note?`<div class="srcnote">${s.note}</div>`:''}</div>`;return h;}
 function renderProblem(){
-  const e=cur;let h=`<h1>${L(e.title)}</h1><div class="ptag">${e.cat} · ${e.kind.toUpperCase()} · ${dl(e.diff)} · ${e.xp} XP</div>`;
-  if(e.context)h+=`<h3>${t('p_context')}</h3><p>${L(e.context)}</p>`;
-  if(e.task)h+=`<h3>${t('p_task')}</h3><p>${L(e.task)}</p>`;
-  const bl=L(e.bullets);if(bl)h+=`<h3>${t('p_req')}</h3><ul>${bl.map(b=>`<li>${b}</li>`).join('')}</ul>`;
+  const e=cur;let h=`<h1>${fld(e,'title')}</h1><div class="ptag">${catLabel(catKey(e))} · ${e.kind.toUpperCase()} · ${dl(e.diff)} · ${e.xp} XP</div>`;
+  if(e.context)h+=`<h3>${t('p_context')}</h3><p>${fld(e,'context')}</p>`;
+  if(e.task)h+=`<h3>${t('p_task')}</h3><p>${fld(e,'task')}</p>`;
+  const bl=fld(e,'bullets');if(bl)h+=`<h3>${t('p_req')}</h3><ul>${bl.map(b=>`<li>${b}</li>`).join('')}</ul>`;
   if(e.sources)h+=`<h3>${t('p_sources')}</h3>${e.sources.map(srcTable).join('')}`;
-  if(e.expected)h+=`<h3>${t('p_expected')}</h3><div class="exp">${L(e.expected)}</div>`;
-  if(e.kind==='quiz')h+=`<h3>${t('p_select')}</h3><div id="opts">`+e.options.map((o,i)=>`<label class="opt" data-i="${i}"><span class="mk">${String.fromCharCode(65+i)}</span>${L(o.t)}</label>`).join('')+`</div>`;
+  if(e.expected)h+=`<h3>${t('p_expected')}</h3><div class="exp">${fld(e,'expected')}</div>`;
+  if(e.kind==='quiz')h+=`<h3>${t('p_select')}</h3><div id="opts">`+e.options.map((o,i)=>`<label class="opt" data-i="${i}"><span class="mk">${String.fromCharCode(65+i)}</span>${optText(e,i)}</label>`).join('')+`</div>`;
   $('#prob').innerHTML=h;
   if(e.kind==='quiz')document.querySelectorAll('.opt').forEach(o=>o.onclick=()=>{if(answered)return;document.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));o.classList.add('sel');quizSel=+o.dataset.i;});
 }
@@ -951,35 +1321,43 @@ async function runPy(){
   const cases=list.map(c=>({name:c.name,ok:c.ok,detail:c.ok?'':`${t('got')} ${c.got} · ${t('expected')} ${c.expected}`}));
   const all=showCases(cases);if(all)await award(e);return all;
 }
-function runQuiz(){const e=cur;if(quizSel==null){showConsole(t('choose'));return;}answered=true;document.querySelectorAll('.opt').forEach((o,i)=>{o.classList.remove('sel');if(e.options[i].ok)o.classList.add('correct');if(i===quizSel&&!e.options[i].ok)o.classList.add('wrong');});const ok=e.options[quizSel].ok;showCases([{name:ok?t('correct'):t('incorrect'),ok,detail:L(e.explain)}]);if(ok)award(e);}
+function runQuiz(){const e=cur;if(quizSel==null){showConsole(t('choose'));return;}answered=true;document.querySelectorAll('.opt').forEach((o,i)=>{o.classList.remove('sel');if(e.options[i].ok)o.classList.add('correct');if(i===quizSel&&!e.options[i].ok)o.classList.add('wrong');});const ok=e.options[quizSel].ok;showCases([{name:ok?t('correct'):t('incorrect'),ok,detail:explainText(e)}]);if(ok)award(e);}
 function runTests(){if(!cur)return;if(cur.kind==='sql')return runSQL();if(cur.kind==='python')return runPy();if(cur.kind==='quiz')return runQuiz();}
 
 async function ai(modeAi){const e=cur,panel=$('#tutor');panel.classList.add('show','pulse');panel.textContent='…';
   const code=e.kind==='quiz'?'(conceptual)':(editor?editor.getValue():'');
   const sys=modeAi==='hint'?t('hint_sys'):t('rev_sys');
-  const prompt=`${sys}\n\n${e.kind}: ${L(e.title)}\n${(L(e.task)||L(e.context)||'').replace(/<[^>]+>/g,'')}\n\n${code}`;
+  const prompt=`${sys}\n\n${e.kind}: ${fld(e,'title')}\n${(fld(e,'task')||fld(e,'context')||'').replace(/<[^>]+>/g,'')}\n\n${code}`;
   try{const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
     const d=await r.json();const txt=(d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();panel.classList.remove('pulse');panel.textContent=txt||'—';
   }catch(err){panel.classList.remove('pulse');panel.textContent=t('tutor_off')+': '+err.message;}}
 
 /* ===========================  exam  =========================== */
+function catAccuracy(){const acc={};orderedCats().forEach(k=>acc[k]={p:0,t:0});
+  stats.history.forEach(a=>{Object.entries(a.byCat||{}).forEach(([k,o])=>{if(!acc[k])acc[k]={p:0,t:0};acc[k].p+=o.p;acc[k].t+=o.t;});});return acc;}
+function weakness(k){const a=catAccuracy()[k];if(!a||a.t===0){const items=EX.filter(e=>catKey(e)===k);if(!items.length)return .5;const s=items.filter(e=>state.solved[e.id]).length;return 1-(s/items.length);}return 1-(a.p/a.t);}
 function buildSetup(){
-  const cats=[...new Set(EX.map(e=>e.cat))];setupCfg={cats:new Set(cats),count:10,diff:'all'};
+  const cats=orderedCats();setupCfg={cats:new Set(cats),count:10,diff:'all',spaced:false};
+  const spLabel=lang==='en'?'Spaced repetition — prioritize my weak categories':'Repetición espaciada — priorizar mis categorías débiles';
   $('#ovSetup').innerHTML=`<h2>${t('setup_t')}</h2><div class="sub">${t('setup_sub')}</div>
     <div class="card" style="max-width:820px">
-      <div class="field"><label>${t('f_cats')}</label><div class="chips" id="setCats">${cats.map(c=>`<span class="chip2 on" data-c="${c}">${c}</span>`).join('')}</div></div>
+      <div class="field"><label>${t('f_cats')}</label><div class="chips" id="setCats">${cats.map(k=>`<span class="chip2 on" data-c="${k}">${catLabel(k)}</span>`).join('')}</div></div>
       <div class="field"><label>${t('f_count')}</label><div class="chips" id="setCount"><span class="chip2" data-n="5">5</span><span class="chip2 on" data-n="10">10</span><span class="chip2" data-n="15">15</span><span class="chip2" data-n="all">${t('all')}</span></div></div>
       <div class="field"><label>${t('f_diff')}</label><div class="chips" id="setDiff"><span class="chip2 on" data-d="all">${t('all')}</span><span class="chip2" data-d="e">Easy</span><span class="chip2" data-d="m">Medium</span><span class="chip2" data-d="h">Hard</span></div></div>
+      <div class="field"><div class="chips"><span class="chip2" id="setSpaced">🎯 ${spLabel}</span></div></div>
       <div style="margin-top:18px"><button class="primary" onclick="startExam()">${t('start')}</button></div>
     </div>`;
   $('#setCats').querySelectorAll('.chip2').forEach(ch=>ch.onclick=()=>{ch.classList.toggle('on');const c=ch.dataset.c;setupCfg.cats.has(c)?setupCfg.cats.delete(c):setupCfg.cats.add(c);});
   $('#setCount').querySelectorAll('.chip2').forEach(ch=>ch.onclick=()=>{$('#setCount').querySelectorAll('.chip2').forEach(x=>x.classList.remove('on'));ch.classList.add('on');setupCfg.count=ch.dataset.n==='all'?999:+ch.dataset.n;});
   $('#setDiff').querySelectorAll('.chip2').forEach(ch=>ch.onclick=()=>{$('#setDiff').querySelectorAll('.chip2').forEach(x=>x.classList.remove('on'));ch.classList.add('on');setupCfg.diff=ch.dataset.d;});
+  $('#setSpaced').onclick=()=>{setupCfg.spaced=!setupCfg.spaced;$('#setSpaced').classList.toggle('on',setupCfg.spaced);};
 }
 function startExam(){
-  let pool=EX.filter(e=>setupCfg.cats.has(e.cat));if(setupCfg.diff!=='all')pool=pool.filter(e=>e.diff===setupCfg.diff);
+  let pool=EX.filter(e=>setupCfg.cats.has(catKey(e)));if(setupCfg.diff!=='all')pool=pool.filter(e=>e.diff===setupCfg.diff);
   if(!pool.length){toast(t('nofilter'));return;}
-  pool=pool.slice().sort(()=>Math.random()-0.5);const items=pool.slice(0,Math.min(setupCfg.count,pool.length));
+  if(setupCfg.spaced){const w={};orderedCats().forEach(k=>w[k]=weakness(k));pool=pool.map(e=>[e,w[catKey(e)]+Math.random()*0.25]).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);}
+  else pool=pool.slice().sort(()=>Math.random()-0.5);
+  const items=pool.slice(0,Math.min(setupCfg.count,pool.length));
   const total=items.reduce((s,e)=>s+(e.timer||DT[e.diff]),0);
   exam={items,idx:0,results:{},times:{},start:Date.now(),qStart:Date.now(),total,finished:false};
   $('#ovSetup').classList.remove('show');document.querySelector('.rail').classList.add('hide');$('#gridv').classList.add('examrun');
@@ -996,8 +1374,10 @@ function loadExamQuestion(i){
   $('#examFinish').onclick=()=>{if(confirm(t('exam_finish_c')))finishExam();};
   if(e.kind==='quiz'){host.innerHTML=`<div style="padding:18px;color:var(--muted);font-family:var(--mono);font-size:12.5px">${t('exam_quiz_note')}</div>`;editor=null;}
   else{host.innerHTML='';editor=CodeMirror(host,{value:e.starter,mode:e.kind==='sql'?'text/x-sql':'python',theme:'material-darker',lineNumbers:true,lineWrapping:true,indentUnit:e.kind==='python'?4:2});setTimeout(()=>editor.refresh(),40);}
-  act.innerHTML=`<button class="primary" id="examNext">${t('exam_next')}</button><button class="ghost" id="examSkip">${t('exam_skip')}</button>`;
+  const runBtn=e.kind!=='quiz'?`<button id="examRun">${t('exam_run')}</button>`:'';
+  act.innerHTML=`<button class="primary" id="examNext">${t('exam_next')}</button>${runBtn}<button class="ghost" id="examSkip">${t('exam_skip')}</button>`;
   $('#examNext').onclick=examSubmit;$('#examSkip').onclick=examSkip;
+  if(e.kind!=='quiz'){const er=$('#examRun');if(er)er.onclick=()=>{e.kind==='sql'?runSQL():runPy();};}
   $('#cases').innerHTML=`<div class="console">${t('exam_prompt')}</div>`;$('#verdict').textContent='';$('#tutor').classList.remove('show');paintExamClock();
 }
 async function examSubmit(){const e=cur;let ok=false;if(e.kind==='quiz'){if(quizSel==null){toast(t('exam_choose'));return;}ok=!!e.options[quizSel].ok;showConsole((ok?'✓ ':'✗ ')+t('registered'));}else{ok=await(e.kind==='sql'?runSQL():runPy());}exam.results[e.id]={ok,cat:e.cat,diff:e.diff,kind:e.kind};exam.times[e.id]=Math.round((Date.now()-exam.qStart)/1000);advanceExam();}
@@ -1007,7 +1387,7 @@ function finishExam(){
   if(!exam||exam.finished)return;exam.finished=true;stopExamTimer();
   exam.items.forEach(e=>{if(!exam.results[e.id])exam.results[e.id]={ok:false,skipped:true,cat:e.cat,diff:e.diff,kind:e.kind};});
   const total=exam.items.length,pass=exam.items.filter(e=>exam.results[e.id].ok).length,byCat={},byDiff={};
-  exam.items.forEach(e=>{const r=exam.results[e.id];(byCat[e.cat]=byCat[e.cat]||{p:0,t:0}).t++;if(r.ok)byCat[e.cat].p++;(byDiff[e.diff]=byDiff[e.diff]||{p:0,t:0}).t++;if(r.ok)byDiff[e.diff].p++;});
+  exam.items.forEach(e=>{const r=exam.results[e.id],ck=catKey(e);(byCat[ck]=byCat[ck]||{p:0,t:0}).t++;if(r.ok)byCat[ck].p++;(byDiff[e.diff]=byDiff[e.diff]||{p:0,t:0}).t++;if(r.ok)byDiff[e.diff].p++;});
   const dur=Math.round((Date.now()-exam.start)/1000);
   const a={date:new Date().toISOString(),score:pass,total,pct:Math.round(pass/total*100),dur,byCat,byDiff};
   stats.history.unshift(a);saveStats();renderReport(a);
@@ -1015,9 +1395,9 @@ function finishExam(){
 function renderReport(a){
   const cats=Object.entries(a.byCat).sort((x,y)=>(x[1].p/x[1].t)-(y[1].p/y[1].t));
   const weak=cats.filter(([c,o])=>o.p/o.t<0.6);
-  const catRows=cats.map(([c,o])=>{const pct=Math.round(o.p/o.t*100);return `<div class="row"><span class="lab">${c}</span><span class="track"><span class="fill" style="width:${pct}%"></span></span><span class="pct">${o.p}/${o.t}</span></div>`}).join('');
+  const catRows=cats.map(([c,o])=>{const pct=Math.round(o.p/o.t*100);return `<div class="row"><span class="lab">${catLabel(c)}</span><span class="track"><span class="fill" style="width:${pct}%"></span></span><span class="pct">${o.p}/${o.t}</span></div>`}).join('');
   const diffRows=['e','m','h'].filter(d=>a.byDiff[d]).map(d=>{const o=a.byDiff[d],pct=Math.round(o.p/o.t*100);return `<div class="row"><span class="lab">${dl(d)}</span><span class="track"><span class="fill" style="width:${pct}%"></span></span><span class="pct">${o.p}/${o.t}</span></div>`}).join('');
-  const qlist=exam.items.map((e,i)=>{const r=exam.results[e.id];return `<div class="case ${r.ok?'pass':'fail'}"><span class="s">${r.ok?'✓':'✗'}</span><span class="d">${i+1}. ${L(e.title)} <small>· ${e.cat} · ${e.kind.toUpperCase()} · ${exam.times[e.id]||0}s${r.skipped?' · '+t('skipped'):''}</small></span></div>`}).join('');
+  const qlist=exam.items.map((e,i)=>{const r=exam.results[e.id];return `<div class="case ${r.ok?'pass':'fail'}"><span class="s">${r.ok?'✓':'✗'}</span><span class="d">${i+1}. ${fld(e,"title")} <small>· ${e.cat} · ${e.kind.toUpperCase()} · ${exam.times[e.id]||0}s${r.skipped?' · '+t('skipped'):''}</small></span></div>`}).join('');
   const col=a.pct>=70?'var(--mint)':a.pct>=50?'var(--gold)':'var(--bad)';
   $('#ovReport').innerHTML=`<h2>${t('rep_title')}</h2><div class="sub">${new Date(a.date).toLocaleString()} · ${t('rep_dur')} ${fmt(a.dur)}</div>
     <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
@@ -1030,8 +1410,8 @@ function renderReport(a){
   $('#gridv').classList.remove('examrun');$('#ovReport').classList.add('show');
 }
 function renderStats(){
-  const h=stats.history,cats=[...new Set(EX.map(e=>e.cat))],m={};cats.forEach(c=>m[c]={s:0,t:0});EX.forEach(e=>{m[e.cat].t++;if(state.solved[e.id])m[e.cat].s++;});
-  const mastery=cats.map(c=>{const o=m[c],pct=o.t?Math.round(o.s/o.t*100):0;return `<div class="row"><span class="lab">${c}</span><span class="track"><span class="fill" style="width:${pct}%"></span></span><span class="pct">${o.s}/${o.t}</span></div>`}).join('');
+  const h=stats.history,ordCats=orderedCats(),m={};ordCats.forEach(k=>m[k]={s:0,t:0});EX.forEach(e=>{const k=catKey(e);if(m[k])m[k].t++;if(state.solved[e.id]&&m[k])m[k].s++;});
+  const mastery=ordCats.map(k=>{const o=m[k]||{s:0,t:0},pct=o.t?Math.round(o.s/o.t*100):0;return `<div class="row"><span class="lab">${catLabel(k)}</span><span class="track"><span class="fill" style="width:${pct}%"></span></span><span class="pct">${o.s}/${o.t}</span></div>`}).join('');
   const best=h.length?Math.max(...h.map(a=>a.pct)):0;
   const rows=h.slice(0,15).map(a=>`<div class="h"><span style="width:170px">${new Date(a.date).toLocaleString()}</span><span style="width:54px;color:${a.pct>=70?'var(--mint)':a.pct>=50?'var(--gold)':'var(--bad)'}">${a.pct}%</span><span style="width:60px">${a.score}/${a.total}</span><span>${fmt(a.dur)}</span></div>`).join('')||`<div class="console">${t('stats_none')}</div>`;
   $('#ovStats').innerHTML=`<h2>${t('stats_title')}</h2><div class="sub">${t('stats_sub')}</div>
@@ -1053,10 +1433,15 @@ async function loadLang(){try{const r=await window.storage.get('delab:lang',fals
 function toast(m){const el=$('#toast');el.innerHTML=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2400);}
 
 document.querySelectorAll('#nav .navbtn').forEach(b=>b.onclick=()=>switchMode(b.dataset.m));
+$('#themeBtn').onclick=()=>{const ld=document.documentElement.getAttribute('data-theme')==='light';document.documentElement.setAttribute('data-theme',ld?'':'light');$('#themeBtn').textContent=ld?'🌙':'☀️';try{window.storage.set('delab:theme',ld?'dark':'light',false);}catch(e){}};
 $('#menub').onclick=()=>document.querySelector('.rail').classList.toggle('open');
 $('#resetBtn').onclick=async()=>{if(confirm(t('reset_c'))){state={solved:{},xp:0,streak:0,lastDay:null};stats={history:[]};await save();await saveStats();renderXP();if(mode==='practice')renderRail();if(mode==='stats')renderStats();}};
 
-window.addEventListener('load',async()=>{await load();await loadStats();await loadLang();setLang(lang);renderXP();renderRail();switchMode('home');});
+window.addEventListener('load',async()=>{
+  await load();await loadStats();await loadLang();
+  try{const th=await window.storage.get('delab:theme',false);if(th&&th.value==='light'){document.documentElement.setAttribute('data-theme','light');$('#themeBtn').textContent='☀️';}}catch(e){}
+  setLang(lang);renderXP();renderRail();switchMode('home');
+});
 
 </script>
 </body>
