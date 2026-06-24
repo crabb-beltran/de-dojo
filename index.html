@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DE Dojo — entrenamiento DE con test cases</title>
+<title>DE Lab — Data Engineering training</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
@@ -14,134 +14,178 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.min.js"></script>
 <style>
-  :root{--ink:#0D1117;--surface:#161B22;--surface2:#1B222B;--border:#222A33;--text:#E6EDF3;--muted:#8B98A5;
-    --amber:#FFB454;--ok:#3FB950;--bad:#F85149;--blue:#58A6FF;--violet:#BC8CFF;
-    --ui:'Space Grotesk',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;}
+  :root{
+    --ink:#0B1012;--surface:#121A1C;--surface2:#18242620;--panel:#13201F;--border:#23312F;
+    --text:#E8EEEC;--muted:#8AA0A0;--coral:#FF6B5B;--mint:#5EEAD4;--gold:#F4C95D;--violet:#C3A6FF;--bad:#FF5C77;
+    --amber:#FF6B5B;--ok:#5EEAD4;--blue:#5EEAD4;
+    --ui:'Manrope',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;--display:'Fraunces',Georgia,serif;
+  }
   *{box-sizing:border-box}html,body{height:100%;margin:0}
-  body{background:var(--ink);color:var(--text);font-family:var(--ui);display:grid;grid-template-rows:auto 1fr;overflow:hidden}
+  body{background:radial-gradient(1200px 600px at 80% -10%,#10201d 0%,var(--ink) 55%) fixed,var(--ink);color:var(--text);font-family:var(--ui);display:grid;grid-template-rows:auto 1fr;overflow:hidden}
   @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-  .top{display:flex;align-items:center;gap:14px;padding:9px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
-  .brand{font-weight:700;letter-spacing:.5px;display:flex;align-items:center;gap:9px}
-  .brand .k{color:var(--amber)} .brand small{font-family:var(--mono);font-weight:500;color:var(--muted);font-size:11px}
+  ::selection{background:var(--coral);color:#1a0d0a}
+  /* top */
+  .top{display:flex;align-items:center;gap:14px;padding:10px 18px;border-bottom:1px solid var(--border);background:rgba(11,16,18,.7);backdrop-filter:blur(8px)}
+  .brand{font-family:var(--display);font-weight:900;font-size:18px;letter-spacing:.3px;display:flex;align-items:center;gap:8px;cursor:pointer}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--coral);box-shadow:0 0 12px var(--coral)}
+  .brand em{font-style:normal;color:var(--mint)}
+  .nav{display:flex;gap:2px;flex-wrap:wrap}
+  .navbtn{font-family:var(--mono);font-size:12px;padding:6px 11px;color:var(--muted);background:transparent;border:1px solid transparent;border-radius:8px;cursor:pointer}
+  .navbtn:hover{color:var(--text)} .navbtn.on{color:var(--coral);border-color:var(--border);background:var(--panel)}
   .spacer{flex:1}
-  .xpwrap{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;color:var(--muted)}
-  .lvl{color:var(--amber);font-weight:600}
-  .pbar{width:130px;height:7px;background:var(--surface2);border-radius:99px;overflow:hidden;border:1px solid var(--border)}
-  .pbar i{display:block;height:100%;background:linear-gradient(90deg,var(--amber),#ffd089);width:0;transition:width .4s}
-  .menub{display:none}
-  .grid{display:grid;grid-template-columns:290px 1fr 1fr;min-height:0;overflow:hidden}
+  .lang{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  .lang button{font-family:var(--mono);font-size:11px;padding:5px 9px;background:transparent;color:var(--muted);border:0;cursor:pointer}
+  .lang button.on{background:var(--coral);color:#1a0d0a;font-weight:600}
+  .xpmini{font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;gap:8px;align-items:center}
+  .xpmini b{color:var(--gold)}
+  .ghostbtn{font-family:var(--mono);font-size:11px;padding:5px 9px;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--muted);cursor:pointer}
+  .ghostbtn:hover{color:var(--text);border-color:var(--coral)}
+  /* views */
+  .view{display:none;min-height:0;overflow:auto}
+  .view.show{display:block}
+  .gridview{display:none;min-height:0;overflow:hidden}
+  .gridview.show{display:grid}
+  /* landing */
+  .home{padding:46px 30px 60px;max-width:1180px;margin:0 auto}
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--mint);margin-bottom:14px}
+  .hero h1{font-family:var(--display);font-weight:900;font-size:clamp(34px,6vw,68px);line-height:1.02;margin:0 0 16px;letter-spacing:-.5px}
+  .hero h1 em{font-style:italic;color:var(--coral)}
+  .hero p{font-size:16px;line-height:1.6;color:#c4d2cf;max-width:620px;margin:0 0 10px}
+  .stats{display:flex;gap:26px;flex-wrap:wrap;margin:26px 0 40px;font-family:var(--mono)}
+  .stats .s b{font-family:var(--display);font-size:30px;font-weight:700;color:var(--gold);display:block;line-height:1}
+  .stats .s span{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+  .mods{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+  .mod{position:relative;border:1px solid var(--border);border-radius:16px;padding:22px;background:linear-gradient(160deg,var(--panel),transparent);cursor:pointer;transition:.18s;overflow:hidden}
+  .mod:hover{transform:translateY(-3px);border-color:var(--coral)}
+  .mod .ic{font-size:22px;margin-bottom:12px}
+  .mod h3{font-family:var(--display);font-weight:700;font-size:21px;margin:0 0 6px}
+  .mod p{font-size:13.5px;line-height:1.5;color:#b6c5c2;margin:0}
+  .mod .arr{position:absolute;top:20px;right:20px;color:var(--muted);transition:.18s}
+  .mod:hover .arr{color:var(--coral);transform:translateX(3px)}
+  .mod.guide{background:linear-gradient(160deg,#1a1420,transparent)} .mod.guide:hover{border-color:var(--violet)}
+  /* guide view */
+  .guideWrap{display:flex;flex-direction:column;height:100%}
+  .gtop{display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid var(--border);background:var(--panel)}
+  .gtop b{font-family:var(--display);font-size:16px}
+  .guideWrap iframe{flex:1;border:0;width:100%;background:#fff}
+  /* grid */
+  .grid{grid-template-columns:288px 1fr 1fr}
   .rail{border-right:1px solid var(--border);background:var(--surface);overflow:auto;min-height:0}
-  .cat{padding:13px 16px 6px;font-family:var(--mono);font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);position:sticky;top:0;background:var(--surface);z-index:1}
+  .cat{padding:13px 16px 6px;font-family:var(--mono);font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mint);position:sticky;top:0;background:var(--surface);z-index:1}
   .ex{padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;gap:10px;align-items:flex-start;transition:.12s}
-  .ex:hover{background:var(--surface2)}
-  .ex.active{background:var(--surface2);box-shadow:inset 3px 0 0 var(--amber)}
+  .ex:hover{background:var(--panel)} .ex.active{background:var(--panel);box-shadow:inset 3px 0 0 var(--coral)}
   .ex .ico{font-family:var(--mono);font-size:9.5px;font-weight:600;padding:2px 5px;border-radius:5px;border:1px solid var(--border);color:var(--muted);flex:none;margin-top:1px}
-  .ex .ico.sql{color:var(--blue);border-color:#23405e}.ex .ico.python{color:var(--amber);border-color:#5e4a23}.ex .ico.quiz{color:var(--violet);border-color:#4a3a5e}
+  .ex .ico.sql{color:var(--mint);border-color:#2a4642}.ex .ico.python{color:var(--gold);border-color:#4a4326}.ex .ico.quiz{color:var(--violet);border-color:#3f3556}
   .ex .tt{font-size:13px;font-weight:600;line-height:1.25}
   .ex .mt{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px}
-  .ex .chk{margin-left:auto;color:var(--ok);flex:none}
+  .ex .chk{margin-left:auto;color:var(--mint);flex:none}
   .diff{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muted);margin-right:3px}
-  .diff.e{background:var(--ok)}.diff.m{background:var(--amber)}.diff.h{background:var(--bad)}
-  .prob{border-right:1px solid var(--border);overflow:auto;min-height:0;padding:18px 22px 40px}
-  .prob h1{font-size:19px;margin:0 0 4px;line-height:1.2}
-  .ptag{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-bottom:14px}
-  .prob h3{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--amber);font-family:var(--mono);margin:18px 0 7px}
-  .prob p{font-size:13.5px;line-height:1.6;color:#cdd6df;margin:0 0 10px}
-  .prob ul{font-size:13px;line-height:1.5;color:#cdd6df;padding-left:18px;margin:0}
-  .prob li{margin:3px 0}
-  .prob code{font-family:var(--mono);background:var(--surface2);padding:1px 5px;border-radius:4px;color:var(--amber);font-size:12px}
-  .src{margin:10px 0}
-  .src .nm{font-family:var(--mono);font-size:11.5px;color:var(--blue);margin-bottom:4px}
-  .src .nm b{color:var(--text)}
+  .diff.e{background:var(--mint)}.diff.m{background:var(--gold)}.diff.h{background:var(--coral)}
+  .prob{border-right:1px solid var(--border);overflow:auto;min-height:0;padding:20px 24px 44px}
+  .prob h1{font-family:var(--display);font-weight:700;font-size:23px;margin:0 0 4px;line-height:1.15}
+  .ptag{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-bottom:16px}
+  .prob h3{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--coral);font-family:var(--mono);margin:20px 0 8px}
+  .prob p{font-size:14px;line-height:1.6;color:#cdd9d6;margin:0 0 10px}
+  .prob ul{font-size:13.5px;line-height:1.55;color:#cdd9d6;padding-left:18px;margin:0}.prob li{margin:3px 0}
+  .prob code{font-family:var(--mono);background:var(--panel);padding:1px 5px;border-radius:4px;color:var(--gold);font-size:12.5px}
+  .src{margin:10px 0}.src .nm{font-family:var(--mono);font-size:11.5px;color:var(--mint);margin-bottom:4px}.src .nm b{color:var(--text)}
   table.dt{border-collapse:collapse;font-family:var(--mono);font-size:11.5px;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
-  table.dt th{background:var(--surface2);color:var(--muted);text-align:left;padding:5px 9px;border-bottom:1px solid var(--border);font-weight:600}
-  table.dt td{padding:4px 9px;border-bottom:1px solid var(--border);color:#cbd5e1}
-  table.dt tr:last-child td{border-bottom:0}
+  table.dt th{background:var(--panel);color:var(--muted);text-align:left;padding:5px 9px;border-bottom:1px solid var(--border);font-weight:600}
+  table.dt td{padding:4px 9px;border-bottom:1px solid var(--border);color:#c2d0cd}table.dt tr:last-child td{border-bottom:0}
   .srcnote{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:3px}
-  .exp{font-family:var(--mono);font-size:11.5px;background:var(--surface);border:1px dashed var(--border);border-radius:8px;padding:9px 11px;color:#9fb;white-space:pre;overflow:auto}
-  .opt{display:block;border:1px solid var(--border);border-radius:9px;padding:10px 13px;margin:7px 0;cursor:pointer;font-size:13px;transition:.12s;background:var(--surface)}
-  .opt:hover{border-color:var(--amber)} .opt.sel{border-color:var(--amber);background:var(--surface2)}
-  .opt.correct{border-color:var(--ok);background:rgba(63,185,80,.08)} .opt.wrong{border-color:var(--bad);background:rgba(248,81,73,.08)}
+  .exp{font-family:var(--mono);font-size:11.5px;background:var(--surface);border:1px dashed var(--border);border-radius:8px;padding:9px 11px;color:var(--mint);white-space:pre;overflow:auto}
+  .opt{display:block;border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin:8px 0;cursor:pointer;font-size:13.5px;transition:.12s;background:var(--surface)}
+  .opt:hover{border-color:var(--coral)}.opt.sel{border-color:var(--coral);background:var(--panel)}
+  .opt.correct{border-color:var(--mint);background:rgba(94,234,212,.08)}.opt.wrong{border-color:var(--bad);background:rgba(255,92,119,.08)}
   .opt .mk{font-family:var(--mono);color:var(--muted);margin-right:8px}
   .work{display:flex;flex-direction:column;min-height:0;min-width:0}
   .wtabs{display:flex;align-items:center;background:var(--surface);border-bottom:1px solid var(--border)}
   .wtab{font-family:var(--mono);font-size:11.5px;padding:9px 14px;color:var(--muted);cursor:pointer;border-right:1px solid var(--border)}
-  .wtab.active{color:var(--text);background:var(--ink);box-shadow:inset 0 -2px 0 var(--amber)}
+  .wtab.active{color:var(--text);background:var(--ink);box-shadow:inset 0 -2px 0 var(--coral)}
   .timer{margin-left:auto;display:flex;align-items:center;gap:7px;padding:0 12px;font-family:var(--mono);font-size:13px}
-  .timer .clock{font-weight:600;color:var(--ok);font-variant-numeric:tabular-nums}
-  .timer .clock.warn{color:var(--amber)} .timer .clock.crit{color:var(--bad);animation:blink 1s infinite}
+  .clock{font-weight:600;color:var(--mint);font-variant-numeric:tabular-nums}.clock.warn{color:var(--gold)}.clock.crit{color:var(--bad);animation:blink 1s infinite}
   @keyframes blink{50%{opacity:.45}}
-  .timer button{padding:3px 8px;font-size:11px}
+  .timer button,.exam-bar button{padding:3px 8px;font-size:11px}
   .edhost{flex:1;min-height:120px;position:relative}
   .CodeMirror{height:100%!important;font-family:var(--mono)!important;font-size:13px;background:var(--ink)!important}
   .actions{display:flex;gap:8px;padding:9px 12px;background:var(--surface);border-top:1px solid var(--border);flex-wrap:wrap}
-  button{font-family:var(--ui);font-weight:600;font-size:13px;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text);padding:8px 13px;transition:.12s}
-  button:hover{border-color:var(--amber);color:#fff} button.primary{background:var(--amber);color:#1a1207;border-color:var(--amber)}
-  button.primary:hover{filter:brightness(1.07)} button.ghost{background:transparent} button:disabled{opacity:.5;cursor:not-allowed}
+  button{font-family:var(--ui);font-weight:600;font-size:13px;border-radius:9px;cursor:pointer;border:1px solid var(--border);background:var(--panel);color:var(--text);padding:8px 13px;transition:.12s}
+  button:hover{border-color:var(--coral);color:#fff}
+  button.primary{background:var(--coral);color:#1a0d0a;border-color:var(--coral)}button.primary:hover{filter:brightness(1.07)}
+  button.ghost{background:transparent}button:disabled{opacity:.5;cursor:not-allowed}
   .results{height:40%;min-height:130px;overflow:auto;background:var(--surface);border-top:1px solid var(--border);font-family:var(--mono);font-size:12px}
   .rhd{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;position:sticky;top:0;background:var(--surface)}
-  .verdict{margin-left:auto;font-weight:600} .verdict.pass{color:var(--ok)} .verdict.fail{color:var(--bad)}
+  .verdict{margin-left:auto;font-weight:600}.verdict.pass{color:var(--mint)}.verdict.fail{color:var(--bad)}
   .case{display:flex;gap:9px;padding:8px 12px;border-bottom:1px solid var(--border);align-items:flex-start}
-  .case .s{flex:none;font-weight:700} .case.pass .s{color:var(--ok)} .case.fail .s{color:var(--bad)}
-  .case .d{color:#cbd5e1;line-height:1.45;white-space:pre-wrap;word-break:break-word}
-  .case .d small{color:var(--muted)}
+  .case .s{flex:none;font-weight:700}.case.pass .s{color:var(--mint)}.case.fail .s{color:var(--bad)}
+  .case .d{color:#c8d6d3;line-height:1.45;white-space:pre-wrap;word-break:break-word}.case .d small{color:var(--muted)}
   .console{padding:10px 12px;color:var(--muted);white-space:pre-wrap;line-height:1.45}
-  .tutor{padding:12px;border-top:1px solid var(--border);background:var(--surface2);white-space:pre-wrap;font-family:var(--ui);font-size:13.5px;line-height:1.6;display:none}
-  .tutor.show{display:block} .tutor code{font-family:var(--mono);background:var(--ink);padding:1px 5px;border-radius:4px;color:var(--amber)}
+  .tutor{padding:12px;border-top:1px solid var(--border);background:var(--panel);white-space:pre-wrap;font-family:var(--ui);font-size:13.5px;line-height:1.6;display:none}
+  .tutor.show{display:block}.tutor code{font-family:var(--mono);background:var(--ink);padding:1px 5px;border-radius:4px;color:var(--gold)}
   .pulse{animation:pulse 1s infinite}@keyframes pulse{50%{opacity:.45}}
-  .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--amber);padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:60}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--coral);padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:60}
   .toast.show{opacity:1}
-  @media(max-width:1080px){.grid{grid-template-columns:1fr 1fr}.rail{position:fixed;z-index:50;width:290px;height:100%;transform:translateX(-100%);transition:.25s}.rail.open{transform:translateX(0)}.menub{display:grid;place-items:center;width:38px;height:38px;border-radius:9px;background:var(--amber);color:#1a1207;border:none;cursor:pointer;font-size:18px}}
-  @media(max-width:720px){.grid{grid-template-columns:1fr;grid-auto-rows:minmax(200px,auto);overflow:auto}body{overflow:auto}.prob{border-right:0;border-bottom:1px solid var(--border)}}
-  /* ---- mode switch + exam + stats ---- */
-  .modesw{display:flex;gap:4px;margin-left:4px}
-  .modesw button{padding:5px 11px;font-size:12px;font-family:var(--mono);background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px}
-  .modesw button.on{background:var(--surface2);color:var(--amber);border-color:var(--amber)}
-  .rail.hide{display:none}
-  .grid.examrun{grid-template-columns:1fr 1fr}
-  .overlay{position:fixed;left:0;right:0;top:50px;bottom:0;background:var(--ink);overflow:auto;display:none;z-index:40;padding:26px 30px}
+  /* overlays */
+  .overlay{position:absolute;left:0;right:0;top:0;bottom:0;background:var(--ink);overflow:auto;display:none;z-index:30;padding:28px 30px}
   .overlay.show{display:block}
-  .overlay h2{font-family:var(--ui);font-size:22px;margin:0 0 4px}
+  .overlay h2{font-family:var(--display);font-weight:700;font-size:25px;margin:0 0 4px}
   .overlay .sub{color:var(--muted);font-size:13px;margin-bottom:20px;font-family:var(--mono)}
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px}
-  .field{margin:14px 0} .field:first-child{margin-top:0}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px}
+  .field{margin:14px 0}.field:first-child{margin-top:0}
   .field label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
   .chips{display:flex;flex-wrap:wrap;gap:8px}
-  .chip2{padding:7px 12px;border:1px solid var(--border);border-radius:999px;font-size:12.5px;cursor:pointer;background:var(--surface2);color:var(--text)}
-  .chip2.on{border-color:var(--amber);color:var(--amber)}
+  .chip2{padding:7px 12px;border:1px solid var(--border);border-radius:999px;font-size:12.5px;cursor:pointer;background:var(--panel);color:var(--text)}
+  .chip2.on{border-color:var(--coral);color:var(--coral)}
   .exam-bar{display:flex;align-items:center;gap:12px;width:100%;padding:0 10px;font-family:var(--mono);font-size:12px}
   .dots{display:flex;gap:5px;flex-wrap:wrap;max-width:46%}
-  .dots i{width:9px;height:9px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:inline-block}
-  .dots i.cur{border-color:var(--amber);box-shadow:0 0 6px var(--amber)} .dots i.pass{background:var(--ok);border-color:var(--ok)} .dots i.fail{background:var(--bad);border-color:var(--bad)}
-  .gclock{font-weight:600;color:var(--ok);font-variant-numeric:tabular-nums} .gclock.warn{color:var(--amber)} .gclock.crit{color:var(--bad);animation:blink 1s infinite}
-  .score{font-size:46px;font-weight:700;font-family:var(--ui);line-height:1}
+  .dots i{width:9px;height:9px;border-radius:50%;background:var(--panel);border:1px solid var(--border);display:inline-block}
+  .dots i.cur{border-color:var(--coral);box-shadow:0 0 6px var(--coral)}.dots i.pass{background:var(--mint);border-color:var(--mint)}.dots i.fail{background:var(--bad);border-color:var(--bad)}
+  .gclock{font-weight:600;color:var(--mint);font-variant-numeric:tabular-nums}.gclock.warn{color:var(--gold)}.gclock.crit{color:var(--bad);animation:blink 1s infinite}
+  .score{font-family:var(--display);font-size:50px;font-weight:900;line-height:1}
   .scoresub{color:var(--muted);font-family:var(--mono);font-size:12px;margin-top:6px}
   .row{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:13px}
-  .row .lab{width:210px;color:#cbd5e1;font-size:12.5px} .row .track{flex:1;height:9px;background:var(--surface2);border-radius:99px;overflow:hidden;border:1px solid var(--border)}
-  .row .fill{height:100%;background:linear-gradient(90deg,var(--amber),#ffd089)} .row .pct{width:58px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--muted)}
-  .weak{border:1px solid var(--bad);background:rgba(248,81,73,.07);border-radius:10px;padding:12px 14px;margin-top:16px;font-size:13.5px;line-height:1.5}
-  .hist .h{display:flex;gap:14px;padding:8px 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:12px;color:#cbd5e1}
+  .row .lab{width:210px;color:#c8d6d3;font-size:12.5px}.row .track{flex:1;height:9px;background:var(--panel);border-radius:99px;overflow:hidden;border:1px solid var(--border)}
+  .row .fill{height:100%;background:linear-gradient(90deg,var(--coral),var(--gold))}.row .pct{width:58px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .weak{border:1px solid var(--bad);background:rgba(255,92,119,.07);border-radius:10px;padding:12px 14px;margin-top:16px;font-size:13.5px;line-height:1.5}
+  .hist .h{display:flex;gap:14px;padding:8px 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:12px;color:#c8d6d3}
+  .menub{display:none}
+  @media(max-width:1080px){.grid{grid-template-columns:1fr 1fr}.rail{position:fixed;z-index:50;width:288px;height:100%;transform:translateX(-100%);transition:.25s}.rail.open{transform:translateX(0)}.menub{display:grid;place-items:center;width:36px;height:36px;border-radius:9px;background:var(--coral);color:#1a0d0a;border:none;cursor:pointer;font-size:17px}.rail.hide{display:none}.grid.examrun{grid-template-columns:1fr 1fr}}
+  @media(min-width:1081px){.rail.hide{display:none}.grid.examrun{grid-template-columns:1fr 1fr}}
+  @media(max-width:720px){.gridview.show{grid-template-columns:1fr;grid-auto-rows:minmax(200px,auto);overflow:auto}.prob{border-right:0;border-bottom:1px solid var(--border)}.nav{display:none}}
 </style>
 </head>
 <body>
 <div class="top">
-  <button class="menub" onclick="document.querySelector('.rail').classList.toggle('open')">☰</button>
-  <div class="brand"><span class="k">DE</span> DOJO <small>entrenamiento con test cases</small></div>
-  <div class="modesw">
-    <button id="mPractice" class="on" onclick="switchMode('practice')">Práctica</button>
-    <button id="mExam" onclick="switchMode('exam')">Examen</button>
-    <button id="mStats" onclick="switchMode('stats')">Stats</button>
+  <button class="menub" id="menub">☰</button>
+  <div class="brand" onclick="switchMode('home')"><span class="dot"></span>DE<em>Lab</em></div>
+  <div class="nav" id="nav">
+    <button class="navbtn" data-m="home">Inicio</button>
+    <button class="navbtn" data-m="guide">Guía</button>
+    <button class="navbtn" data-m="practice">Práctica</button>
+    <button class="navbtn" data-m="exam">Examen</button>
+    <button class="navbtn" data-m="stats">Stats</button>
   </div>
   <div class="spacer"></div>
-  <div class="xpwrap">
-    <span>🔥 <span id="streak">0</span></span>
-    <span class="lvl">Lv <span id="lvl">1</span></span>
-    <span class="pbar"><i id="xpbar"></i></span>
-    <span id="xptxt">0 XP</span>
-    <button class="ghost" id="resetBtn" style="padding:5px 9px;font-size:11px">reset</button>
+  <div class="lang"><button id="langEs" class="on" onclick="setLang('es')">ES</button><button id="langEn" onclick="setLang('en')">EN</button></div>
+  <div class="xpmini">Lv <b id="lvl">1</b> · <span id="xptxt">0 XP</span></div>
+  <button class="ghostbtn" id="resetBtn">reset</button>
+</div>
+
+<!-- HOME -->
+<div class="view show" id="home"></div>
+
+<!-- GUIDE -->
+<div class="view" id="guideView">
+  <div class="guideWrap">
+    <div class="gtop"><b id="gTitle">Guía de entrevista DE</b><span style="flex:1"></span>
+      <a class="ghostbtn" href="https://crabb-beltran.github.io/de-interview-guide/" target="_blank" rel="noopener" id="gOpen">abrir en pestaña ↗</a>
+      <button class="ghostbtn" onclick="switchMode('home')" id="gBack">← inicio</button></div>
+    <iframe id="guideFrame" title="DE Interview Guide" loading="lazy"></iframe>
   </div>
 </div>
-<div class="grid">
+
+<!-- PRACTICE / EXAM GRID -->
+<div class="gridview grid" id="gridv" style="position:relative">
   <aside class="rail" id="rail"></aside>
   <section class="prob" id="prob"></section>
   <section class="work">
@@ -149,29 +193,20 @@
     <div class="edhost" id="edhost"></div>
     <div class="actions" id="actions"></div>
     <div class="results" id="results">
-      <div class="rhd">test cases <span class="verdict" id="verdict"></span></div>
-      <div id="cases"><div class="console">Pulsa <b>Run tests</b> para evaluar.</div></div>
+      <div class="rhd"><span id="rhdLabel">test cases</span> <span class="verdict" id="verdict"></span></div>
+      <div id="cases"><div class="console"></div></div>
       <div class="tutor" id="tutor"></div>
     </div>
   </section>
+  <div class="overlay" id="ovSetup"></div>
+  <div class="overlay" id="ovReport"></div>
+  <div class="overlay" id="ovStats"></div>
 </div>
-<div class="overlay" id="ovSetup">
-  <h2>Examen cronometrado</h2>
-  <div class="sub">Selecciona el alcance. El tiempo total se calcula según la dificultad de las preguntas elegidas.</div>
-  <div class="card" style="max-width:780px">
-    <div class="field"><label>Categorías</label><div class="chips" id="setCats"></div></div>
-    <div class="field"><label># de preguntas</label><div class="chips" id="setCount">
-      <span class="chip2" data-n="5">5</span><span class="chip2 on" data-n="10">10</span><span class="chip2" data-n="15">15</span><span class="chip2" data-n="all">Todas</span></div></div>
-    <div class="field"><label>Dificultad</label><div class="chips" id="setDiff">
-      <span class="chip2 on" data-d="all">Todas</span><span class="chip2" data-d="e">Easy</span><span class="chip2" data-d="m">Medium</span><span class="chip2" data-d="h">Hard</span></div></div>
-    <div style="margin-top:18px"><button class="primary" onclick="startExam()">Empezar examen ▸</button></div>
-  </div>
-</div>
-<div class="overlay" id="ovReport"></div>
-<div class="overlay" id="ovStats"></div>
+
 <div class="toast" id="toast"></div>
 
 <script>
+
 const DT={e:480,m:900,h:1500}; // default timer seconds by difficulty
 /* ===== helper to build source tables compactly ===== */
 function S(name,cols,rows,note){return {name,cols,rows,note};}
@@ -571,293 +606,458 @@ chk("k>distintos", top_k(["x","x","y"], 5), ["x","y"])
    {t:'Grafo, por la baja latencia de lookups por clave.',ok:false}],
  explain:'Patrón de acceso fijo por clave + escala + eventual = key-value/wide-column. NoSQL se elige por patrón de acceso, no por "anti-SQL".'
 },
+/* ===== Competitive (SQL/Python) + DBA ===== */
+{
+ id:'sql_consec',cat:'X · Competitive',kind:'sql',diff:'m',xp:25,
+ title:{es:'Números consecutivos (3+ veces)',en:'Consecutive numbers (3+ times)'},tags:'self-join · LeetCode 180',
+ context:{es:'Clásico de entrevista/competencia: detectar valores que aparecen en 3 o más filas consecutivas (por <code>id</code>).',en:'Interview/contest classic: find values that appear in 3+ consecutive rows (by <code>id</code>).'},
+ task:{es:'Devuelve los <code>num</code> que se repiten en al menos 3 ids consecutivos.',en:'Return the <code>num</code> values that repeat in at least 3 consecutive ids.'},
+ bullets:{es:['Salida: columna <code>num</code> (distinct).','Pista: self-join 3 veces sobre <code>id+1</code>, <code>id+2</code>.'],en:['Output: column <code>num</code> (distinct).','Hint: self-join 3× on <code>id+1</code>, <code>id+2</code>.']},
+ sources:[S('logs',['id','num'],[[1,1],[2,1],[3,1],[4,2],[5,1],[6,2],[7,2]])],
+ expected:'num → 1',
+ datasets:[`CREATE TABLE logs(id INT,num INT);INSERT INTO logs VALUES (1,1),(2,1),(3,1),(4,2),(5,1),(6,2),(7,2);`],
+ ref:`SELECT DISTINCT l1.num AS num FROM logs l1 JOIN logs l2 ON l2.id=l1.id+1 AND l2.num=l1.num JOIN logs l3 ON l3.id=l1.id+2 AND l3.num=l1.num`,
+ starter:`SELECT DISTINCT l1.num AS num\nFROM logs l1\n-- JOIN logs l2 ... id+1 ; JOIN logs l3 ... id+2\n;`
+},
+{
+ id:'sql_leaderboard',cat:'X · Competitive',kind:'sql',diff:'m',xp:25,
+ title:{es:'Leaderboard con desempate',en:'Leaderboard with tie-break'},tags:'window · DENSE_RANK',
+ context:{es:'Ranking de un torneo: mayor score primero; a igual score, menor tiempo gana. Mismos score+tiempo comparten posición.',en:'Tournament ranking: higher score first; on ties, lower time wins. Equal score+time share a rank.'},
+ task:{es:'Asigna el rank a cada jugador.',en:'Assign the rank to each player.'},
+ bullets:{es:['Salida: <code>player</code>, <code>rnk</code>.','Orden: <code>score DESC, t ASC</code>; empates = mismo rank (DENSE_RANK).'],en:['Output: <code>player</code>, <code>rnk</code>.','Order: <code>score DESC, t ASC</code>; ties share a rank (DENSE_RANK).']},
+ sources:[S('sub',['player','score','t'],[['a',100,50],['b',100,40],['c',90,30],['d',100,40]],'t = seconds')],
+ expected:'b 1 · d 1 · a 2 · c 3',
+ datasets:[`CREATE TABLE sub(player TEXT,score INT,t INT);INSERT INTO sub VALUES ('a',100,50),('b',100,40),('c',90,30),('d',100,40);`],
+ ref:`SELECT player, DENSE_RANK() OVER(ORDER BY score DESC, t ASC) AS rnk FROM sub ORDER BY rnk, player`,
+ starter:`SELECT player,\n  DENSE_RANK() OVER (/* score DESC, t ASC */) AS rnk\nFROM sub\nORDER BY rnk, player;`
+},
+{
+ id:'sql_dupe_pk',cat:'Y · DBA / Administración',kind:'sql',diff:'e',xp:20,
+ title:{es:'Duplicados que bloquean un UNIQUE',en:'Duplicates blocking a UNIQUE'},tags:'DBA · constraints',
+ context:{es:'Tarea de DBA: antes de añadir un índice <code>UNIQUE(email)</code> debes encontrar los emails duplicados que harían fallar la migración.',en:'DBA task: before adding a <code>UNIQUE(email)</code> index you must find the duplicate emails that would fail the migration.'},
+ task:{es:'Lista los <code>email</code> con más de una fila y su conteo.',en:'List the <code>email</code> values with more than one row and their count.'},
+ bullets:{es:['Salida: <code>email</code>, <code>c</code> (conteo).','Solo duplicados; orden por email.'],en:['Output: <code>email</code>, <code>c</code> (count).','Duplicates only; order by email.']},
+ sources:[S('u',['email','id'],[['a@x',1],['b@x',2],['a@x',3],['c@x',4],['b@x',5]])],
+ expected:'a@x 2 · b@x 2',
+ datasets:[`CREATE TABLE u(email TEXT,id INT);INSERT INTO u VALUES ('a@x',1),('b@x',2),('a@x',3),('c@x',4),('b@x',5);`],
+ ref:`SELECT email, COUNT(*) c FROM u GROUP BY email HAVING COUNT(*)>1 ORDER BY email`,
+ starter:`SELECT email, COUNT(*) AS c\nFROM u\nGROUP BY email\n-- HAVING ... ORDER BY email\n;`
+},
+{
+ id:'py_brackets',cat:'X · Competitive',kind:'python',diff:'e',xp:15,
+ title:{es:'Paréntesis balanceados',en:'Balanced brackets'},tags:'stack · classic',
+ context:{es:'Problema base de competencia: validar anidamiento correcto de <code>()[]{}</code> con una pila.',en:'Contest staple: validate correct nesting of <code>()[]{}</code> using a stack.'},
+ task:{es:'Implementa <code>valid_brackets(s)</code> → <code>True/False</code>.',en:'Implement <code>valid_brackets(s)</code> → <code>True/False</code>.'},
+ bullets:{es:['Cierre debe coincidir con la apertura más reciente.','Cadena vacía = válida.'],en:['A closer must match the most recent opener.','Empty string = valid.']},
+ sources:[S('cases',['input','→'],[['"([]{})"','True'],['"(]"','False'],['"((("','False']])],
+ expected:'True / False',
+ starter:`def valid_brackets(s):\n    pairs = {")":"(", "]":"[", "}":"{"}\n    stack = []\n    for ch in s:\n        ...\n    return not stack\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("balanceado", valid_brackets("([]{})"), True)
+chk("mal cierre", valid_brackets("(]"), False)
+chk("sin cerrar", valid_brackets("((("), False)
+chk("vacío", valid_brackets(""), True)
+`
+},
+{
+ id:'py_twosum',cat:'X · Competitive',kind:'python',diff:'e',xp:15,
+ title:{es:'Two-Sum (índices)',en:'Two-Sum (indices)'},tags:'hash map · O(n)',
+ context:{es:'Encuentra dos índices cuyos valores sumen el objetivo, en O(n) con un dict.',en:'Find two indices whose values sum to the target, in O(n) using a dict.'},
+ task:{es:'Implementa <code>two_sum(nums, target)</code> → lista de 2 índices (o <code>[]</code>).',en:'Implement <code>two_sum(nums, target)</code> → list of 2 indices (or <code>[]</code>).'},
+ bullets:{es:['Devuelve el primer par válido <code>[i, j]</code> con <code>i&lt;j</code>.','Sin solución → <code>[]</code>.'],en:['Return the first valid pair <code>[i, j]</code> with <code>i&lt;j</code>.','No solution → <code>[]</code>.']},
+ sources:[S('cases',['nums','target','→'],[['[2,7,11,15]','9','[0,1]'],['[3,2,4]','6','[1,2]']])],
+ expected:'[i, j]',
+ starter:`def two_sum(nums, target):\n    seen = {}\n    for i, n in enumerate(nums):\n        # if complement in seen -> return\n        ...\n    return []\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("par básico", two_sum([2,7,11,15],9), [0,1])
+chk("medio", two_sum([3,2,4],6), [1,2])
+chk("sin solución", two_sum([1,2],10), [])
+`
+},
+{
+ id:'py_window_max',cat:'X · Competitive',kind:'python',diff:'h',xp:30,
+ title:{es:'Máximo en ventana deslizante',en:'Sliding window maximum'},tags:'deque · monotonic',
+ context:{es:'Para métricas en streaming necesitas el máximo de cada ventana de tamaño k. La solución O(n) usa una cola monótona.',en:'For streaming metrics you need the max of each window of size k. The O(n) solution uses a monotonic deque.'},
+ task:{es:'Implementa <code>window_max(nums, k)</code> → lista de máximos por ventana.',en:'Implement <code>window_max(nums, k)</code> → list of per-window maxima.'},
+ bullets:{es:['Salida con <code>len = len(nums) - k + 1</code>.','Mantén índices en un <code>deque</code>; descarta menores y fuera de ventana.'],en:['Output with <code>len = len(nums) - k + 1</code>.','Keep indices in a <code>deque</code>; drop smaller and out-of-window.']},
+ sources:[S('cases',['nums','k','→'],[['[1,3,-1,-3,5,3,6,7]','3','[3,3,5,5,6,7]']])],
+ expected:'[3, 3, 5, 5, 6, 7]',
+ starter:`from collections import deque\n\ndef window_max(nums, k):\n    dq = deque()\n    out = []\n    for i, n in enumerate(nums):\n        # pop smaller from right; append i; drop left if out of window; emit when i>=k-1\n        ...\n    return out\n`,
+ pytests:`
+from collections import deque
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("ventana 3", window_max([1,3,-1,-3,5,3,6,7],3), [3,3,5,5,6,7])
+chk("k=1", window_max([4,2,9],1), [4,2,9])
+chk("k=len", window_max([2,5,1],3), [5])
+`
+},
+{
+ id:'py_batch_load',cat:'Y · DBA / Administración',kind:'python',diff:'m',xp:25,
+ title:{es:'Carga masiva idempotente (transacción)',en:'Idempotent bulk load (transaction)'},tags:'sqlite3 · DBA · batch',
+ context:{es:'Un job de carga debe insertar miles de filas rápido y de forma idempotente: una sola transacción y sin romper ante PK repetida.',en:'A load job must insert thousands of rows fast and idempotently: a single transaction and no failure on duplicate PK.'},
+ task:{es:'Implementa <code>batch_load(conn, rows)</code> con <code>executemany</code> + <code>INSERT OR IGNORE</code> dentro de una transacción.',en:'Implement <code>batch_load(conn, rows)</code> with <code>executemany</code> + <code>INSERT OR IGNORE</code> inside a transaction.'},
+ bullets:{es:['<code>rows</code> = lista de <code>(id, payload)</code>.','Reejecutar no duplica (PK).','Una sola transacción (usa <code>with conn:</code>).'],en:['<code>rows</code> = list of <code>(id, payload)</code>.','Re-running does not duplicate (PK).','One transaction (use <code>with conn:</code>).']},
+ sources:[S('events',['id','payload'],[['1','a'],['2','b'],['3','c']],'PK = id')],
+ expected:'3 filas tras reejecutar el batch',
+ starter:`def batch_load(conn, rows):\n    with conn:  # transaction\n        conn.executemany("INSERT OR IGNORE INTO events(id,payload) VALUES(?,?)", rows)\n`,
+ pytests:`
+import sqlite3
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+conn=sqlite3.connect(":memory:")
+conn.execute("CREATE TABLE events(id INTEGER PRIMARY KEY, payload TEXT)")
+batch_load(conn,[(1,"a"),(2,"b"),(2,"b"),(3,"c")])
+batch_load(conn,[(1,"a"),(3,"c")])
+chk("conteo idempotente", conn.execute("SELECT COUNT(*) FROM events").fetchone()[0], 3)
+chk("ids correctos", conn.execute("SELECT id FROM events ORDER BY id").fetchall(), [(1,),(2,),(3,)])
+`
+},
+{
+ id:'q_isolation',cat:'Y · DBA / Administración',kind:'quiz',diff:'h',xp:20,timer:150,
+ title:{es:'Niveles de aislamiento',en:'Isolation levels'},tags:'DBA · ACID',
+ context:{es:'Dos transacciones concurrentes; una lee un rango, otra inserta una fila en ese rango.',en:'Two concurrent transactions; one reads a range, another inserts a row into that range.'},
+ task:{es:'¿Qué nivel evita el <i>phantom read</i>?',en:'Which level prevents the <i>phantom read</i>?'},
+ options:[{t:{es:'READ COMMITTED',en:'READ COMMITTED'},ok:false},
+   {t:{es:'REPEATABLE READ (en estándar SQL no garantiza no-phantoms)',en:'REPEATABLE READ (standard SQL does not guarantee no phantoms)'},ok:false},
+   {t:{es:'SERIALIZABLE: el único que previene phantom reads.',en:'SERIALIZABLE: the only one that prevents phantom reads.'},ok:true},
+   {t:{es:'READ UNCOMMITTED',en:'READ UNCOMMITTED'},ok:false}],
+ explain:{es:'Phantoms se eliminan solo en SERIALIZABLE (en el estándar). Trade-off: máxima consistencia a costa de concurrencia/locks.',en:'Phantoms are eliminated only at SERIALIZABLE (per the standard). Trade-off: maximum consistency at the cost of concurrency/locking.'}
+},
+{
+ id:'q_index',cat:'Y · DBA / Administración',kind:'quiz',diff:'m',xp:15,timer:150,
+ title:{es:'¿Índice covering?',en:'Covering index?'},tags:'DBA · índices',
+ context:{es:'Query frecuente: <code>SELECT status FROM jobs WHERE user_id=?</code> sobre una tabla enorme.',en:'Frequent query: <code>SELECT status FROM jobs WHERE user_id=?</code> on a huge table.'},
+ task:{es:'Mejor índice:',en:'Best index:'},
+ options:[{t:{es:'<code>(user_id)</code> — requiere lookup extra a la tabla por <code>status</code>.',en:'<code>(user_id)</code> — needs an extra table lookup for <code>status</code>.'},ok:false},
+   {t:{es:'<code>(user_id, status)</code> — covering: resuelve filtro y columna sin tocar la tabla.',en:'<code>(user_id, status)</code> — covering: serves filter and column without touching the table.'},ok:true},
+   {t:{es:'<code>(status)</code> — no ayuda al filtro por user_id.',en:'<code>(status)</code> — does not help the user_id filter.'},ok:false},
+   {t:{es:'Hash index sobre <code>user_id</code> — no soporta covering.',en:'Hash index on <code>user_id</code> — no covering support.'},ok:false}],
+ explain:{es:'Un índice covering <code>(user_id, status)</code> satisface filtro + proyección desde el propio índice (index-only scan). Trade-off: más espacio y escritura.',en:'A covering index <code>(user_id, status)</code> satisfies filter + projection from the index itself (index-only scan). Trade-off: more space and write cost.'}
+},
+{
+ id:'q_vacuum',cat:'Y · DBA / Administración',kind:'quiz',diff:'m',xp:15,timer:120,
+ title:{es:'Bloat y estadísticas',en:'Bloat and statistics'},tags:'DBA · mantenimiento',
+ context:{es:'Tras muchas actualizaciones/borrados, el planner elige planes malos y la tabla creció en disco.',en:'After many updates/deletes, the planner picks bad plans and the table grew on disk.'},
+ task:{es:'Acción de mantenimiento correcta (PostgreSQL):',en:'Correct maintenance action (PostgreSQL):'},
+ options:[{t:{es:'<code>VACUUM</code> recupera espacio muerto y <code>ANALYZE</code> refresca estadísticas del planner.',en:'<code>VACUUM</code> reclaims dead space and <code>ANALYZE</code> refreshes planner statistics.'},ok:true},
+   {t:{es:'Reiniciar la base de datos.',en:'Restart the database.'},ok:false},
+   {t:{es:'Subir <code>work_mem</code> y ya.',en:'Just raise <code>work_mem</code>.'},ok:false},
+   {t:{es:'Dropear y recrear todos los índices cada hora.',en:'Drop and recreate all indexes hourly.'},ok:false}],
+ explain:{es:'Dead tuples → bloat + estadísticas desactualizadas → planes malos. <code>VACUUM (ANALYZE)</code> es la respuesta; autovacuum debería estar afinado.',en:'Dead tuples → bloat + stale statistics → bad plans. <code>VACUUM (ANALYZE)</code> is the fix; autovacuum should be tuned.'}
+},
 ];
+/* ===========================  i18n  =========================== */
+let lang='es';
+const T={
+ es:{nav_home:'Inicio',nav_guide:'Guía',nav_practice:'Práctica',nav_exam:'Examen',nav_stats:'Stats',
+  home_kicker:'Plataforma de entrenamiento · Data Engineering',
+  home_title:'Domina el oficio de <em>Data Engineer</em>, problema por problema.',
+  home_sub:'Una guía de entrevista orientada a producción + un dojo con ejercicios ejecutables y test cases reales: SQL avanzado, Python/PySpark, pandas, DBA, estadística y retos competitivos.',
+  s_ex:'ejercicios',s_cat:'categorías',s_modes:'modos',
+  mod_guide_t:'Guía de entrevista',mod_guide_d:'Referencia DE orientada a producción: cloud, modelado, dbt, Snowflake, NoSQL, estadística y trade-offs.',
+  mod_practice_t:'Práctica',mod_practice_d:'Resuelve a tu ritmo. Editor con ejecución real, fuentes visibles, pistas y review IA.',
+  mod_exam_t:'Examen cronometrado',mod_exam_d:'Set aleatorio por categoría y dificultad, countdown global y reporte de resultados.',
+  mod_stats_t:'Progreso',mod_stats_d:'Dominio por categoría e historial de exámenes para medir y mejorar tus skills.',
+  guide_title:'Guía de entrevista DE',guide_open:'abrir en pestaña ↗',guide_back:'← inicio',
+  p_context:'Contexto',p_task:'Tarea',p_req:'Requisitos',p_sources:'Fuentes / datos disponibles',p_expected:'Salida esperada (muestra)',p_select:'Selecciona',
+  w_answer:'respuesta',w_runtests:'Run tests ▸',w_check:'Comprobar',w_hint:'Pista IA',w_review:'Review IA',w_reveal:'Ver solución',w_reveal_c:'¿Mostrar una solución de referencia?',w_noref:'# (referencia no disponible)',
+  res_label:'test cases',res_prompt:'Pulsa <b>Run tests</b> para evaluar.',correct:'Correcto',incorrect:'Incorrecto',choose:'Selecciona una opción primero.',already:'Ya resuelto ✓',
+  exam_q:'Pregunta',exam_finish:'Finalizar',exam_finish_c:'¿Finalizar ahora? Las preguntas sin enviar cuentan como falladas.',exam_next:'Enviar y siguiente ▸',exam_skip:'Saltar',exam_choose:'Elige una opción',
+  exam_quiz_note:'Elige una opción a la izquierda y envía.',exam_prompt:'Resuelve y pulsa <b>Enviar y siguiente</b>.',registered:'respuesta registrada',
+  setup_t:'Examen cronometrado',setup_sub:'Selecciona el alcance. El tiempo total se calcula según la dificultad.',f_cats:'Categorías',f_count:'# de preguntas',f_diff:'Dificultad',all:'Todas',start:'Empezar examen ▸',nofilter:'No hay ejercicios con esos filtros',
+  rep_title:'Resultado del examen',rep_dur:'duración',rep_bycat:'Por categoría',rep_bydiff:'Por dificultad',rep_detail:'Detalle por pregunta',rep_correct:'correctas',
+  rep_weak:'A reforzar:',rep_weak2:'Practica estos temas en modo Práctica antes del próximo intento.',rep_solid:'Sólido en todas las categorías evaluadas.',rep_solid2:'Sube la dificultad o el número de preguntas.',
+  rep_new:'Nuevo examen',rep_prog:'Ver progreso',rep_prac:'Ir a práctica',skipped:'saltada',
+  stats_title:'Progreso',stats_sub:'Dominio en práctica + historial de exámenes',stats_mastery:'Dominio por categoría (práctica)',stats_hist:'Historial de exámenes',stats_best:'mejor examen',stats_none:'Sin exámenes aún. Inicia uno para registrar tu progreso.',stats_start:'Iniciar examen',
+  reset_c:'¿Borrar progreso (XP, resueltos, streak, historial)?',
+  loading_py:'Cargando runtime de Python (Pyodide, ~una vez)…',loading_pkg:'Cargando paquetes',py_blocked:'No se pudo cargar Python aquí (el sandbox bloqueó el runtime). Usa <b>Ver solución</b> o <b>Review IA</b>.',
+  sql_fail:'No se pudo cargar sql.js',write_q:'Escribe una query.',no_res:'Sin resultados.',tutor_off:'Tutor IA no disponible aquí',hint_sys:'Da UNA pista breve (máx 3 líneas) que oriente sin resolver.',rev_sys:'Eres un Senior Data Engineer revisando código de un colega senior. Feedback directo, máx 8 líneas: correctitud, edge cases, idempotencia/coste/rendimiento, estilo de producción. Señala líneas concretas. No reescribas todo.',
+  expected:'esperado',got:'tu salida',rows:'fila(s)',
+  toast_xp:'XP',toast_timeup:'⏱ Tiempo agotado — puedes seguir, pero rinde ½ XP',toast_examtime:'⏱ Tiempo del examen agotado'},
+ en:{nav_home:'Home',nav_guide:'Guide',nav_practice:'Practice',nav_exam:'Exam',nav_stats:'Stats',
+  home_kicker:'Training platform · Data Engineering',
+  home_title:'Master the <em>Data Engineer</em> craft, one problem at a time.',
+  home_sub:'A production-oriented interview guide + a dojo of executable exercises with real test cases: advanced SQL, Python/PySpark, pandas, DBA, statistics and competitive challenges.',
+  s_ex:'exercises',s_cat:'categories',s_modes:'modes',
+  mod_guide_t:'Interview guide',mod_guide_d:'Production-oriented DE reference: cloud, modeling, dbt, Snowflake, NoSQL, statistics and trade-offs.',
+  mod_practice_t:'Practice',mod_practice_d:'Solve at your pace. Real-execution editor, visible sources, hints and AI review.',
+  mod_exam_t:'Timed exam',mod_exam_d:'Random set by category and difficulty, global countdown and a score report.',
+  mod_stats_t:'Progress',mod_stats_d:'Category mastery and exam history to measure and improve your skills.',
+  guide_title:'DE interview guide',guide_open:'open in tab ↗',guide_back:'← home',
+  p_context:'Context',p_task:'Task',p_req:'Requirements',p_sources:'Sources / available data',p_expected:'Expected output (sample)',p_select:'Select',
+  w_answer:'answer',w_runtests:'Run tests ▸',w_check:'Check',w_hint:'AI hint',w_review:'AI review',w_reveal:'Reveal solution',w_reveal_c:'Show a reference solution?',w_noref:'# (no reference available)',
+  res_label:'test cases',res_prompt:'Press <b>Run tests</b> to evaluate.',correct:'Correct',incorrect:'Incorrect',choose:'Select an option first.',already:'Already solved ✓',
+  exam_q:'Question',exam_finish:'Finish',exam_finish_c:'Finish now? Unsubmitted questions count as failed.',exam_next:'Submit & next ▸',exam_skip:'Skip',exam_choose:'Pick an option',
+  exam_quiz_note:'Pick an option on the left and submit.',exam_prompt:'Solve and press <b>Submit & next</b>.',registered:'answer recorded',
+  setup_t:'Timed exam',setup_sub:'Choose the scope. Total time is computed from difficulty.',f_cats:'Categories',f_count:'# of questions',f_diff:'Difficulty',all:'All',start:'Start exam ▸',nofilter:'No exercises match those filters',
+  rep_title:'Exam result',rep_dur:'duration',rep_bycat:'By category',rep_bydiff:'By difficulty',rep_detail:'Per-question detail',rep_correct:'correct',
+  rep_weak:'To reinforce:',rep_weak2:'Practice these topics before your next attempt.',rep_solid:'Solid across all assessed categories.',rep_solid2:'Raise difficulty or question count.',
+  rep_new:'New exam',rep_prog:'View progress',rep_prac:'Go to practice',skipped:'skipped',
+  stats_title:'Progress',stats_sub:'Practice mastery + exam history',stats_mastery:'Category mastery (practice)',stats_hist:'Exam history',stats_best:'best exam',stats_none:'No exams yet. Start one to track your progress.',stats_start:'Start exam',
+  reset_c:'Clear progress (XP, solved, streak, history)?',
+  loading_py:'Loading Python runtime (Pyodide, ~once)…',loading_pkg:'Loading packages',py_blocked:'Could not load Python here (sandbox blocked the runtime). Use <b>Reveal solution</b> or <b>AI review</b>.',
+  sql_fail:'Could not load sql.js',write_q:'Write a query.',no_res:'No results.',tutor_off:'AI tutor unavailable here',hint_sys:'Give ONE short hint (max 3 lines) that guides without solving.',rev_sys:'You are a Senior Data Engineer reviewing code from a senior peer. Direct feedback, max 8 lines: correctness, edge cases, idempotency/cost/performance, production style. Point to concrete lines. Do not rewrite everything.',
+  expected:'expected',got:'your output',rows:'row(s)',
+  toast_xp:'XP',toast_timeup:'⏱ Time up — you can continue, but it yields ½ XP',toast_examtime:'⏱ Exam time is up'}
+};
+function t(k){return (T[lang]&&T[lang][k])||T.es[k]||k;}
+function L(v){if(v&&typeof v==='object'&&!Array.isArray(v)&&('es'in v||'en'in v))return v[lang]!=null?v[lang]:v.es;return v;}
+const DIFFL={es:{e:'easy',m:'medium',h:'hard'},en:{e:'easy',m:'medium',h:'hard'}};
+function dl(d){return DIFFL[lang][d];}
 
-/* =========================================================  ENGINE  ========================================================= */
+/* ===========================  state  =========================== */
 const $=s=>document.querySelector(s);
 let state={solved:{},xp:0,streak:0,lastDay:null};
-let cur=null,editor=null,SQL=null,pyodide=null,pyLoading=null,quizSel=null,answered=false;
+let stats={history:[]};
+let mode='home',cur=null,editor=null,SQL=null,pyodide=null,pyLoading=null,quizSel=null,answered=false;
 let timer={remaining:0,id:null,paused:false,expired:false};
-let mode='practice',exam=null,stats={history:[]},examTimer={remaining:0,id:null},setupCfg={cats:new Set(),count:10,diff:'all'};
+let exam=null,examTimer={remaining:0,id:null},setupCfg={cats:new Set(),count:10,diff:'all'};
 
 const levelFor=xp=>Math.floor(xp/100)+1;
-function renderXP(){const xp=state.xp;$('#lvl').textContent=levelFor(xp);$('#xptxt').textContent=xp+' XP';$('#xpbar').style.width=(xp%100)+'%';$('#streak').textContent=state.streak;}
+function renderXP(){$('#lvl').textContent=levelFor(state.xp);$('#xptxt').textContent=state.xp+' XP';}
 async function award(ex){
   if(mode==='exam')return;
-  if(state.solved[ex.id]){toast('Ya resuelto ✓');return;}
-  let gain=ex.xp; let note='';
-  if(timer.expired){gain=Math.floor(ex.xp/2);note=' (tiempo agotado: ½ XP)';}
-  state.solved[ex.id]=true; state.xp+=gain;
-  if(!timer.expired){const t=new Date().toISOString().slice(0,10);
-    if(state.lastDay!==t){state.streak=(state.lastDay&&(new Date(t)-new Date(state.lastDay))===86400000)?state.streak+1:1;state.lastDay=t;}}
-  stopTimer(); renderXP(); renderRail(); await save();
-  toast(`✓ +${gain} XP · ${ex.title}${note}`);
+  if(state.solved[ex.id]){toast(t('already'));return;}
+  let gain=ex.xp,note='';
+  if(timer.expired){gain=Math.floor(ex.xp/2);note=' (½ XP)';}
+  state.solved[ex.id]=true;state.xp+=gain;
+  if(!timer.expired){const d=new Date().toISOString().slice(0,10);if(state.lastDay!==d){state.streak=(state.lastDay&&(new Date(d)-new Date(state.lastDay))===86400000)?state.streak+1:1;state.lastDay=d;}}
+  stopTimer();renderXP();renderRail();await save();
+  toast(`✓ +${gain} ${t('toast_xp')} · ${L(ex.title)}${note}`);
 }
 
-/* ---- timer ---- */
+/* ===========================  i18n apply  =========================== */
+function setLang(l){lang=l;$('#langEs').classList.toggle('on',l==='es');$('#langEn').classList.toggle('on',l==='en');
+  document.documentElement.lang=l;applyNav();
+  // re-render current view
+  if(mode==='home')renderHome();
+  else if(mode==='practice'&&cur){renderProblem();renderWork();}
+  else if(mode==='exam'&&exam&&!exam.finished)loadExamQuestion(exam.idx);
+  else if(mode==='exam')buildSetup();
+  else if(mode==='stats')renderStats();
+  saveLang();
+}
+function applyNav(){document.querySelectorAll('#nav .navbtn').forEach(b=>{b.textContent=t('nav_'+b.dataset.m);});
+  $('#gTitle').textContent=t('guide_title');$('#gOpen').textContent=t('guide_open');$('#gBack').textContent=t('guide_back');$('#rhdLabel').textContent=t('res_label');}
+function navHighlight(m){document.querySelectorAll('#nav .navbtn').forEach(b=>b.classList.toggle('on',b.dataset.m===m));}
+
+/* ===========================  views  =========================== */
+function showView(w){$('#home').classList.toggle('show',w==='home');$('#guideView').classList.toggle('show',w==='guide');$('#gridv').classList.toggle('show',w==='grid');}
+function loadGuide(){const f=$('#guideFrame');if(!f.getAttribute('src'))f.src='https://crabb-beltran.github.io/de-interview-guide/';}
+function renderHome(){
+  const ncat=new Set(EX.map(e=>e.cat)).size;
+  $('#home').innerHTML=`<div class="home">
+    <div class="kicker">${t('home_kicker')}</div>
+    <div class="hero"><h1>${t('home_title')}</h1><p>${t('home_sub')}</p></div>
+    <div class="stats">
+      <div class="s"><b>${EX.length}</b><span>${t('s_ex')}</span></div>
+      <div class="s"><b>${ncat}</b><span>${t('s_cat')}</span></div>
+      <div class="s"><b>4</b><span>${t('s_modes')}</span></div>
+    </div>
+    <div class="mods">
+      <div class="mod guide" onclick="switchMode('guide')"><div class="ic">📘</div><span class="arr">→</span><h3>${t('mod_guide_t')}</h3><p>${t('mod_guide_d')}</p></div>
+      <div class="mod" onclick="switchMode('practice')"><div class="ic">🧪</div><span class="arr">→</span><h3>${t('mod_practice_t')}</h3><p>${t('mod_practice_d')}</p></div>
+      <div class="mod" onclick="switchMode('exam')"><div class="ic">⏱️</div><span class="arr">→</span><h3>${t('mod_exam_t')}</h3><p>${t('mod_exam_d')}</p></div>
+      <div class="mod" onclick="switchMode('stats')"><div class="ic">📈</div><span class="arr">→</span><h3>${t('mod_stats_t')}</h3><p>${t('mod_stats_d')}</p></div>
+    </div></div>`;
+}
+function switchMode(m){
+  mode=m;stopTimer();stopExamTimer();navHighlight(m);
+  ['ovSetup','ovReport','ovStats'].forEach(id=>$('#'+id).classList.remove('show'));
+  document.querySelector('.rail').classList.remove('open');
+  if(m==='home'){showView('home');renderHome();}
+  else if(m==='guide'){showView('guide');loadGuide();}
+  else if(m==='practice'){showView('grid');document.querySelector('.rail').classList.remove('hide');$('#gridv').classList.remove('examrun');renderRail();open(cur?cur.id:EX[0].id);}
+  else if(m==='exam'){showView('grid');document.querySelector('.rail').classList.add('hide');$('#gridv').classList.remove('examrun');exam=null;buildSetup();$('#ovSetup').classList.add('show');}
+  else if(m==='stats'){showView('grid');document.querySelector('.rail').classList.add('hide');renderStats();$('#ovStats').classList.add('show');}
+}
+
+/* ===========================  practice  =========================== */
 function fmt(s){const m=Math.floor(s/60),x=s%60;return m+':'+String(x).padStart(2,'0');}
-function paintClock(){const c=$('#clock');if(!c)return;c.textContent=fmt(timer.remaining);
-  c.className='clock'+(timer.remaining<=15?' crit':timer.remaining<=60?' warn':'');}
-function startTimer(sec){stopTimer();timer={remaining:sec,id:null,paused:false,expired:false};paintClock();
-  timer.id=setInterval(()=>{if(timer.paused)return;timer.remaining--;paintClock();
-    if(timer.remaining<=0){clearInterval(timer.id);timer.id=null;timer.expired=true;paintClock();toast('⏱ Tiempo agotado — puedes seguir, pero rinde ½ XP');}},1000);}
+function paintClock(){const c=$('#clock');if(!c)return;c.textContent=fmt(timer.remaining);c.className='clock'+(timer.remaining<=15?' crit':timer.remaining<=60?' warn':'');}
+function startTimer(sec){stopTimer();timer={remaining:sec,id:null,paused:false,expired:false};paintClock();timer.id=setInterval(()=>{if(timer.paused)return;timer.remaining--;paintClock();if(timer.remaining<=0){clearInterval(timer.id);timer.id=null;timer.expired=true;paintClock();toast(t('toast_timeup'));}},1000);}
 function stopTimer(){if(timer.id){clearInterval(timer.id);timer.id=null;}}
 function toggleTimer(){timer.paused=!timer.paused;const b=$('#tpause');if(b)b.textContent=timer.paused?'▶':'⏸';}
 function resetTimer(){if(!cur)return;startTimer(cur.timer||DT[cur.diff]);const b=$('#tpause');if(b)b.textContent='⏸';}
 
-/* ---- rail ---- */
+const DTk={e:480,m:900,h:1500};
 function renderRail(){
   const cats=[...new Set(EX.map(e=>e.cat))];let html='';
   for(const c of cats){html+=`<div class="cat">${c}</div>`;
     for(const e of EX.filter(x=>x.cat===c)){const done=state.solved[e.id];
-      html+=`<div class="ex ${cur&&cur.id===e.id?'active':''}" data-id="${e.id}">
-        <span class="ico ${e.kind}">${e.kind.toUpperCase()}</span>
-        <span><span class="tt">${e.title}</span>
-        <span class="mt"><span class="diff ${e.diff}"></span>${({e:'easy',m:'medium',h:'hard'})[e.diff]} · ${e.tags}</span></span>
-        ${done?'<span class="chk">✓</span>':''}</div>`;}}
+      html+=`<div class="ex ${cur&&cur.id===e.id?'active':''}" data-id="${e.id}"><span class="ico ${e.kind}">${e.kind.toUpperCase()}</span><span><span class="tt">${L(e.title)}</span><span class="mt"><span class="diff ${e.diff}"></span>${dl(e.diff)} · ${e.tags}</span></span>${done?'<span class="chk">✓</span>':''}</div>`;}}
   $('#rail').innerHTML=html;
   document.querySelectorAll('.ex').forEach(el=>el.onclick=()=>{open(el.dataset.id);document.querySelector('.rail').classList.remove('open');});
 }
-
-/* ---- open ---- */
-function open(id){
-  cur=EX.find(e=>e.id===id);answered=false;quizSel=null;
-  renderRail();renderProblem();renderWork();
-  $('#cases').innerHTML='<div class="console">Pulsa <b>Run tests</b> para evaluar.</div>';
-  $('#verdict').textContent='';$('#verdict').className='verdict';$('#tutor').classList.remove('show');
-  startTimer(cur.timer||DT[cur.diff]);
-}
-function srcTable(s){
-  let h=`<div class="src"><div class="nm">📄 <b>${s.name}</b></div><table class="dt"><tr>${s.cols.map(c=>`<th>${c}</th>`).join('')}</tr>`;
-  h+=s.rows.map(r=>`<tr>${r.map(v=>`<td>${v}</td>`).join('')}</tr>`).join('');
-  h+=`</table>${s.note?`<div class="srcnote">${s.note}</div>`:''}</div>`;return h;
-}
+function open(id){cur=EX.find(e=>e.id===id);answered=false;quizSel=null;renderRail();renderProblem();renderWork();$('#cases').innerHTML=`<div class="console">${t('res_prompt')}</div>`;$('#verdict').textContent='';$('#verdict').className='verdict';$('#tutor').classList.remove('show');startTimer(cur.timer||DT[cur.diff]);}
+function srcTable(s){let h=`<div class="src"><div class="nm">📄 <b>${s.name}</b></div><table class="dt"><tr>${s.cols.map(c=>`<th>${c}</th>`).join('')}</tr>`;h+=s.rows.map(r=>`<tr>${r.map(v=>`<td>${v}</td>`).join('')}</tr>`).join('');h+=`</table>${s.note?`<div class="srcnote">${s.note}</div>`:''}</div>`;return h;}
 function renderProblem(){
-  const e=cur;let h=`<h1>${e.title}</h1><div class="ptag">${e.cat} · ${e.kind.toUpperCase()} · ${({e:'easy',m:'medium',h:'hard'})[e.diff]} · ${e.xp} XP</div>`;
-  if(e.context)h+=`<h3>Contexto</h3><p>${e.context}</p>`;
-  if(e.task)h+=`<h3>Tarea</h3><p>${e.task}</p>`;
-  if(e.bullets)h+=`<h3>Requisitos</h3><ul>${e.bullets.map(b=>`<li>${b}</li>`).join('')}</ul>`;
-  if(e.sources)h+=`<h3>Fuentes / datos disponibles</h3>${e.sources.map(srcTable).join('')}`;
-  if(e.expected)h+=`<h3>Salida esperada (muestra)</h3><div class="exp">${e.expected}</div>`;
-  if(e.kind==='quiz')h+=`<h3>Selecciona</h3><div id="opts">`+e.options.map((o,i)=>`<label class="opt" data-i="${i}"><span class="mk">${String.fromCharCode(65+i)}</span>${o.t}</label>`).join('')+`</div>`;
+  const e=cur;let h=`<h1>${L(e.title)}</h1><div class="ptag">${e.cat} · ${e.kind.toUpperCase()} · ${dl(e.diff)} · ${e.xp} XP</div>`;
+  if(e.context)h+=`<h3>${t('p_context')}</h3><p>${L(e.context)}</p>`;
+  if(e.task)h+=`<h3>${t('p_task')}</h3><p>${L(e.task)}</p>`;
+  const bl=L(e.bullets);if(bl)h+=`<h3>${t('p_req')}</h3><ul>${bl.map(b=>`<li>${b}</li>`).join('')}</ul>`;
+  if(e.sources)h+=`<h3>${t('p_sources')}</h3>${e.sources.map(srcTable).join('')}`;
+  if(e.expected)h+=`<h3>${t('p_expected')}</h3><div class="exp">${L(e.expected)}</div>`;
+  if(e.kind==='quiz')h+=`<h3>${t('p_select')}</h3><div id="opts">`+e.options.map((o,i)=>`<label class="opt" data-i="${i}"><span class="mk">${String.fromCharCode(65+i)}</span>${L(o.t)}</label>`).join('')+`</div>`;
   $('#prob').innerHTML=h;
   if(e.kind==='quiz')document.querySelectorAll('.opt').forEach(o=>o.onclick=()=>{if(answered)return;document.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));o.classList.add('sel');quizSel=+o.dataset.i;});
 }
 function renderWork(){
   const e=cur,tabs=$('#wtabs'),host=$('#edhost'),act=$('#actions');
-  const tlabel=e.kind==='quiz'?'respuesta':(e.kind==='sql'?'query.sql':'solution.py');
-  tabs.innerHTML=`<div class="wtab active">${tlabel}</div>
-    <div class="timer"><span class="clock" id="clock">--:--</span>
-      <button id="tpause">⏸</button><button id="treset">⟳</button></div>`;
+  const tlabel=e.kind==='quiz'?t('w_answer'):(e.kind==='sql'?'query.sql':'solution.py');
+  tabs.innerHTML=`<div class="wtab active">${tlabel}</div><div class="timer"><span class="clock" id="clock">--:--</span><button id="tpause">⏸</button><button id="treset">⟳</button></div>`;
   $('#tpause').onclick=toggleTimer;$('#treset').onclick=resetTimer;
-  if(e.kind==='quiz'){
-    host.innerHTML=`<div style="padding:18px;color:var(--muted);font-family:var(--mono);font-size:12.5px;line-height:1.6">Ejercicio conceptual.<br>Elige una opción en el panel izquierdo y pulsa <b>Comprobar</b>.</div>`;editor=null;
-    act.innerHTML=`<button class="primary" id="run">Comprobar</button><button id="hint">Pista IA</button>`;
-  }else{
-    host.innerHTML='';editor=CodeMirror(host,{value:e.starter,mode:e.kind==='sql'?'text/x-sql':'python',theme:'material-darker',lineNumbers:true,lineWrapping:true,indentUnit:e.kind==='python'?4:2});
-    setTimeout(()=>editor.refresh(),40);
-    act.innerHTML=`<button class="primary" id="run">Run tests ▸</button><button id="hint">Pista IA</button><button id="review">Review IA</button><button class="ghost" id="reveal">Ver solución</button>`;
-    $('#reveal').onclick=()=>{if(confirm('¿Mostrar una solución de referencia?'))editor.setValue(e.ref?('-- referencia:\n'+e.ref+';'):'# (referencia no disponible para este ejercicio)');};
-    $('#review').onclick=()=>ai('review');
-  }
-  $('#run').onclick=runTests;$('#hint').onclick=()=>ai('hint');
-  paintClock();
+  if(e.kind==='quiz'){host.innerHTML=`<div style="padding:18px;color:var(--muted);font-family:var(--mono);font-size:12.5px;line-height:1.6">${t('exam_quiz_note')}</div>`;editor=null;act.innerHTML=`<button class="primary" id="run">${t('w_check')}</button><button id="hint">${t('w_hint')}</button>`;}
+  else{host.innerHTML='';editor=CodeMirror(host,{value:e.starter,mode:e.kind==='sql'?'text/x-sql':'python',theme:'material-darker',lineNumbers:true,lineWrapping:true,indentUnit:e.kind==='python'?4:2});setTimeout(()=>editor.refresh(),40);
+    act.innerHTML=`<button class="primary" id="run">${t('w_runtests')}</button><button id="hint">${t('w_hint')}</button><button id="review">${t('w_review')}</button><button class="ghost" id="reveal">${t('w_reveal')}</button>`;
+    $('#reveal').onclick=()=>{if(confirm(t('w_reveal_c')))editor.setValue(e.ref?('-- ref:\n'+e.ref+';'):t('w_noref'));};$('#review').onclick=()=>ai('review');}
+  $('#run').onclick=runTests;$('#hint').onclick=()=>ai('hint');paintClock();
 }
-
-/* ---- results ---- */
-function showCases(list){const pass=list.filter(c=>c.ok).length,all=pass===list.length&&list.length>0;
-  $('#verdict').textContent=`${pass}/${list.length}`;$('#verdict').className='verdict '+(all?'pass':'fail');
-  $('#cases').innerHTML=list.map(c=>`<div class="case ${c.ok?'pass':'fail'}"><span class="s">${c.ok?'✓':'✗'}</span><span class="d">${c.name}${c.detail?`<br><small>${c.detail}</small>`:''}</span></div>`).join('');return all;}
+function showCases(list){const pass=list.filter(c=>c.ok).length,all=pass===list.length&&list.length>0;$('#verdict').textContent=`${pass}/${list.length}`;$('#verdict').className='verdict '+(all?'pass':'fail');$('#cases').innerHTML=list.map(c=>`<div class="case ${c.ok?'pass':'fail'}"><span class="s">${c.ok?'✓':'✗'}</span><span class="d">${c.name}${c.detail?`<br><small>${c.detail}</small>`:''}</span></div>`).join('');return all;}
 function showConsole(m){$('#cases').innerHTML=`<div class="console">${m}</div>`;$('#verdict').textContent='';}
 
-/* ---- SQL ---- */
 async function ensureSQL(){if(SQL)return SQL;SQL=await initSqlJs({locateFile:f=>`https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${f}`});return SQL;}
-function rowsEq(a,b,ordered){const n=r=>JSON.stringify(r);if(a.length!==b.length)return false;if(ordered)return a.every((r,i)=>n(r)===n(b[i]));const sa=a.map(n).sort(),sb=b.map(n).sort();return sa.every((v,i)=>v===sb[i]);}
+function rowsEq(a,b,o){const n=r=>JSON.stringify(r);if(a.length!==b.length)return false;if(o)return a.every((r,i)=>n(r)===n(b[i]));const sa=a.map(n).sort(),sb=b.map(n).sort();return sa.every((v,i)=>v===sb[i]);}
 function exec(db,sql){const r=db.exec(sql);return r.length?{cols:r[0].columns,rows:r[0].values}:{cols:[],rows:[]};}
 function preview(r){const x=r.rows.slice(0,3).map(row=>'['+row.join(',')+']').join(' ');return (x||'∅')+(r.rows.length>3?' …':'');}
 async function runSQL(){
   const e=cur,userSQL=editor.getValue().trim().replace(/;+\s*$/,'');
-  if(!userSQL){showConsole('Escribe una query.');return false;}
-  let lib;try{lib=await ensureSQL();}catch(err){showConsole('No se pudo cargar sql.js: '+err);return false;}
+  if(!userSQL){showConsole(t('write_q'));return false;}
+  let lib;try{lib=await ensureSQL();}catch(err){showConsole(t('sql_fail')+': '+err);return false;}
   const cases=[],ordered=/order\s+by/i.test(e.ref);
   for(let i=0;i<e.datasets.length;i++){const db=new lib.Database();
-    try{db.run(e.datasets[i]);let exp;try{exp=exec(db,e.ref);}catch(err){cases.push({name:`dataset ${i+1}`,ok:false,detail:'error en referencia: '+err});db.close();continue;}
+    try{db.run(e.datasets[i]);let exp;try{exp=exec(db,e.ref);}catch(err){cases.push({name:`dataset ${i+1}`,ok:false,detail:'ref error: '+err});db.close();continue;}
       let got;try{got=exec(db,userSQL);}catch(err){cases.push({name:`dataset ${i+1}`,ok:false,detail:'SQL error: '+err});db.close();continue;}
       const ok=rowsEq(got.rows,exp.rows,ordered);
-      cases.push({name:`dataset ${i+1} · ${exp.rows.length} fila(s) esperadas`,ok,detail:ok?'':`tu salida: ${got.rows.length} fila(s) — ${preview(got)} | esperado: ${preview(exp)}`});
+      cases.push({name:`dataset ${i+1} · ${exp.rows.length} ${t('rows')}`,ok,detail:ok?'':`${t('got')}: ${preview(got)} | ${t('expected')}: ${preview(exp)}`});
     }finally{db.close();}}
   const all=showCases(cases);if(all)await award(e);return all;
 }
-
-/* ---- Python (Pyodide) ---- */
-function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('no se pudo cargar '+src));document.head.appendChild(s);});}
-async function ensurePy(){if(pyodide)return pyodide;if(pyLoading)return pyLoading;
-  showConsole('Cargando runtime de Python (Pyodide, ~una vez)… <span class="pulse">●</span>');
-  pyLoading=(async()=>{await loadScript('https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js');pyodide=await loadPyodide({indexURL:'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/'});return pyodide;})();
-  return pyLoading;}
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('load fail '+src));document.head.appendChild(s);});}
+async function ensurePy(){if(pyodide)return pyodide;if(pyLoading)return pyLoading;showConsole(t('loading_py')+' <span class="pulse">●</span>');pyLoading=(async()=>{await loadScript('https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js');pyodide=await loadPyodide({indexURL:'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/'});return pyodide;})();return pyLoading;}
 async function runPy(){
-  const e=cur;let py;
-  try{py=await ensurePy();}catch(err){showConsole('No se pudo cargar Python en este entorno (el sandbox bloqueó el runtime).<br>Usa <b>Ver solución</b> o <b>Review IA</b>.<br><small>'+err.message+'</small>');return false;}
-  if(e.pyPackages){try{showConsole('Cargando paquetes: '+e.pyPackages.join(', ')+'… <span class="pulse">●</span>');await py.loadPackage(e.pyPackages);}catch(err){showConsole('No se pudieron cargar paquetes ('+e.pyPackages.join(',')+'): '+err);return false;}}
+  const e=cur;let py;try{py=await ensurePy();}catch(err){showConsole(t('py_blocked')+'<br><small>'+err.message+'</small>');return false;}
+  if(e.pyPackages){try{showConsole(t('loading_pkg')+': '+e.pyPackages.join(', ')+'… <span class="pulse">●</span>');await py.loadPackage(e.pyPackages);}catch(err){showConsole('pkg error: '+err);return false;}}
   const code=editor.getValue()+'\n'+e.pytests+'\nimport json\nprint("__RESULTS__"+json.dumps(cases))';
   let out='';py.setStdout({batched:s=>out+=s+'\n'});
-  try{await py.runPythonAsync(code);}catch(err){showConsole('Error de ejecución:\n'+(err.message||err));return false;}
-  const m=out.indexOf('__RESULTS__');if(m<0){showConsole('Sin resultados. Salida:\n'+out);return false;}
-  let list;try{list=JSON.parse(out.slice(m+11));}catch(err){showConsole('Resultados ilegibles.\n'+out);return false;}
-  const cases=list.map(c=>({name:c.name,ok:c.ok,detail:c.ok?'':`obtuvo ${c.got} · esperaba ${c.expected}`}));
+  try{await py.runPythonAsync(code);}catch(err){showConsole('Error:\n'+(err.message||err));return false;}
+  const m=out.indexOf('__RESULTS__');if(m<0){showConsole(t('no_res')+'\n'+out);return false;}
+  let list;try{list=JSON.parse(out.slice(m+11));}catch(err){showConsole(out);return false;}
+  const cases=list.map(c=>({name:c.name,ok:c.ok,detail:c.ok?'':`${t('got')} ${c.got} · ${t('expected')} ${c.expected}`}));
   const all=showCases(cases);if(all)await award(e);return all;
 }
-
-/* ---- quiz ---- */
-function runQuiz(){const e=cur;if(quizSel==null){showConsole('Selecciona una opción primero.');return;}
-  answered=true;document.querySelectorAll('.opt').forEach((o,i)=>{o.classList.remove('sel');if(e.options[i].ok)o.classList.add('correct');if(i===quizSel&&!e.options[i].ok)o.classList.add('wrong');});
-  const ok=e.options[quizSel].ok;showCases([{name:ok?'Correcto':'Incorrecto',ok,detail:e.explain}]);if(ok)award(e);}
+function runQuiz(){const e=cur;if(quizSel==null){showConsole(t('choose'));return;}answered=true;document.querySelectorAll('.opt').forEach((o,i)=>{o.classList.remove('sel');if(e.options[i].ok)o.classList.add('correct');if(i===quizSel&&!e.options[i].ok)o.classList.add('wrong');});const ok=e.options[quizSel].ok;showCases([{name:ok?t('correct'):t('incorrect'),ok,detail:L(e.explain)}]);if(ok)award(e);}
 function runTests(){if(!cur)return;if(cur.kind==='sql')return runSQL();if(cur.kind==='python')return runPy();if(cur.kind==='quiz')return runQuiz();}
 
-/* ---- AI tutor ---- */
-async function ai(mode){const e=cur,panel=$('#tutor');panel.classList.add('show','pulse');panel.textContent=mode==='hint'?'Generando pista…':'Revisando tu código…';
+async function ai(modeAi){const e=cur,panel=$('#tutor');panel.classList.add('show','pulse');panel.textContent='…';
   const code=e.kind==='quiz'?'(conceptual)':(editor?editor.getValue():'');
-  const sys=mode==='hint'?`Da UNA pista breve (máx 3 líneas) que oriente sin resolver.`:`Eres un Senior Data Engineer revisando código de un colega senior. Feedback directo, máx 8 líneas: correctitud, edge cases, idempotencia/coste/rendimiento, estilo de producción. Señala líneas concretas. No reescribas todo.`;
-  const prompt=`${sys}\n\nEjercicio (${e.kind}): ${e.title}\nObjetivo: ${(e.task||e.context||'').replace(/<[^>]+>/g,'')}\n\nCódigo del usuario:\n${code}`;
+  const sys=modeAi==='hint'?t('hint_sys'):t('rev_sys');
+  const prompt=`${sys}\n\n${e.kind}: ${L(e.title)}\n${(L(e.task)||L(e.context)||'').replace(/<[^>]+>/g,'')}\n\n${code}`;
   try{const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
-    const d=await r.json();const txt=(d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();panel.classList.remove('pulse');panel.textContent=txt||'Sin respuesta.';
-  }catch(err){panel.classList.remove('pulse');panel.textContent='Tutor IA no disponible aquí: '+err.message;}}
+    const d=await r.json();const txt=(d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();panel.classList.remove('pulse');panel.textContent=txt||'—';
+  }catch(err){panel.classList.remove('pulse');panel.textContent=t('tutor_off')+': '+err.message;}}
 
-/* ---- persistence ---- */
-async function save(){try{await window.storage.set('dedojo:v2',JSON.stringify(state),false);}catch(e){}}
-async function load(){try{const r=await window.storage.get('dedojo:v2',false);if(r&&r.value)state=Object.assign(state,JSON.parse(r.value));}catch(e){}}
-function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
-$('#resetBtn').onclick=async()=>{if(confirm('¿Borrar progreso (XP, resueltos, streak, historial de exámenes)?')){state={solved:{},xp:0,streak:0,lastDay:null};stats={history:[]};await save();await saveStats();renderXP();renderRail();}};
-
-/* ===== exam + stats ===== */
-async function saveStats(){try{await window.storage.set('dedojo:stats',JSON.stringify(stats),false);}catch(e){}}
-async function loadStats(){try{const r=await window.storage.get('dedojo:stats',false);if(r&&r.value)stats=Object.assign({history:[]},JSON.parse(r.value));}catch(e){}}
-
-function switchMode(m){
-  mode=m; stopTimer(); stopExamTimer();
-  $('#mPractice').classList.toggle('on',m==='practice');
-  $('#mExam').classList.toggle('on',m==='exam');
-  $('#mStats').classList.toggle('on',m==='stats');
-  ['ovSetup','ovReport','ovStats'].forEach(id=>$('#'+id).classList.remove('show'));
-  document.querySelector('.rail').classList.toggle('hide',m!=='practice');
-  document.querySelector('.grid').classList.remove('examrun');
-  if(m==='practice'){renderRail();open(cur?cur.id:EX[0].id);}
-  else if(m==='exam'){exam=null;buildSetup();$('#ovSetup').classList.add('show');}
-  else if(m==='stats'){renderStats();$('#ovStats').classList.add('show');}
-}
-
+/* ===========================  exam  =========================== */
 function buildSetup(){
-  const cats=[...new Set(EX.map(e=>e.cat))];
-  setupCfg={cats:new Set(cats),count:10,diff:'all'};
-  const cc=$('#setCats');
-  cc.innerHTML=cats.map(c=>`<span class="chip2 on" data-c="${c}">${c}</span>`).join('');
-  cc.querySelectorAll('.chip2').forEach(ch=>ch.onclick=()=>{ch.classList.toggle('on');const c=ch.dataset.c;setupCfg.cats.has(c)?setupCfg.cats.delete(c):setupCfg.cats.add(c);});
+  const cats=[...new Set(EX.map(e=>e.cat))];setupCfg={cats:new Set(cats),count:10,diff:'all'};
+  $('#ovSetup').innerHTML=`<h2>${t('setup_t')}</h2><div class="sub">${t('setup_sub')}</div>
+    <div class="card" style="max-width:820px">
+      <div class="field"><label>${t('f_cats')}</label><div class="chips" id="setCats">${cats.map(c=>`<span class="chip2 on" data-c="${c}">${c}</span>`).join('')}</div></div>
+      <div class="field"><label>${t('f_count')}</label><div class="chips" id="setCount"><span class="chip2" data-n="5">5</span><span class="chip2 on" data-n="10">10</span><span class="chip2" data-n="15">15</span><span class="chip2" data-n="all">${t('all')}</span></div></div>
+      <div class="field"><label>${t('f_diff')}</label><div class="chips" id="setDiff"><span class="chip2 on" data-d="all">${t('all')}</span><span class="chip2" data-d="e">Easy</span><span class="chip2" data-d="m">Medium</span><span class="chip2" data-d="h">Hard</span></div></div>
+      <div style="margin-top:18px"><button class="primary" onclick="startExam()">${t('start')}</button></div>
+    </div>`;
+  $('#setCats').querySelectorAll('.chip2').forEach(ch=>ch.onclick=()=>{ch.classList.toggle('on');const c=ch.dataset.c;setupCfg.cats.has(c)?setupCfg.cats.delete(c):setupCfg.cats.add(c);});
   $('#setCount').querySelectorAll('.chip2').forEach(ch=>ch.onclick=()=>{$('#setCount').querySelectorAll('.chip2').forEach(x=>x.classList.remove('on'));ch.classList.add('on');setupCfg.count=ch.dataset.n==='all'?999:+ch.dataset.n;});
   $('#setDiff').querySelectorAll('.chip2').forEach(ch=>ch.onclick=()=>{$('#setDiff').querySelectorAll('.chip2').forEach(x=>x.classList.remove('on'));ch.classList.add('on');setupCfg.diff=ch.dataset.d;});
-  // reset visual defaults
-  $('#setCount').querySelectorAll('.chip2').forEach(x=>x.classList.toggle('on',x.dataset.n==='10'));
-  $('#setDiff').querySelectorAll('.chip2').forEach(x=>x.classList.toggle('on',x.dataset.d==='all'));
 }
-
 function startExam(){
-  let pool=EX.filter(e=>setupCfg.cats.has(e.cat));
-  if(setupCfg.diff!=='all')pool=pool.filter(e=>e.diff===setupCfg.diff);
-  if(!pool.length){toast('No hay ejercicios con esos filtros');return;}
-  pool=pool.slice().sort(()=>Math.random()-0.5);
-  const items=pool.slice(0,Math.min(setupCfg.count,pool.length));
+  let pool=EX.filter(e=>setupCfg.cats.has(e.cat));if(setupCfg.diff!=='all')pool=pool.filter(e=>e.diff===setupCfg.diff);
+  if(!pool.length){toast(t('nofilter'));return;}
+  pool=pool.slice().sort(()=>Math.random()-0.5);const items=pool.slice(0,Math.min(setupCfg.count,pool.length));
   const total=items.reduce((s,e)=>s+(e.timer||DT[e.diff]),0);
   exam={items,idx:0,results:{},times:{},start:Date.now(),qStart:Date.now(),total,finished:false};
-  $('#ovSetup').classList.remove('show');
-  document.querySelector('.rail').classList.add('hide');
-  document.querySelector('.grid').classList.add('examrun');
-  startExamTimer(total);
-  loadExamQuestion(0);
+  $('#ovSetup').classList.remove('show');document.querySelector('.rail').classList.add('hide');$('#gridv').classList.add('examrun');
+  startExamTimer(total);loadExamQuestion(0);
 }
-
 function examDots(){return exam.items.map((e,i)=>{let cl='';if(i===exam.idx)cl='cur';else if(exam.results[e.id])cl=exam.results[e.id].ok?'pass':'fail';return `<i class="${cl}"></i>`;}).join('');}
 function paintExamClock(){const c=$('#examClock');if(!c||!exam)return;c.textContent=fmt(examTimer.remaining);c.className='gclock'+(examTimer.remaining<=30?' crit':examTimer.remaining<=120?' warn':'');}
-function startExamTimer(sec){stopExamTimer();examTimer.remaining=sec;paintExamClock();examTimer.id=setInterval(()=>{examTimer.remaining--;paintExamClock();if(examTimer.remaining<=0){stopExamTimer();toast('⏱ Tiempo del examen agotado');finishExam();}},1000);}
+function startExamTimer(sec){stopExamTimer();examTimer.remaining=sec;paintExamClock();examTimer.id=setInterval(()=>{examTimer.remaining--;paintExamClock();if(examTimer.remaining<=0){stopExamTimer();toast(t('toast_examtime'));finishExam();}},1000);}
 function stopExamTimer(){if(examTimer.id){clearInterval(examTimer.id);examTimer.id=null;}}
-
 function loadExamQuestion(i){
-  exam.idx=i;cur=exam.items[i];answered=false;quizSel=null;exam.qStart=Date.now();
-  renderProblem();
+  exam.idx=i;cur=exam.items[i];answered=false;quizSel=null;exam.qStart=Date.now();renderProblem();
   const e=cur,tabs=$('#wtabs'),host=$('#edhost'),act=$('#actions');
-  tabs.innerHTML=`<div class="exam-bar"><b>Pregunta ${i+1}/${exam.items.length}</b>
-    <span class="dots">${examDots()}</span>
-    <span style="margin-left:auto" class="gclock" id="examClock">--:--</span>
-    <button id="examFinish" style="padding:4px 9px;font-size:11px">Finalizar</button></div>`;
-  $('#examFinish').onclick=()=>{if(confirm('¿Finalizar ahora? Las preguntas sin enviar cuentan como falladas.'))finishExam();};
-  if(e.kind==='quiz'){host.innerHTML=`<div style="padding:18px;color:var(--muted);font-family:var(--mono);font-size:12.5px">Elige una opción a la izquierda y envía.</div>`;editor=null;}
+  tabs.innerHTML=`<div class="exam-bar"><b>${t('exam_q')} ${i+1}/${exam.items.length}</b><span class="dots">${examDots()}</span><span style="margin-left:auto" class="gclock" id="examClock">--:--</span><button id="examFinish">${t('exam_finish')}</button></div>`;
+  $('#examFinish').onclick=()=>{if(confirm(t('exam_finish_c')))finishExam();};
+  if(e.kind==='quiz'){host.innerHTML=`<div style="padding:18px;color:var(--muted);font-family:var(--mono);font-size:12.5px">${t('exam_quiz_note')}</div>`;editor=null;}
   else{host.innerHTML='';editor=CodeMirror(host,{value:e.starter,mode:e.kind==='sql'?'text/x-sql':'python',theme:'material-darker',lineNumbers:true,lineWrapping:true,indentUnit:e.kind==='python'?4:2});setTimeout(()=>editor.refresh(),40);}
-  act.innerHTML=`<button class="primary" id="examNext">Enviar y siguiente ▸</button><button class="ghost" id="examSkip">Saltar</button>`;
+  act.innerHTML=`<button class="primary" id="examNext">${t('exam_next')}</button><button class="ghost" id="examSkip">${t('exam_skip')}</button>`;
   $('#examNext').onclick=examSubmit;$('#examSkip').onclick=examSkip;
-  $('#cases').innerHTML='<div class="console">Resuelve y pulsa <b>Enviar y siguiente</b>.</div>';
-  $('#verdict').textContent='';$('#tutor').classList.remove('show');
-  paintExamClock();
+  $('#cases').innerHTML=`<div class="console">${t('exam_prompt')}</div>`;$('#verdict').textContent='';$('#tutor').classList.remove('show');paintExamClock();
 }
-async function examSubmit(){
-  const e=cur;let ok=false;
-  if(e.kind==='quiz'){if(quizSel==null){toast('Elige una opción');return;}ok=!!e.options[quizSel].ok;showConsole(ok?'✓ respuesta registrada':'✗ respuesta registrada');}
-  else{ok=await(e.kind==='sql'?runSQL():runPy());}
-  exam.results[e.id]={ok,cat:e.cat,diff:e.diff,kind:e.kind};
-  exam.times[e.id]=Math.round((Date.now()-exam.qStart)/1000);
-  advanceExam();
-}
+async function examSubmit(){const e=cur;let ok=false;if(e.kind==='quiz'){if(quizSel==null){toast(t('exam_choose'));return;}ok=!!e.options[quizSel].ok;showConsole((ok?'✓ ':'✗ ')+t('registered'));}else{ok=await(e.kind==='sql'?runSQL():runPy());}exam.results[e.id]={ok,cat:e.cat,diff:e.diff,kind:e.kind};exam.times[e.id]=Math.round((Date.now()-exam.qStart)/1000);advanceExam();}
 function examSkip(){const e=cur;exam.results[e.id]={ok:false,skipped:true,cat:e.cat,diff:e.diff,kind:e.kind};exam.times[e.id]=Math.round((Date.now()-exam.qStart)/1000);advanceExam();}
 function advanceExam(){if(exam.idx<exam.items.length-1)loadExamQuestion(exam.idx+1);else finishExam();}
-
 function finishExam(){
-  if(!exam||exam.finished)return;
-  exam.finished=true;stopExamTimer();
+  if(!exam||exam.finished)return;exam.finished=true;stopExamTimer();
   exam.items.forEach(e=>{if(!exam.results[e.id])exam.results[e.id]={ok:false,skipped:true,cat:e.cat,diff:e.diff,kind:e.kind};});
-  const total=exam.items.length,pass=exam.items.filter(e=>exam.results[e.id].ok).length;
-  const byCat={},byDiff={};
-  exam.items.forEach(e=>{const r=exam.results[e.id];
-    (byCat[e.cat]=byCat[e.cat]||{p:0,t:0}).t++;if(r.ok)byCat[e.cat].p++;
-    (byDiff[e.diff]=byDiff[e.diff]||{p:0,t:0}).t++;if(r.ok)byDiff[e.diff].p++;});
+  const total=exam.items.length,pass=exam.items.filter(e=>exam.results[e.id].ok).length,byCat={},byDiff={};
+  exam.items.forEach(e=>{const r=exam.results[e.id];(byCat[e.cat]=byCat[e.cat]||{p:0,t:0}).t++;if(r.ok)byCat[e.cat].p++;(byDiff[e.diff]=byDiff[e.diff]||{p:0,t:0}).t++;if(r.ok)byDiff[e.diff].p++;});
   const dur=Math.round((Date.now()-exam.start)/1000);
   const a={date:new Date().toISOString(),score:pass,total,pct:Math.round(pass/total*100),dur,byCat,byDiff};
-  stats.history.unshift(a);saveStats();
-  renderReport(a);
+  stats.history.unshift(a);saveStats();renderReport(a);
 }
 function renderReport(a){
   const cats=Object.entries(a.byCat).sort((x,y)=>(x[1].p/x[1].t)-(y[1].p/y[1].t));
   const weak=cats.filter(([c,o])=>o.p/o.t<0.6);
   const catRows=cats.map(([c,o])=>{const pct=Math.round(o.p/o.t*100);return `<div class="row"><span class="lab">${c}</span><span class="track"><span class="fill" style="width:${pct}%"></span></span><span class="pct">${o.p}/${o.t}</span></div>`}).join('');
-  const diffRows=['e','m','h'].filter(d=>a.byDiff[d]).map(d=>{const o=a.byDiff[d],pct=Math.round(o.p/o.t*100);return `<div class="row"><span class="lab">${({e:'easy',m:'medium',h:'hard'})[d]}</span><span class="track"><span class="fill" style="width:${pct}%"></span></span><span class="pct">${o.p}/${o.t}</span></div>`}).join('');
-  const qlist=exam.items.map((e,i)=>{const r=exam.results[e.id];return `<div class="case ${r.ok?'pass':'fail'}"><span class="s">${r.ok?'✓':'✗'}</span><span class="d">${i+1}. ${e.title} <small>· ${e.cat} · ${e.kind.toUpperCase()} · ${exam.times[e.id]||0}s${r.skipped?' · saltada':''}</small></span></div>`}).join('');
-  const col=a.pct>=70?'var(--ok)':a.pct>=50?'var(--amber)':'var(--bad)';
-  $('#ovReport').innerHTML=`
-    <h2>Resultado del examen</h2><div class="sub">${new Date(a.date).toLocaleString()} · duración ${fmt(a.dur)}</div>
+  const diffRows=['e','m','h'].filter(d=>a.byDiff[d]).map(d=>{const o=a.byDiff[d],pct=Math.round(o.p/o.t*100);return `<div class="row"><span class="lab">${dl(d)}</span><span class="track"><span class="fill" style="width:${pct}%"></span></span><span class="pct">${o.p}/${o.t}</span></div>`}).join('');
+  const qlist=exam.items.map((e,i)=>{const r=exam.results[e.id];return `<div class="case ${r.ok?'pass':'fail'}"><span class="s">${r.ok?'✓':'✗'}</span><span class="d">${i+1}. ${L(e.title)} <small>· ${e.cat} · ${e.kind.toUpperCase()} · ${exam.times[e.id]||0}s${r.skipped?' · '+t('skipped'):''}</small></span></div>`}).join('');
+  const col=a.pct>=70?'var(--mint)':a.pct>=50?'var(--gold)':'var(--bad)';
+  $('#ovReport').innerHTML=`<h2>${t('rep_title')}</h2><div class="sub">${new Date(a.date).toLocaleString()} · ${t('rep_dur')} ${fmt(a.dur)}</div>
     <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
-      <div class="card" style="min-width:190px;text-align:center"><div class="score" style="color:${col}">${a.pct}%</div><div class="scoresub">${a.score} de ${a.total} correctas</div></div>
-      <div class="card" style="flex:1;min-width:330px"><div class="field"><label>Por categoría</label>${catRows}</div><div class="field"><label>Por dificultad</label>${diffRows}</div></div>
+      <div class="card" style="min-width:190px;text-align:center"><div class="score" style="color:${col}">${a.pct}%</div><div class="scoresub">${a.score} / ${a.total} ${t('rep_correct')}</div></div>
+      <div class="card" style="flex:1;min-width:330px"><div class="field"><label>${t('rep_bycat')}</label>${catRows}</div><div class="field"><label>${t('rep_bydiff')}</label>${diffRows}</div></div>
     </div>
-    ${weak.length?`<div class="weak"><b>A reforzar:</b> ${weak.map(([c])=>c).join(' · ')}.<br>Practica estos temas en modo Práctica antes del próximo intento.</div>`:`<div class="weak" style="border-color:var(--ok);background:rgba(63,185,80,.07)"><b>Sólido en todas las categorías evaluadas.</b> Sube la dificultad o el número de preguntas.</div>`}
-    <div class="card" style="margin-top:16px"><div class="field"><label>Detalle por pregunta</label><div style="font-family:var(--mono)">${qlist}</div></div></div>
-    <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap"><button class="primary" onclick="switchMode('exam')">Nuevo examen</button><button onclick="switchMode('stats')">Ver progreso</button><button class="ghost" onclick="switchMode('practice')">Ir a práctica</button></div>`;
-  document.querySelector('.grid').classList.remove('examrun');
-  $('#ovReport').classList.add('show');
+    ${weak.length?`<div class="weak"><b>${t('rep_weak')}</b> ${weak.map(([c])=>c).join(' · ')}.<br>${t('rep_weak2')}</div>`:`<div class="weak" style="border-color:var(--mint);background:rgba(94,234,212,.07)"><b>${t('rep_solid')}</b> ${t('rep_solid2')}</div>`}
+    <div class="card" style="margin-top:16px"><div class="field"><label>${t('rep_detail')}</label><div style="font-family:var(--mono)">${qlist}</div></div></div>
+    <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap"><button class="primary" onclick="switchMode('exam')">${t('rep_new')}</button><button onclick="switchMode('stats')">${t('rep_prog')}</button><button class="ghost" onclick="switchMode('practice')">${t('rep_prac')}</button></div>`;
+  $('#gridv').classList.remove('examrun');$('#ovReport').classList.add('show');
 }
-
 function renderStats(){
-  const h=stats.history,cats=[...new Set(EX.map(e=>e.cat))];
-  const m={};cats.forEach(c=>m[c]={s:0,t:0});EX.forEach(e=>{m[e.cat].t++;if(state.solved[e.id])m[e.cat].s++;});
+  const h=stats.history,cats=[...new Set(EX.map(e=>e.cat))],m={};cats.forEach(c=>m[c]={s:0,t:0});EX.forEach(e=>{m[e.cat].t++;if(state.solved[e.id])m[e.cat].s++;});
   const mastery=cats.map(c=>{const o=m[c],pct=o.t?Math.round(o.s/o.t*100):0;return `<div class="row"><span class="lab">${c}</span><span class="track"><span class="fill" style="width:${pct}%"></span></span><span class="pct">${o.s}/${o.t}</span></div>`}).join('');
   const best=h.length?Math.max(...h.map(a=>a.pct)):0;
-  const rows=h.slice(0,15).map(a=>`<div class="h"><span style="width:170px">${new Date(a.date).toLocaleString()}</span><span style="width:54px;color:${a.pct>=70?'var(--ok)':a.pct>=50?'var(--amber)':'var(--bad)'}">${a.pct}%</span><span style="width:60px">${a.score}/${a.total}</span><span>${fmt(a.dur)}</span></div>`).join('')||'<div class="console">Sin exámenes aún. Inicia uno para registrar tu progreso.</div>';
-  $('#ovStats').innerHTML=`
-    <h2>Progreso</h2><div class="sub">Dominio en práctica + historial de exámenes</div>
+  const rows=h.slice(0,15).map(a=>`<div class="h"><span style="width:170px">${new Date(a.date).toLocaleString()}</span><span style="width:54px;color:${a.pct>=70?'var(--mint)':a.pct>=50?'var(--gold)':'var(--bad)'}">${a.pct}%</span><span style="width:60px">${a.score}/${a.total}</span><span>${fmt(a.dur)}</span></div>`).join('')||`<div class="console">${t('stats_none')}</div>`;
+  $('#ovStats').innerHTML=`<h2>${t('stats_title')}</h2><div class="sub">${t('stats_sub')}</div>
     <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
-      <div class="card" style="min-width:180px;text-align:center"><div class="score">Lv ${levelFor(state.xp)}</div><div class="scoresub">${state.xp} XP · 🔥 ${state.streak}<br>mejor examen: ${best}%</div></div>
-      <div class="card" style="flex:1;min-width:340px"><div class="field"><label>Dominio por categoría (práctica)</label>${mastery}</div></div>
+      <div class="card" style="min-width:180px;text-align:center"><div class="score">Lv ${levelFor(state.xp)}</div><div class="scoresub">${state.xp} XP · 🔥 ${state.streak}<br>${t('stats_best')}: ${best}%</div></div>
+      <div class="card" style="flex:1;min-width:340px"><div class="field"><label>${t('stats_mastery')}</label>${mastery}</div></div>
     </div>
-    <div class="card" style="margin-top:16px"><div class="field"><label>Historial de exámenes</label><div class="hist">${rows}</div></div></div>
-    <div style="margin-top:16px;display:flex;gap:10px"><button class="primary" onclick="switchMode('exam')">Iniciar examen</button><button class="ghost" onclick="switchMode('practice')">Práctica</button></div>`;
+    <div class="card" style="margin-top:16px"><div class="field"><label>${t('stats_hist')}</label><div class="hist">${rows}</div></div></div>
+    <div style="margin-top:16px;display:flex;gap:10px"><button class="primary" onclick="switchMode('exam')">${t('stats_start')}</button><button class="ghost" onclick="switchMode('practice')">${t('nav_practice')}</button></div>`;
 }
 
-window.addEventListener('load',async()=>{await load();await loadStats();renderXP();renderRail();open(EX[0].id);});
+/* ===========================  persistence + init  =========================== */
+async function save(){try{await window.storage.set('delab:state',JSON.stringify(state),false);}catch(e){}}
+async function load(){try{const r=await window.storage.get('delab:state',false);if(r&&r.value)state=Object.assign(state,JSON.parse(r.value));}catch(e){}}
+async function saveStats(){try{await window.storage.set('delab:stats',JSON.stringify(stats),false);}catch(e){}}
+async function loadStats(){try{const r=await window.storage.get('delab:stats',false);if(r&&r.value)stats=Object.assign({history:[]},JSON.parse(r.value));}catch(e){}}
+async function saveLang(){try{await window.storage.set('delab:lang',lang,false);}catch(e){}}
+async function loadLang(){try{const r=await window.storage.get('delab:lang',false);if(r&&r.value)lang=r.value;}catch(e){}}
+function toast(m){const el=$('#toast');el.innerHTML=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2400);}
+
+document.querySelectorAll('#nav .navbtn').forEach(b=>b.onclick=()=>switchMode(b.dataset.m));
+$('#menub').onclick=()=>document.querySelector('.rail').classList.toggle('open');
+$('#resetBtn').onclick=async()=>{if(confirm(t('reset_c'))){state={solved:{},xp:0,streak:0,lastDay:null};stats={history:[]};await save();await saveStats();renderXP();if(mode==='practice')renderRail();if(mode==='stats')renderStats();}};
+
+window.addEventListener('load',async()=>{await load();await loadStats();await loadLang();setLang(lang);renderXP();renderRail();switchMode('home');});
+
 </script>
 </body>
 </html>
