@@ -1,7 +1,8 @@
-.DS_Store
-node_modules/
 *.log
-.vscode/
-.idea/
-app*.js
 *Zone.Identifier*
+.DS_Store
+.idea/
+.vscode/
+app*.js
+node_modules/
+test/node_modules/
