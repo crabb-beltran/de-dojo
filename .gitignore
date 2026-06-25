@@ -6,3 +6,8 @@
 app*.js
 node_modules/
 test/node_modules/
+test/es_en_map.json
+test/tpl_es.json
+test/new_en.json
+test/new_guide_en.txt
+test/en_arr.mjs
