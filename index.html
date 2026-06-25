@@ -158,11 +158,19 @@
   .ex:hover{background:var(--panel)} .ex.active{background:var(--panel);box-shadow:inset 3px 0 0 var(--coral)}
   .ex .ico{font-family:var(--mono);font-size:9.5px;font-weight:600;padding:2px 5px;border-radius:5px;border:1px solid var(--border);color:var(--muted);flex:none;margin-top:1px}
   .ex .ico.sql{color:var(--mint);border-color:#2a4642}.ex .ico.python{color:var(--gold);border-color:#4a4326}.ex .ico.quiz{color:var(--violet);border-color:#3f3556}
-  .ex .tt{font-size:13px;font-weight:600;line-height:1.25}
-  .ex .mt{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px}
-  .ex .chk{margin-left:auto;color:var(--mint);flex:none}
-  .diff{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muted);margin-right:3px}
-  .diff.e{background:var(--ok)}.diff.m{background:var(--gold)}.diff.h{background:var(--bad)}
+  .ex{padding:11px 16px}
+  .ex .tt{font-size:13px;font-weight:600;line-height:1.3}
+  .ex .mt{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px}
+  .ex .mt .tags{opacity:.8;min-width:0}
+  .ex .chk{margin-left:auto;color:var(--mint);flex:none;font-size:14px}
+  .ex .lock{margin-left:auto;flex:none;font-size:12px;opacity:.7}
+  .ex.locked{opacity:.5;cursor:not-allowed}
+  .ex.locked:hover{background:transparent}
+  .dpill{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:1.5px 6px;border-radius:5px;border:1px solid currentColor;flex:none;line-height:1.4}
+  .dpill.e{color:var(--ok)}.dpill.m{color:var(--gold)}.dpill.h{color:var(--bad)}
+  .lvlbar{height:8px;border-radius:6px;background:var(--border);overflow:hidden;margin:10px 0 6px}
+  .lvlbar>span{display:block;height:100%;background:linear-gradient(90deg,var(--coral),var(--mint));border-radius:6px;transition:width .4s}
+  .lvlnext{font-family:var(--mono);font-size:11px;color:var(--muted)}.lvlnext b{color:var(--mint)}
   .prob{border-right:1px solid var(--border);overflow:auto;min-height:0;padding:20px 24px 44px}
   .prob h1{font-family:var(--display);font-weight:700;font-size:23px;margin:0 0 4px;line-height:1.15}
   .ptag{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-bottom:16px}
@@ -176,9 +184,11 @@
   table.dt td{padding:4px 9px;border-bottom:1px solid var(--border);color:var(--text2)}table.dt tr:last-child td{border-bottom:0}
   .srcnote{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:3px}
   .exp{font-family:var(--mono);font-size:11.5px;background:var(--surface);border:1px dashed var(--border);border-radius:8px;padding:9px 11px;color:var(--mint);white-space:pre;overflow:auto}
-  .opt{display:block;border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin:8px 0;cursor:pointer;font-size:13.5px;transition:.12s;background:var(--surface)}
+  .opt{position:relative;display:block;border:1px solid var(--border);border-radius:10px;padding:11px 40px 11px 14px;margin:8px 0;cursor:pointer;font-size:13.5px;transition:.12s;background:var(--surface)}
   .opt:hover{border-color:var(--coral)}.opt.sel{border-color:var(--coral);background:var(--panel)}
   .opt.correct{border-color:var(--mint);background:rgba(94,234,212,.08)}.opt.wrong{border-color:var(--bad);background:rgba(255,92,119,.08)}
+  .opt.correct::after{content:'✓';position:absolute;right:13px;top:50%;transform:translateY(-50%);color:var(--mint);font-weight:800;font-size:16px}
+  .opt.wrong::after{content:'✗';position:absolute;right:13px;top:50%;transform:translateY(-50%);color:var(--bad);font-weight:800;font-size:16px}
   .opt .mk{font-family:var(--mono);color:var(--muted);margin-right:8px}
   .work{display:flex;flex-direction:column;min-height:0;min-width:0}
   .wtabs{display:flex;align-items:center;background:var(--surface);border-bottom:1px solid var(--border)}
@@ -1577,7 +1587,7 @@ const EN={
 let lang='es';
 const T={
  es:{nav_home:'Inicio',nav_guide:'Guía',nav_practice:'Práctica',nav_exam:'Examen',nav_stats:'Stats',
-  home_kicker:'Plataforma de entrenamiento · Data Engineering',home_tag:'Entrena · Práctica · Domina',rights:'Todos los derechos reservados.',
+  home_kicker:'Plataforma de entrenamiento · Data Engineering',home_tag:'Entrena · Práctica · Domina',rights:'Todos los derechos reservados.',locked_msg:'Completa primero los ejercicios más fáciles de esta categoría 🔒',to_next:'faltan {n} XP → Lv {l}',to_lvl:'para Lv {l}',
   home_title:'Domina el oficio de <em>Data Engineer</em>, problema por problema.',
   home_sub:'Una guía de entrevista orientada a producción + un dojo con ejercicios ejecutables y test cases reales: SQL avanzado, Python/PySpark, pandas, DBA, estadística y retos competitivos.',
   s_ex:'ejercicios',s_cat:'categorías',s_modes:'modos',
@@ -1602,7 +1612,7 @@ const T={
   expected:'esperado',got:'tu salida',rows:'fila(s)',
   toast_xp:'XP',toast_timeup:'⏱ Tiempo agotado — puedes seguir, pero rinde ½ XP',toast_examtime:'⏱ Tiempo del examen agotado'},
  en:{nav_home:'Home',nav_guide:'Guide',nav_practice:'Practice',nav_exam:'Exam',nav_stats:'Stats',
-  home_kicker:'Training platform · Data Engineering',home_tag:'Train · Practice · Master',rights:'All rights reserved.',
+  home_kicker:'Training platform · Data Engineering',home_tag:'Train · Practice · Master',rights:'All rights reserved.',locked_msg:'Complete the easier exercises in this category first 🔒',to_next:'{n} XP → Lv {l}',to_lvl:'to Lv {l}',
   home_title:'Master the <em>Data Engineer</em> craft, one problem at a time.',
   home_sub:'A production-oriented interview guide + a dojo of executable exercises with real test cases: advanced SQL, Python/PySpark, pandas, DBA, statistics and competitive challenges.',
   s_ex:'exercises',s_cat:'categories',s_modes:'modes',
@@ -1651,7 +1661,13 @@ let timer={remaining:0,id:null,paused:false,expired:false};
 let exam=null,examTimer={remaining:0,id:null},setupCfg={cats:new Set(),count:10,diff:'all',spaced:false};
 
 const levelFor=xp=>Math.floor(xp/100)+1;
-function renderXP(){$('#lvl').textContent=levelFor(state.xp);$('#xptxt').textContent=state.xp+' XP';}
+const XP_PER_LVL=100;
+function xpInfo(){const lvl=levelFor(state.xp),into=state.xp%XP_PER_LVL,need=XP_PER_LVL-into;return{lvl,into,need,pct:Math.round(into/XP_PER_LVL*100)};}
+function shuffled(n){const a=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+const DORD={e:0,m:1,h:2};
+function diffAllSolved(k,d){const items=EX.filter(e=>catKey(e)===k&&e.diff===d);return items.length===0||items.every(e=>state.solved[e.id]);}
+function isUnlocked(e){if(state.solved[e.id])return true;if(e.diff==='e')return true;const k=catKey(e);if(e.diff==='m')return diffAllSolved(k,'e');if(e.diff==='h')return diffAllSolved(k,'e')&&diffAllSolved(k,'m');return true;}
+function renderXP(){const x=xpInfo();$('#lvl').textContent=x.lvl;$('#xptxt').textContent=`${state.xp} XP · ${t('to_next').replace('{n}',x.need).replace('{l}',x.lvl+1)}`;}
 async function award(ex){
   if(mode==='exam')return;
   if(state.solved[ex.id]){toast(t('already'));return;}
@@ -3023,13 +3039,15 @@ const DTk={e:480,m:900,h:1500};
 function renderRail(){
   let html='';
   for(const k of orderedCats()){const items=EX.filter(e=>catKey(e)===k);if(!items.length)continue;
+    items.sort((a,b)=>(DORD[a.diff]-DORD[b.diff]));
     html+=`<div class="cat">${catLabel(k)}</div>`;
-    for(const e of items){const done=state.solved[e.id];
-      html+=`<div class="ex ${cur&&cur.id===e.id?'active':''}" data-id="${e.id}"><span class="ico ${e.kind}">${e.kind.toUpperCase()}</span><span><span class="tt">${fld(e,'title')}</span><span class="mt"><span class="diff ${e.diff}"></span>${dl(e.diff)} · ${e.tags}</span></span>${done?'<span class="chk">✓</span>':''}</div>`;}}
+    for(const e of items){const done=state.solved[e.id],locked=!isUnlocked(e);
+      const tail=done?'<span class="chk">✓</span>':locked?'<span class="lock" title="">🔒</span>':'';
+      html+=`<div class="ex ${cur&&cur.id===e.id?'active':''} ${locked?'locked':''}" data-id="${e.id}"><span class="ico ${e.kind}">${e.kind.toUpperCase()}</span><span style="min-width:0;flex:1"><span class="tt">${fld(e,'title')}</span><span class="mt"><span class="dpill ${e.diff}">${dl(e.diff)}</span><span class="tags">${e.tags}</span></span></span>${tail}</div>`;}}
   $('#rail').innerHTML=html;
-  document.querySelectorAll('.ex').forEach(el=>el.onclick=()=>{open(el.dataset.id);document.querySelector('.rail').classList.remove('open');});
+  document.querySelectorAll('.ex').forEach(el=>el.onclick=()=>{if(el.classList.contains('locked')){toast(t('locked_msg'));return;}open(el.dataset.id);document.querySelector('.rail').classList.remove('open');});
 }
-function open(id){cur=EX.find(e=>e.id===id);answered=false;quizSel=null;renderRail();renderProblem();renderWork();$('#cases').innerHTML=`<div class="console">${t('res_prompt')}</div>`;$('#verdict').textContent='';$('#verdict').className='verdict';$('#tutor').classList.remove('show');startTimer(cur.timer||DT[cur.diff]);}
+function open(id){const e=EX.find(e=>e.id===id);if(!e)return;if(!isUnlocked(e)){toast(t('locked_msg'));return;}cur=e;answered=false;quizSel=null;if(cur.kind==='quiz')cur._order=shuffled(cur.options.length);renderRail();renderProblem();renderWork();$('#cases').innerHTML=`<div class="console">${t('res_prompt')}</div>`;$('#verdict').textContent='';$('#verdict').className='verdict';$('#tutor').classList.remove('show');startTimer(cur.timer||DT[cur.diff]);}
 function srcTable(s){let h=`<div class="src"><div class="nm">📄 <b>${s.name}</b></div><table class="dt"><tr>${s.cols.map(c=>`<th>${c}</th>`).join('')}</tr>`;h+=s.rows.map(r=>`<tr>${r.map(v=>`<td>${v}</td>`).join('')}</tr>`).join('');h+=`</table>${s.note?`<div class="srcnote">${s.note}</div>`:''}</div>`;return h;}
 function renderProblem(){
   const e=cur;let h=`<h1>${fld(e,'title')}</h1><div class="ptag">${catLabel(catKey(e))} · ${e.kind.toUpperCase()} · ${dl(e.diff)} · ${e.xp} XP</div>`;
@@ -3038,7 +3056,7 @@ function renderProblem(){
   const bl=fld(e,'bullets');if(bl)h+=`<h3>${t('p_req')}</h3><ul>${bl.map(b=>`<li>${b}</li>`).join('')}</ul>`;
   if(e.sources)h+=`<h3>${t('p_sources')}</h3>${e.sources.map(srcTable).join('')}`;
   if(e.expected)h+=`<h3>${t('p_expected')}</h3><div class="exp">${fld(e,'expected')}</div>`;
-  if(e.kind==='quiz')h+=`<h3>${t('p_select')}</h3><div id="opts">`+e.options.map((o,i)=>`<label class="opt" data-i="${i}"><span class="mk">${String.fromCharCode(65+i)}</span>${optText(e,i)}</label>`).join('')+`</div>`;
+  if(e.kind==='quiz'){const ord=(e._order&&e._order.length===e.options.length)?e._order:e.options.map((_,i)=>i);h+=`<h3>${t('p_select')}</h3><div id="opts">`+ord.map((oi,pos)=>`<label class="opt" data-i="${oi}"><span class="mk">${String.fromCharCode(65+pos)}</span>${optText(e,oi)}</label>`).join('')+`</div>`;}
   $('#prob').innerHTML=h;
   if(e.kind==='quiz')document.querySelectorAll('.opt').forEach(o=>o.onclick=()=>{if(answered)return;document.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));o.classList.add('sel');quizSel=+o.dataset.i;});
 }
@@ -3086,7 +3104,7 @@ async function runPy(){
   const cases=list.map(c=>({name:c.name,ok:c.ok,detail:c.ok?'':`${t('got')} ${c.got} · ${t('expected')} ${c.expected}`}));
   const all=showCases(cases);if(all)await award(e);return all;
 }
-function runQuiz(){const e=cur;if(quizSel==null){showConsole(t('choose'));return;}answered=true;document.querySelectorAll('.opt').forEach((o,i)=>{o.classList.remove('sel');if(e.options[i].ok)o.classList.add('correct');if(i===quizSel&&!e.options[i].ok)o.classList.add('wrong');});const ok=e.options[quizSel].ok;showCases([{name:ok?t('correct'):t('incorrect'),ok,detail:explainText(e)}]);if(ok)award(e);}
+function runQuiz(){const e=cur;if(quizSel==null){showConsole(t('choose'));return;}answered=true;document.querySelectorAll('.opt').forEach(o=>{const oi=+o.dataset.i;o.classList.remove('sel');if(e.options[oi].ok)o.classList.add('correct');if(oi===quizSel&&!e.options[oi].ok)o.classList.add('wrong');});const ok=e.options[quizSel].ok;showCases([{name:ok?t('correct'):t('incorrect'),ok,detail:explainText(e)}]);if(ok)award(e);}
 function runTests(){if(!cur)return;if(cur.kind==='sql')return runSQL();if(cur.kind==='python')return runPy();if(cur.kind==='quiz')return runQuiz();}
 
 async function ai(modeAi){const e=cur,panel=$('#tutor');panel.classList.add('show','pulse');panel.textContent='…';
@@ -3141,7 +3159,7 @@ function paintExamClock(){const c=$('#examClock');if(!c||!exam)return;c.textCont
 function startExamTimer(sec){stopExamTimer();examTimer.remaining=sec;paintExamClock();examTimer.id=setInterval(()=>{examTimer.remaining--;paintExamClock();if(examTimer.remaining<=0){stopExamTimer();toast(t('toast_examtime'));finishExam();}},1000);}
 function stopExamTimer(){if(examTimer.id){clearInterval(examTimer.id);examTimer.id=null;}}
 function loadExamQuestion(i){
-  exam.idx=i;cur=exam.items[i];answered=false;quizSel=null;exam.qStart=Date.now();renderProblem();
+  exam.idx=i;cur=exam.items[i];answered=false;quizSel=null;if(cur.kind==='quiz')cur._order=shuffled(cur.options.length);exam.qStart=Date.now();renderProblem();
   const e=cur,tabs=$('#wtabs'),host=$('#edhost'),act=$('#actions');
   tabs.innerHTML=`<div class="exam-bar"><b>${t('exam_q')} ${i+1}/${exam.items.length}</b><span class="dots">${examDots()}</span><span style="margin-left:auto" class="gclock" id="examClock">--:--</span><button id="examFinish">${t('exam_finish')}</button></div>`;
   $('#examFinish').onclick=()=>{if(confirm(t('exam_finish_c')))finishExam();};
@@ -3189,7 +3207,10 @@ function renderStats(){
   const rows=h.slice(0,15).map(a=>`<div class="h"><span style="width:170px">${new Date(a.date).toLocaleString()}</span><span style="width:54px;color:${a.pct>=70?'var(--mint)':a.pct>=50?'var(--gold)':'var(--bad)'}">${a.pct}%</span><span style="width:60px">${a.score}/${a.total}</span><span>${fmt(a.dur)}</span></div>`).join('')||`<div class="console">${t('stats_none')}</div>`;
   $('#ovStats').innerHTML=`<h2>${t('stats_title')}</h2><div class="sub">${t('stats_sub')}</div>
     <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
-      <div class="card" style="min-width:180px;text-align:center"><div class="score">Lv ${levelFor(state.xp)}</div><div class="scoresub">${state.xp} XP · 🔥 ${state.streak}<br>${t('stats_best')}: ${best}%</div></div>
+      <div class="card" style="min-width:230px"><div class="score" style="text-align:center">Lv ${xpInfo().lvl}</div>
+        <div class="lvlbar"><span style="width:${xpInfo().pct}%"></span></div>
+        <div class="lvlnext">${xpInfo().into}/${XP_PER_LVL} XP · <b>${xpInfo().need} XP</b> ${t('to_lvl').replace('{l}',xpInfo().lvl+1)}</div>
+        <div class="scoresub" style="text-align:center;margin-top:10px">${state.xp} XP · 🔥 ${state.streak} · ${t('stats_best')}: ${best}%</div></div>
       <div class="card" style="flex:1;min-width:340px"><div class="field"><label>${t('stats_mastery')}</label>${mastery}</div></div>
     </div>
     <div class="card" style="margin-top:16px"><div class="field"><label>${t('stats_hist')}</label><div class="hist">${rows}</div></div></div>
