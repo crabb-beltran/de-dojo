@@ -1,5 +1,5 @@
 /**
- * DE Lab — AI tutor proxy (Cloudflare Worker, free tier).
+ * DE Dojo — AI tutor proxy (Cloudflare Worker, free tier).
  *
  * The browser app must NEVER hold an Anthropic API key. This Worker sits in
  * front of the Anthropic Messages API, injects the key from a server-side

@@ -1,9 +1,37 @@
+<!--
+  DE Dojo — Data Engineering training platform
+  © 2026 DE Dojo. Todos los derechos reservados. / All rights reserved.
+  "DE Dojo", su logotipo (torii + gráfico) y el lema "Entrena · Práctica · Domina"
+  son marcas de DE Dojo. Prohibida su reproducción sin autorización.
+-->
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DE Lab — Data Engineering training</title>
+<title>DE Dojo — Data Engineering training</title>
+<!-- Favicons (light/dark aware) + brand -->
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="assets/de-dojo-icon.png">
+<link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="assets/de-dojo-icon-dark.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="application-name" content="DE Dojo">
+<meta name="apple-mobile-web-app-title" content="DE Dojo">
+<meta name="author" content="DE Dojo">
+<meta name="description" content="DE Dojo — entrena, practica y domina Data Engineering con una guía de entrevista orientada a producción y un dojo de ejercicios ejecutables con test cases reales.">
+<meta name="keywords" content="DE Dojo, Data Engineering, SQL, PySpark, dbt, Snowflake, entrenamiento, entrevista">
+<meta name="theme-color" content="#0b1726">
+<meta name="copyright" content="© 2026 DE Dojo. Todos los derechos reservados.">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DE Dojo">
+<meta property="og:title" content="DE Dojo — Data Engineering training">
+<meta property="og:description" content="Entrena, practica y domina Data Engineering: guía de entrevista + dojo de ejercicios ejecutables con test cases reales.">
+<meta property="og:image" content="assets/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="DE Dojo — Data Engineering training">
+<meta name="twitter:description" content="Entrena · Práctica · Domina — Data Engineering con ejercicios ejecutables y test cases reales.">
+<meta name="twitter:image" content="assets/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -64,6 +92,7 @@
   .top::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--coral) 70%,transparent),transparent);opacity:.7}
   .brand{font-family:var(--display);font-weight:900;font-size:18px;letter-spacing:.3px;display:flex;align-items:center;gap:8px;cursor:pointer}
   .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--coral);box-shadow:0 0 12px var(--coral);animation:pulseDot 2.4s ease-in-out infinite}
+  .brand .blogo{width:26px;height:26px;border-radius:7px;display:block;flex:none}
   @keyframes pulseDot{0%,100%{box-shadow:0 0 8px var(--coral)}50%{box-shadow:0 0 18px var(--coral),0 0 30px color-mix(in srgb,var(--coral) 50%,transparent)}}
   .brand em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
   .nav{display:flex;gap:2px;flex-wrap:wrap}
@@ -94,6 +123,11 @@
   .stats .s b{font-family:var(--display);font-size:30px;font-weight:700;color:var(--gold);display:block;line-height:1;text-shadow:0 0 24px color-mix(in srgb,var(--gold) 35%,transparent)}
   .stats .s span{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
   .mods{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+  .homefoot{margin-top:40px;padding-top:18px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;color:var(--muted);font-size:12.5px}
+  .homefoot .ft-brand{display:inline-flex;align-items:center;gap:7px;font-family:var(--display);font-weight:800;color:var(--text);font-size:14px}
+  .homefoot .ft-brand img{border-radius:5px}
+  .homefoot .ft-tag{font-family:var(--mono);letter-spacing:.04em;text-transform:uppercase;font-size:10.5px;color:var(--g-amber,#f5a524)}
+  .homefoot .ft-cc{margin-left:auto}
   .mod{position:relative;border:1px solid var(--border);border-radius:16px;padding:22px;background:linear-gradient(160deg,color-mix(in srgb,var(--panel) 92%,transparent),color-mix(in srgb,var(--surface) 40%,transparent));cursor:pointer;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;overflow:hidden;box-shadow:var(--shadow)}
   .mod::before{content:"";position:absolute;left:0;top:0;height:2px;width:100%;background:var(--grad);opacity:0;transition:opacity .18s ease}
   .mod::after{content:"";position:absolute;inset:0;background:radial-gradient(360px 160px at 50% 0%,color-mix(in srgb,var(--coral) 12%,transparent),transparent 70%);opacity:0;transition:opacity .25s ease;pointer-events:none}
@@ -202,7 +236,7 @@
 <body>
 <div class="top">
   <button class="menub" id="menub">☰</button>
-  <div class="brand" onclick="switchMode('home')"><span class="dot"></span>DE<em>Lab</em></div>
+  <div class="brand" onclick="switchMode('home')"><img class="blogo" src="assets/de-dojo-icon.png" alt="DE Dojo" width="26" height="26">DE<em>Dojo</em></div>
   <div class="nav" id="nav">
     <button class="navbtn" data-m="home">Inicio</button>
     <button class="navbtn" data-m="guide">Guía</button>
@@ -1213,7 +1247,7 @@ const EN={
 let lang='es';
 const T={
  es:{nav_home:'Inicio',nav_guide:'Guía',nav_practice:'Práctica',nav_exam:'Examen',nav_stats:'Stats',
-  home_kicker:'Plataforma de entrenamiento · Data Engineering',
+  home_kicker:'Plataforma de entrenamiento · Data Engineering',rights:'Todos los derechos reservados.',
   home_title:'Domina el oficio de <em>Data Engineer</em>, problema por problema.',
   home_sub:'Una guía de entrevista orientada a producción + un dojo con ejercicios ejecutables y test cases reales: SQL avanzado, Python/PySpark, pandas, DBA, estadística y retos competitivos.',
   s_ex:'ejercicios',s_cat:'categorías',s_modes:'modos',
@@ -1238,7 +1272,7 @@ const T={
   expected:'esperado',got:'tu salida',rows:'fila(s)',
   toast_xp:'XP',toast_timeup:'⏱ Tiempo agotado — puedes seguir, pero rinde ½ XP',toast_examtime:'⏱ Tiempo del examen agotado'},
  en:{nav_home:'Home',nav_guide:'Guide',nav_practice:'Practice',nav_exam:'Exam',nav_stats:'Stats',
-  home_kicker:'Training platform · Data Engineering',
+  home_kicker:'Training platform · Data Engineering',rights:'All rights reserved.',
   home_title:'Master the <em>Data Engineer</em> craft, one problem at a time.',
   home_sub:'A production-oriented interview guide + a dojo of executable exercises with real test cases: advanced SQL, Python/PySpark, pandas, DBA, statistics and competitive challenges.',
   s_ex:'exercises',s_cat:'categories',s_modes:'modes',
@@ -1817,7 +1851,12 @@ function renderHome(){
       <div class="mod" onclick="switchMode('practice')"><div class="ic">🧪</div><span class="arr">→</span><h3>${t('mod_practice_t')}</h3><p>${t('mod_practice_d')}</p></div>
       <div class="mod" onclick="switchMode('exam')"><div class="ic">⏱️</div><span class="arr">→</span><h3>${t('mod_exam_t')}</h3><p>${t('mod_exam_d')}</p></div>
       <div class="mod" onclick="switchMode('stats')"><div class="ic">📈</div><span class="arr">→</span><h3>${t('mod_stats_t')}</h3><p>${t('mod_stats_d')}</p></div>
-    </div></div>`;
+    </div>
+    <footer class="homefoot">
+      <span class="ft-brand"><img src="assets/de-dojo-icon.png" alt="" width="20" height="20">DE Dojo</span>
+      <span class="ft-tag">Entrena · Práctica · Domina</span>
+      <span class="ft-cc">© ${new Date().getFullYear()} DE Dojo · ${t('rights')}</span>
+    </footer></div>`;
 }
 function switchMode(m){
   mode=m;stopTimer();stopExamTimer();navHighlight(m);document.body.dataset.mode=m;
@@ -2188,7 +2227,7 @@ figure {margin:22px 0;border:1px solid var(--g-line);border-radius:14px;overflow
 <div class="wrap">
 
 <aside>
-  <div class="brand">DATA ENGINEER<br><b>INTERVIEW GUIDE</b><small>DE Lab · Senior DE track · v3.0</small></div>
+  <div class="brand">DATA ENGINEER<br><b>INTERVIEW GUIDE</b><small>DE Dojo · Senior DE track · v3.0</small></div>
   <div class="search"><input id="q" placeholder="🔎 filtrar por palabra..." oninput="filt(this.value)"></div>
   <nav id="nav">
     <div class="grp">Fundamentos</div>
@@ -2998,9 +3037,10 @@ result = df_large.join(df_small_s, <span class="st">'k_salted'</span>)</code></p
 </table></div>
 
 <div class="foot">
-DE Lab · Data Engineering Interview Guide · v3.0<br>
+DE Dojo · Data Engineering Interview Guide · v3.0<br>
 Stack: AWS · GCP · Snowflake · dbt · Airflow · PySpark · Terraform · Iceberg · NoSQL<br>
-Material de estudio — corregido, ampliado (Snowflake · Estadística · NoSQL) y graficado.
+Material de estudio — corregido, ampliado (Snowflake · Estadística · NoSQL) y graficado.<br>
+<span style="opacity:.8">© 2026 DE Dojo · Entrena · Práctica · Domina · Todos los derechos reservados.</span>
 </div>
 </main>
 </div>

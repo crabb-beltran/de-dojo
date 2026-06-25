@@ -1,5 +1,5 @@
 /**
- * Exercise validator — content integrity gate for DE Lab.
+ * Exercise validator — content integrity gate for DE Dojo.
  *
  * Extracts the EX (exercises), EN (English overlay), CAT and CATMAP literals
  * straight out of index.html and checks, with NO running browser:
