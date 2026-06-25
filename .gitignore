@@ -11,3 +11,4 @@ test/tpl_es.json
 test/new_en.json
 test/new_guide_en.txt
 test/en_arr.mjs
+test/en_res.mjs
