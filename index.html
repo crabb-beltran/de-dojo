@@ -115,6 +115,11 @@
   /* landing */
   .home{padding:46px 30px 60px;max-width:1180px;margin:0 auto}
   .kicker{font-family:var(--mono);font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--mint);margin-bottom:14px;display:inline-flex;align-items:center;gap:9px}
+  .brandlock{display:flex;align-items:center;gap:13px;margin-bottom:22px}
+  .brandlock .bl-logo{border-radius:12px;box-shadow:0 8px 22px -8px rgba(0,0,0,.55);flex:none}
+  .brandlock .bl-name{font-family:var(--display);font-weight:800;font-size:26px;line-height:1;letter-spacing:-.01em;color:var(--text)}
+  .brandlock .bl-name b{color:var(--coral);font-weight:800}
+  .brandlock .bl-tag{display:block;margin-top:6px;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--g-amber,#f5a524)}
   .kicker::before{content:"";width:26px;height:1px;background:linear-gradient(90deg,transparent,var(--mint))}
   .hero h1{font-family:var(--display);font-weight:900;font-size:clamp(34px,6vw,68px);line-height:1.02;margin:0 0 16px;letter-spacing:-.5px}
   .hero h1 em{font-style:italic;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -1247,7 +1252,7 @@ const EN={
 let lang='es';
 const T={
  es:{nav_home:'Inicio',nav_guide:'Guía',nav_practice:'Práctica',nav_exam:'Examen',nav_stats:'Stats',
-  home_kicker:'Plataforma de entrenamiento · Data Engineering',rights:'Todos los derechos reservados.',
+  home_kicker:'Plataforma de entrenamiento · Data Engineering',home_tag:'Entrena · Práctica · Domina',rights:'Todos los derechos reservados.',
   home_title:'Domina el oficio de <em>Data Engineer</em>, problema por problema.',
   home_sub:'Una guía de entrevista orientada a producción + un dojo con ejercicios ejecutables y test cases reales: SQL avanzado, Python/PySpark, pandas, DBA, estadística y retos competitivos.',
   s_ex:'ejercicios',s_cat:'categorías',s_modes:'modos',
@@ -1272,7 +1277,7 @@ const T={
   expected:'esperado',got:'tu salida',rows:'fila(s)',
   toast_xp:'XP',toast_timeup:'⏱ Tiempo agotado — puedes seguir, pero rinde ½ XP',toast_examtime:'⏱ Tiempo del examen agotado'},
  en:{nav_home:'Home',nav_guide:'Guide',nav_practice:'Practice',nav_exam:'Exam',nav_stats:'Stats',
-  home_kicker:'Training platform · Data Engineering',rights:'All rights reserved.',
+  home_kicker:'Training platform · Data Engineering',home_tag:'Train · Practice · Master',rights:'All rights reserved.',
   home_title:'Master the <em>Data Engineer</em> craft, one problem at a time.',
   home_sub:'A production-oriented interview guide + a dojo of executable exercises with real test cases: advanced SQL, Python/PySpark, pandas, DBA, statistics and competitive challenges.',
   s_ex:'exercises',s_cat:'categories',s_modes:'modes',
@@ -1839,7 +1844,10 @@ function loadGuide(){
 function renderHome(){
   const ncat=new Set(EX.map(e=>e.cat)).size;
   $('#home').innerHTML=`<div class="home">
-    <div class="kicker">${t('home_kicker')}</div>
+    <div class="brandlock">
+      <img src="assets/de-dojo-icon.png" class="bl-logo" width="54" height="54" alt="DE Dojo" loading="eager">
+      <div class="bl-txt"><span class="bl-name">DE&nbsp;<b>Dojo</b></span><span class="bl-tag">${t('home_tag')}</span></div>
+    </div>
     <div class="hero"><h1>${t('home_title')}</h1><p>${t('home_sub')}</p></div>
     <div class="stats">
       <div class="s"><b>${EX.length}</b><span>${t('s_ex')}</span></div>
