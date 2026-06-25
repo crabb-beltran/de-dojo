@@ -212,6 +212,31 @@
   .case .s{flex:none;font-weight:700}.case.pass .s{color:var(--mint)}.case.fail .s{color:var(--bad)}
   .case .d{color:var(--text2);line-height:1.45;white-space:pre-wrap;word-break:break-word}.case .d small{color:var(--muted)}
   .console{padding:10px 12px;color:var(--muted);white-space:pre-wrap;line-height:1.45}
+  /* terminal-style result console */
+  .term{margin:8px;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#0b0f16}
+  .term .termbar{display:flex;align-items:center;gap:6px;padding:6px 10px;background:#11161f;border-bottom:1px solid var(--border)}
+  .term .termbar .d{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .term .termbar .d.r{background:#ff5f57}.term .termbar .d.y{background:#febc2e}.term .termbar .d.g{background:#28c840}
+  .term .termbar .ttl{margin-left:6px;font-size:10px;letter-spacing:.5px;color:var(--muted)}
+  .term .termbody{padding:10px 12px;overflow-x:auto;max-width:100%}
+  .term .prompt{color:#7ee0c8;margin-bottom:8px}.term .prompt .okc{color:var(--mint);font-weight:700}.term .prompt .failc{color:var(--bad);font-weight:700}
+  .term .clabel{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin:10px 0 4px}
+  .term .cerr{color:var(--bad);white-space:pre-wrap}
+  .term .stdout{color:#cdd6e4;white-space:pre-wrap;line-height:1.5}
+  table.cout{border-collapse:collapse;font-size:11.5px;margin:2px 0}
+  table.cout th{color:#7ee0c8;text-align:left;padding:3px 10px 3px 0;border-bottom:1px solid #2a3343;white-space:nowrap}
+  table.cout td{padding:2px 10px 2px 0;color:#dbe2ee;white-space:nowrap;border-bottom:1px solid #161c26}
+  table.cout td .nul{color:#6b7688;font-style:italic}
+  .term .cnote{color:#6b7688;font-size:10.5px;margin-top:4px}
+  .chart{margin:8px 0;font-size:11px;color:var(--muted)}
+  .cbar{display:flex;align-items:center;gap:8px;margin:3px 0}
+  .cbar .cblab{flex:none;width:96px;text-align:right;color:#cdd6e4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}
+  .cbar .cbtrack{flex:1;min-width:60px;max-width:240px;height:13px;background:#161c26;border-radius:3px;overflow:hidden}
+  .cbar .cbfill{display:block;height:100%;background:linear-gradient(90deg,var(--coral),var(--mint));border-radius:3px}
+  .cbar .cbval{flex:none;color:#7ee0c8;font-size:11px}
+  .caselist{display:flex;flex-wrap:wrap;gap:6px;padding:2px 10px 10px}
+  .cchip{font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border)}
+  .cchip.ok{color:var(--mint);border-color:#2a4642}.cchip.no{color:var(--bad);border-color:#4a2a32}
   .tutor{padding:12px;border-top:1px solid var(--border);background:var(--panel);white-space:pre-wrap;font-family:var(--ui);font-size:13.5px;line-height:1.6;display:none}
   .tutor.show{display:block}.tutor code{font-family:var(--mono);background:var(--ink);padding:1px 5px;border-radius:4px;color:var(--gold)}
   .pulse{animation:pulse 1s infinite}@keyframes pulse{50%{opacity:.45}}
@@ -1800,6 +1825,259 @@ src=[{"id":1,"v":"a"}]; upsert(src,[{"id":1,"v":"z"}]); chk("no muta entrada", s
    {t:{es:'Más RAM en el servidor.',en:'More RAM on the server.'},ok:false}],
  explain:{es:'Un deadlock ocurre cuando T1 tiene A y pide B mientras T2 tiene B y pide A. Se previene imponiendo un orden global de adquisición de locks (todos piden A antes que B), transacciones cortas, y bajando el alcance de los locks. La base detecta el ciclo y aborta una víctima; tu app debe reintentarla.',en:'A deadlock occurs when T1 holds A and requests B while T2 holds B and requests A. Prevent it by imposing a global lock-acquisition order (everyone takes A before B), short transactions, and narrowing lock scope. The DB detects the cycle and aborts a victim; your app should retry it.'}
 },
+/* ===================== SQL · JOINS MULTI-TABLA (+6) ===================== */
+{
+ id:'sql_join_enrich',cat:'joins',kind:'sql',diff:'m',xp:20,
+ title:{es:'Enriquecer pedidos (3 tablas)',en:'Enrich orders (3 tables)'},tags:'joins · 3 tablas',
+ context:{es:'Un analista pide un reporte legible de pedidos con nombre de cliente, producto y total de línea.',en:'An analyst asks for a readable orders report with customer name, product and line total.'},
+ task:{es:'Une <code>orders</code> con <code>customers</code> y <code>products</code>; calcula <code>total = qty*price</code>.',en:'Join <code>orders</code> with <code>customers</code> and <code>products</code>; compute <code>total = qty*price</code>.'},
+ bullets:[{es:'Salida: <code>id</code>, <code>cust</code>, <code>prod</code>, <code>total</code>. Orden por <code>id</code>.',en:'Output: <code>id</code>, <code>cust</code>, <code>prod</code>, <code>total</code>. Order by <code>id</code>.'}],
+ sources:[S('customers',['id','name'],[[1,'Ana'],[2,'Bob']]),S('products',['id','name','price'],[[10,'Widget',5],[11,'Gadget',8]]),S('orders',['id','cust_id','prod_id','qty'],[[1,1,10,3],[2,2,11,2],[3,1,11,1]])],
+ expected:'1 Ana Widget 15\n2 Bob Gadget 16\n3 Ana Gadget 8',
+ datasets:[`CREATE TABLE customers(id INT,name TEXT);INSERT INTO customers VALUES(1,'Ana'),(2,'Bob');CREATE TABLE products(id INT,name TEXT,price INT);INSERT INTO products VALUES(10,'Widget',5),(11,'Gadget',8);CREATE TABLE orders(id INT,cust_id INT,prod_id INT,qty INT);INSERT INTO orders VALUES(1,1,10,3),(2,2,11,2),(3,1,11,1);`],
+ ref:`SELECT o.id, c.name cust, p.name prod, o.qty*p.price total FROM orders o JOIN customers c ON c.id=o.cust_id JOIN products p ON p.id=o.prod_id ORDER BY o.id`,
+ starter:`SELECT o.id, /* c.name, p.name, total */\nFROM orders o\n  JOIN customers c ON c.id = o.cust_id\n  JOIN products  p ON p.id = o.prod_id\nORDER BY o.id;`
+},
+{
+ id:'sql_join_left_agg',cat:'joins',kind:'sql',diff:'m',xp:20,
+ title:{es:'Gasto por cliente (LEFT JOIN + 0)',en:'Spend per customer (LEFT JOIN + 0)'},tags:'joins · LEFT · COALESCE',
+ context:{es:'Quieren el gasto total por cliente incluyendo a los que no compraron (deben aparecer con 0).',en:'They want total spend per customer including those who never bought (must show 0).'},
+ task:{es:'<code>LEFT JOIN</code> y <code>SUM</code>; usa <code>COALESCE</code> para que los sin pedidos den 0.',en:'<code>LEFT JOIN</code> and <code>SUM</code>; use <code>COALESCE</code> so customers with no orders show 0.'},
+ bullets:[{es:'Salida: <code>name</code>, <code>spend</code>. Orden por <code>name</code>.',en:'Output: <code>name</code>, <code>spend</code>. Order by <code>name</code>.'}],
+ sources:[S('customers',['id','name'],[[1,'Ana'],[2,'Bob'],[3,'Cy']]),S('orders',['id','cust_id','amount'],[[1,1,100],[2,1,50],[3,2,30]])],
+ expected:'Ana 150\nBob 30\nCy 0',
+ datasets:[`CREATE TABLE customers(id INT,name TEXT);INSERT INTO customers VALUES(1,'Ana'),(2,'Bob'),(3,'Cy');CREATE TABLE orders(id INT,cust_id INT,amount INT);INSERT INTO orders VALUES(1,1,100),(2,1,50),(3,2,30);`],
+ ref:`SELECT c.name, COALESCE(SUM(o.amount),0) spend FROM customers c LEFT JOIN orders o ON o.cust_id=c.id GROUP BY c.id,c.name ORDER BY c.name`,
+ starter:`SELECT c.name, COALESCE(SUM(o.amount), 0) AS spend\nFROM customers c\n  LEFT JOIN orders o ON o.cust_id = c.id\nGROUP BY c.id, c.name\nORDER BY c.name;`
+},
+{
+ id:'sql_join_notexists',cat:'joins',kind:'sql',diff:'m',xp:20,
+ title:{es:'Productos nunca vendidos (anti-join)',en:'Never-sold products (anti-join)'},tags:'joins · NOT EXISTS',
+ context:{es:'Marketing quiere la lista de productos que jamás se han vendido.',en:'Marketing wants the list of products that have never been sold.'},
+ task:{es:'Devuelve los productos sin ninguna fila en <code>orders</code> (usa <code>NOT EXISTS</code> o anti-join).',en:'Return products with no row in <code>orders</code> (use <code>NOT EXISTS</code> or an anti-join).'},
+ bullets:[{es:'Salida: <code>name</code>. Orden por <code>name</code>.',en:'Output: <code>name</code>. Order by <code>name</code>.'}],
+ sources:[S('products',['id','name'],[[1,'A'],[2,'B'],[3,'C']]),S('orders',['id','prod_id'],[[1,1],[2,1],[3,3]])],
+ expected:'B',
+ datasets:[`CREATE TABLE products(id INT,name TEXT);INSERT INTO products VALUES(1,'A'),(2,'B'),(3,'C');CREATE TABLE orders(id INT,prod_id INT);INSERT INTO orders VALUES(1,1),(2,1),(3,3);`],
+ ref:`SELECT p.name FROM products p WHERE NOT EXISTS(SELECT 1 FROM orders o WHERE o.prod_id=p.id) ORDER BY p.name`,
+ starter:`SELECT p.name\nFROM products p\nWHERE NOT EXISTS (\n  SELECT 1 FROM orders o WHERE o.prod_id = p.id\n)\nORDER BY p.name;`
+},
+{
+ id:'sql_join_self',cat:'joins',kind:'sql',diff:'m',xp:20,
+ title:{es:'Self-join: empleado y su jefe',en:'Self-join: employee and manager'},tags:'joins · self-join',
+ context:{es:'RR.HH. quiere cada empleado junto al nombre de su jefe (la jerarquía vive en una sola tabla).',en:'HR wants each employee next to their manager\'s name (the hierarchy lives in one table).'},
+ task:{es:'Haz un <code>self-join</code> de <code>emp</code> consigo misma por <code>mgr_id</code>; el jefe puede ser <code>NULL</code>.',en:'Self-join <code>emp</code> with itself on <code>mgr_id</code>; the manager may be <code>NULL</code>.'},
+ bullets:[{es:'Salida: <code>emp</code>, <code>mgr</code>. Orden por <code>emp</code>.',en:'Output: <code>emp</code>, <code>mgr</code>. Order by <code>emp</code>.'}],
+ sources:[S('emp',['id','name','mgr_id'],[[1,'CEO','∅'],[2,'Ana',1],[3,'Bob',2]])],
+ expected:'Ana CEO\nBob Ana\nCEO (null)',
+ datasets:[`CREATE TABLE emp(id INT,name TEXT,mgr_id INT);INSERT INTO emp VALUES(1,'CEO',NULL),(2,'Ana',1),(3,'Bob',2);`],
+ ref:`SELECT e.name emp, m.name mgr FROM emp e LEFT JOIN emp m ON m.id=e.mgr_id ORDER BY e.name`,
+ starter:`SELECT e.name AS emp, m.name AS mgr\nFROM emp e\n  LEFT JOIN emp m ON m.id = e.mgr_id\nORDER BY e.name;`
+},
+{
+ id:'sql_join_bridge',cat:'joins',kind:'sql',diff:'h',xp:30,
+ title:{es:'Muchos-a-muchos vía tabla puente',en:'Many-to-many via a bridge table'},tags:'joins · bridge · M:N',
+ context:{es:'Estudiantes y cursos se relacionan N:M mediante una tabla de inscripciones.',en:'Students and courses relate N:M through an enrollment table.'},
+ task:{es:'Cuenta cuántos cursos tiene cada estudiante (incluye 0 si no tiene).',en:'Count how many courses each student has (include 0 if none).'},
+ bullets:[{es:'Salida: <code>name</code>, <code>courses</code>. Une por la tabla puente <code>enroll</code>.',en:'Output: <code>name</code>, <code>courses</code>. Join via the bridge table <code>enroll</code>.'}],
+ sources:[S('students',['id','name'],[[1,'Ana'],[2,'Bob']]),S('courses',['id','title'],[[10,'SQL'],[11,'PY']]),S('enroll',['student_id','course_id'],[[1,10],[1,11],[2,10]])],
+ expected:'Ana 2\nBob 1',
+ datasets:[`CREATE TABLE students(id INT,name TEXT);INSERT INTO students VALUES(1,'Ana'),(2,'Bob');CREATE TABLE courses(id INT,title TEXT);INSERT INTO courses VALUES(10,'SQL'),(11,'PY');CREATE TABLE enroll(student_id INT,course_id INT);INSERT INTO enroll VALUES(1,10),(1,11),(2,10);`],
+ ref:`SELECT s.name, COUNT(e.course_id) courses FROM students s LEFT JOIN enroll e ON e.student_id=s.id GROUP BY s.id,s.name ORDER BY s.name`,
+ starter:`SELECT s.name, COUNT(e.course_id) AS courses\nFROM students s\n  LEFT JOIN enroll e ON e.student_id = s.id\nGROUP BY s.id, s.name\nORDER BY s.name;`
+},
+{
+ id:'sql_join_5tables',cat:'joins',kind:'sql',diff:'h',xp:35,
+ title:{es:'Ingreso por región (5 tablas)',en:'Revenue per region (5 tables)'},tags:'joins · 5 tablas · star',
+ context:{es:'Un esquema estrella: regiones → clientes → pedidos → líneas → productos. Finanzas quiere el ingreso por región.',en:'A star schema: regions → customers → orders → items → products. Finance wants revenue per region.'},
+ task:{es:'Une las <b>5 tablas</b> y suma <code>qty*price</code> por región.',en:'Join the <b>5 tables</b> and sum <code>qty*price</code> per region.'},
+ bullets:[{es:'Salida: <code>region</code>, <code>revenue</code>. Orden por <code>region</code>.',en:'Output: <code>region</code>, <code>revenue</code>. Order by <code>region</code>.'},{es:'Cadena: regions→customers→orders→order_items→products.',en:'Chain: regions→customers→orders→order_items→products.'}],
+ sources:[S('regions',['id','name'],[[1,'North'],[2,'South']]),S('customers',['id','name','region_id'],[[1,'Ana',1],[2,'Bob',2],[3,'Cy',1]]),S('orders',['id','cust_id'],[[1,1],[2,2],[3,3]]),S('order_items',['order_id','prod_id','qty'],[[1,10,2],[1,11,1],[2,10,5],[3,11,2]]),S('products',['id','price'],[[10,5],[11,8]])],
+ expected:'North 34\nSouth 25',
+ viz:'bar',
+ datasets:[`CREATE TABLE regions(id INT,name TEXT);INSERT INTO regions VALUES(1,'North'),(2,'South');CREATE TABLE customers(id INT,name TEXT,region_id INT);INSERT INTO customers VALUES(1,'Ana',1),(2,'Bob',2),(3,'Cy',1);CREATE TABLE orders(id INT,cust_id INT);INSERT INTO orders VALUES(1,1),(2,2),(3,3);CREATE TABLE products(id INT,price INT);INSERT INTO products VALUES(10,5),(11,8);CREATE TABLE order_items(order_id INT,prod_id INT,qty INT);INSERT INTO order_items VALUES(1,10,2),(1,11,1),(2,10,5),(3,11,2);`],
+ ref:`SELECT r.name region, SUM(oi.qty*p.price) revenue FROM regions r JOIN customers c ON c.region_id=r.id JOIN orders o ON o.cust_id=c.id JOIN order_items oi ON oi.order_id=o.id JOIN products p ON p.id=oi.prod_id GROUP BY r.id,r.name ORDER BY r.name`,
+ starter:`SELECT r.name AS region, SUM(oi.qty * p.price) AS revenue\nFROM regions r\n  JOIN customers   c  ON c.region_id = r.id\n  JOIN orders      o  ON o.cust_id   = c.id\n  JOIN order_items oi ON oi.order_id = o.id\n  JOIN products    p  ON p.id        = oi.prod_id\nGROUP BY r.id, r.name\nORDER BY r.name;`
+},
+/* ===================== SQL · DML / DDL / TCL / DCL (DBA) ===================== */
+{
+ id:'sql_dml_update',cat:'Y · DBA / Administración',kind:'sql',diff:'e',xp:15,
+ title:{es:'DML: UPDATE condicional',en:'DML: conditional UPDATE'},tags:'DML · UPDATE',
+ context:{es:'Subió el costo de la categoría A; debes ajustar los precios en la tabla.',en:'Category A costs rose; you must adjust the prices in the table.'},
+ task:{es:'Escribe un <code>UPDATE</code> que sume <b>10</b> al <code>price</code> de los productos con <code>cat=\'A\'</code>.',en:'Write an <code>UPDATE</code> that adds <b>10</b> to <code>price</code> for products where <code>cat=\'A\'</code>.'},
+ bullets:[{es:'Se verifica el estado final de la tabla (no devuelvas un SELECT).',en:'The final table state is checked (don\'t return a SELECT).'},{es:'Solo cambia la categoría A.',en:'Change only category A.'}],
+ sources:[S('products',['id','cat','price'],[[1,'A',100],[2,'B',50],[3,'A',80]])],
+ expected:'tras el UPDATE: 1→110, 2→50, 3→90',
+ datasets:[`CREATE TABLE products(id INT,cat TEXT,price INT);INSERT INTO products VALUES(1,'A',100),(2,'B',50),(3,'A',80);`],
+ ref:`UPDATE products SET price=price+10 WHERE cat='A'`,
+ verify:`SELECT id,price FROM products ORDER BY id`,
+ starter:`UPDATE products\nSET price = price + 10\nWHERE cat = 'A';`
+},
+{
+ id:'sql_dml_upsert',cat:'Y · DBA / Administración',kind:'sql',diff:'m',xp:20,
+ title:{es:'DML: UPSERT (INSERT … ON CONFLICT)',en:'DML: UPSERT (INSERT … ON CONFLICT)'},tags:'DML · upsert · MERGE',
+ context:{es:'Llega un reabastecimiento: SKU existente suma cantidad; SKU nuevo se inserta.',en:'A restock arrives: an existing SKU adds quantity; a new SKU is inserted.'},
+ task:{es:'Aplica el lote <code>(\'a\',5),(\'c\',3)</code> con <code>INSERT … ON CONFLICT(sku) DO UPDATE</code> sumando <code>qty</code>.',en:'Apply the batch <code>(\'a\',5),(\'c\',3)</code> with <code>INSERT … ON CONFLICT(sku) DO UPDATE</code> adding <code>qty</code>.'},
+ bullets:[{es:'Idempotente por clave: <code>a</code> suma; <code>c</code> se inserta. Se verifica el estado final.',en:'Idempotent by key: <code>a</code> adds; <code>c</code> is inserted. Final state is checked.'},{es:'Usa <code>excluded.qty</code> para el valor entrante.',en:'Use <code>excluded.qty</code> for the incoming value.'}],
+ sources:[S('inv',['sku (PK)','qty'],[['a',10],['b',4]],'restock entrante: a+5, c+3')],
+ expected:'a→15, b→4, c→3',
+ datasets:[`CREATE TABLE inv(sku TEXT PRIMARY KEY,qty INT);INSERT INTO inv VALUES('a',10),('b',4);`],
+ ref:`INSERT INTO inv(sku,qty) VALUES('a',5),('c',3) ON CONFLICT(sku) DO UPDATE SET qty=qty+excluded.qty`,
+ verify:`SELECT sku,qty FROM inv ORDER BY sku`,
+ starter:`INSERT INTO inv (sku, qty)\nVALUES ('a', 5), ('c', 3)\nON CONFLICT(sku) DO UPDATE\n  SET qty = qty + excluded.qty;`
+},
+{
+ id:'sql_ddl_alter',cat:'Y · DBA / Administración',kind:'sql',diff:'m',xp:20,
+ title:{es:'DDL: ALTER + backfill',en:'DDL: ALTER + backfill'},tags:'DDL · ALTER · default',
+ context:{es:'Necesitas añadir un estado a usuarios; los nuevos son \'active\' y los antiguos (id≤2) \'legacy\'.',en:'You must add a status to users; new ones default to \'active\' and old ones (id≤2) to \'legacy\'.'},
+ task:{es:'<code>ALTER TABLE</code> añade <code>status TEXT DEFAULT \'active\'</code> y luego haz backfill de los <code>id≤2</code> a <code>\'legacy\'</code>.',en:'<code>ALTER TABLE</code> add <code>status TEXT DEFAULT \'active\'</code> then backfill <code>id≤2</code> to <code>\'legacy\'</code>.'},
+ bullets:[{es:'Dos sentencias: ALTER y UPDATE. Se verifica el estado final.',en:'Two statements: ALTER and UPDATE. Final state is checked.'}],
+ sources:[S('users',['id','email'],[[1,'a@x'],[2,'b@x'],[3,'c@x']])],
+ expected:'1→legacy, 2→legacy, 3→active',
+ datasets:[`CREATE TABLE users(id INT,email TEXT);INSERT INTO users VALUES(1,'a@x'),(2,'b@x'),(3,'c@x');`],
+ ref:`ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active';UPDATE users SET status='legacy' WHERE id<=2`,
+ verify:`SELECT id,status FROM users ORDER BY id`,
+ starter:`ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active';\nUPDATE users SET status = 'legacy' WHERE id <= 2;`
+},
+{
+ id:'sql_tcl_savepoint',cat:'Y · DBA / Administración',kind:'sql',diff:'h',xp:30,
+ title:{es:'TCL: transacción con SAVEPOINT',en:'TCL: transaction with SAVEPOINT'},tags:'TCL · savepoint · rollback',
+ context:{es:'Debitas una cuenta y, dentro de la misma transacción, intentas un crédito que debes deshacer parcialmente.',en:'You debit an account and, within the same transaction, attempt a credit you must partially undo.'},
+ task:{es:'En una transacción: resta 30 a <code>id=1</code>; crea un <code>SAVEPOINT</code>; suma 30 a <code>id=2</code>; haz <code>ROLLBACK TO</code> el savepoint; <code>COMMIT</code>.',en:'In one transaction: subtract 30 from <code>id=1</code>; create a <code>SAVEPOINT</code>; add 30 to <code>id=2</code>; <code>ROLLBACK TO</code> the savepoint; <code>COMMIT</code>.'},
+ bullets:[{es:'Resultado esperado: <code>id1=70</code> (debitado), <code>id2=50</code> (el crédito se revierte).',en:'Expected: <code>id1=70</code> (debited), <code>id2=50</code> (the credit is reverted).'}],
+ sources:[S('acct',['id','bal'],[[1,100],[2,50]])],
+ expected:'1→70, 2→50',
+ datasets:[`CREATE TABLE acct(id INT,bal INT);INSERT INTO acct VALUES(1,100),(2,50);`],
+ ref:`BEGIN;UPDATE acct SET bal=bal-30 WHERE id=1;SAVEPOINT s;UPDATE acct SET bal=bal+30 WHERE id=2;ROLLBACK TO s;COMMIT`,
+ verify:`SELECT id,bal FROM acct ORDER BY id`,
+ starter:`BEGIN;\n  UPDATE acct SET bal = bal - 30 WHERE id = 1;\n  SAVEPOINT s;\n  UPDATE acct SET bal = bal + 30 WHERE id = 2;\n  ROLLBACK TO s;\nCOMMIT;`
+},
+{
+ id:'q_dcl_grant',cat:'Y · DBA / Administración',kind:'quiz',diff:'m',xp:15,timer:120,
+ title:{es:'DCL: GRANT / REVOKE y roles',en:'DCL: GRANT / REVOKE and roles'},tags:'DCL · permisos · RBAC',
+ context:{es:'Un analista solo debe LEER el esquema de reporting, nunca escribir.',en:'An analyst should only READ the reporting schema, never write.'},
+ task:{es:'Enfoque correcto de DCL (control de acceso):',en:'Correct DCL (access control) approach:'},
+ options:[{t:{es:'Crear un <b>rol</b> de solo lectura (<code>GRANT SELECT ON schema TO role</code>) y asignar el usuario al rol; revocar con <code>REVOKE</code>. RBAC por función, mínimo privilegio.',en:'Create a read-only <b>role</b> (<code>GRANT SELECT ON schema TO role</code>) and assign the user to it; revoke with <code>REVOKE</code>. RBAC by function, least privilege.'},ok:true},
+   {t:{es:'Darle permisos de administrador "por si acaso".',en:'Give them admin permissions "just in case".'},ok:false},
+   {t:{es:'Compartir la contraseña del usuario root.',en:'Share the root user password.'},ok:false},
+   {t:{es:'Quitar todos los índices del esquema.',en:'Drop all indexes from the schema.'},ok:false}],
+ explain:{es:'DCL = Data Control Language: <code>GRANT</code>/<code>REVOKE</code> sobre privilegios. La práctica senior es RBAC: agrupar permisos en roles por función de negocio y asignar usuarios a roles (mínimo privilegio), no otorgar permisos directos ni de más. SQLite no implementa DCL; sí Postgres/Snowflake/BigQuery.',en:'DCL = Data Control Language: <code>GRANT</code>/<code>REVOKE</code> over privileges. The senior practice is RBAC: group permissions into roles by business function and assign users to roles (least privilege), not granting direct or excess permissions. SQLite has no DCL; Postgres/Snowflake/BigQuery do.'}
+},
+/* ===================== SQL/Python · NULL/NA + FORMATEO (DQ) ===================== */
+{
+ id:'sql_null_coalesce',cat:'C · Transformación y DQ',kind:'sql',diff:'e',xp:15,
+ title:{es:'Manejo de NULLs (COALESCE + flag)',en:'Null handling (COALESCE + flag)'},tags:'DQ · NULL · COALESCE',
+ context:{es:'Una tabla de leads tiene email y teléfono que pueden faltar; el CRM necesita valores por defecto y un flag de contactabilidad.',en:'A leads table has email and phone that may be missing; the CRM needs defaults and a contactability flag.'},
+ task:{es:'Sustituye nulos (<code>email→\'unknown\'</code>, <code>phone→\'N/A\'</code>) y agrega <code>has_contact</code> (1 si hay email o teléfono).',en:'Replace nulls (<code>email→\'unknown\'</code>, <code>phone→\'N/A\'</code>) and add <code>has_contact</code> (1 if email or phone present).'},
+ bullets:[{es:'Salida: <code>id</code>, <code>email</code>, <code>phone</code>, <code>has_contact</code>. Orden por <code>id</code>.',en:'Output: <code>id</code>, <code>email</code>, <code>phone</code>, <code>has_contact</code>. Order by <code>id</code>.'}],
+ sources:[S('leads',['id','email','phone'],[[1,'a@x','∅'],[2,'∅','555'],[3,'∅','∅']])],
+ expected:'1 a@x N/A 1\n2 unknown 555 1\n3 unknown N/A 0',
+ datasets:[`CREATE TABLE leads(id INT,email TEXT,phone TEXT);INSERT INTO leads VALUES(1,'a@x',NULL),(2,NULL,'555'),(3,NULL,NULL);`],
+ ref:`SELECT id, COALESCE(email,'unknown') email, COALESCE(phone,'N/A') phone, CASE WHEN email IS NOT NULL OR phone IS NOT NULL THEN 1 ELSE 0 END has_contact FROM leads ORDER BY id`,
+ starter:`SELECT\n  id,\n  COALESCE(email, 'unknown') AS email,\n  COALESCE(phone, 'N/A')     AS phone,\n  CASE WHEN email IS NOT NULL OR phone IS NOT NULL THEN 1 ELSE 0 END AS has_contact\nFROM leads\nORDER BY id;`
+},
+{
+ id:'sql_format_names',cat:'C · Transformación y DQ',kind:'sql',diff:'m',xp:20,
+ title:{es:'Formateo: limpiar nombres y fechas',en:'Formatting: clean names and dates'},tags:'formateo · trim · strftime',
+ context:{es:'Datos crudos con espacios y mayúsculas inconsistentes; reporting quiere nombres Propios y el año.',en:'Raw data with spaces and inconsistent casing; reporting wants Proper-cased names and the year.'},
+ task:{es:'<code>TRIM</code> + proper-case (1ª mayúscula, resto minúsculas) del nombre, y extrae el año de <code>created</code>.',en:'<code>TRIM</code> + proper-case (first upper, rest lower) the name, and extract the year from <code>created</code>.'},
+ bullets:[{es:'Salida: <code>nm</code>, <code>yr</code>. Pistas: <code>trim</code>, <code>upper/lower</code>, <code>substr</code>, <code>strftime(\'%Y\',·)</code>.',en:'Output: <code>nm</code>, <code>yr</code>. Hints: <code>trim</code>, <code>upper/lower</code>, <code>substr</code>, <code>strftime(\'%Y\',·)</code>.'}],
+ sources:[S('raw',['name','created'],[['  ANA ','2020-03-09'],['bob','2019-12-25']])],
+ expected:'Ana 2020\nBob 2019',
+ datasets:[`CREATE TABLE raw(name TEXT,created TEXT);INSERT INTO raw VALUES('  ANA ','2020-03-09'),('bob','2019-12-25');`],
+ ref:`SELECT upper(substr(trim(name),1,1))||lower(substr(trim(name),2)) nm, strftime('%Y',created) yr FROM raw ORDER BY nm`,
+ starter:`SELECT\n  upper(substr(trim(name),1,1)) || lower(substr(trim(name),2)) AS nm,\n  strftime('%Y', created) AS yr\nFROM raw\nORDER BY nm;`
+},
+{
+ id:'py_dq_nulls',cat:'C · Transformación y DQ',kind:'python',diff:'m',xp:20,
+ title:{es:'Verificar nulos/NA por columna (pandas)',en:'Check nulls/NA per column (pandas)'},tags:'DQ · pandas · isna',
+ context:{es:'Antes de cargar a Silver, perfilas cuántos faltantes tiene cada columna.',en:'Before loading to Silver, you profile how many missing values each column has.'},
+ task:{es:'Implementa <code>null_report(df)</code> que devuelva un <code>dict</code> <code>{columna: nº de NaN}</code>.',en:'Implement <code>null_report(df)</code> returning a <code>dict</code> <code>{column: NaN count}</code>.'},
+ bullets:[{es:'Usa <code>df[col].isna().sum()</code>; convierte a <code>int</code>.',en:'Use <code>df[col].isna().sum()</code>; cast to <code>int</code>.'},{es:'Recorre <code>df.columns</code>.',en:'Iterate <code>df.columns</code>.'}],
+ sources:[S('df','df = pd.DataFrame({a:[1,NaN,3], b:[x,NaN,NaN]})'.split('=').slice(0,1).concat(['ejemplo']),[['a','1 null'],['b','2 nulls']])],
+ expected:'{"a": 1, "b": 2}',
+ pyPackages:['pandas'],
+ starter:`import pandas as pd\n\ndef null_report(df):\n    # {columna: nº de NaN} como int\n    ...\n`,
+ pytests:`
+import pandas as pd, numpy as np
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+df=pd.DataFrame({"a":[1,None,3],"b":["x",None,None]})
+chk("conteo de nulos", null_report(df), {"a":1,"b":2})
+chk("sin nulos", null_report(pd.DataFrame({"x":[1,2]})), {"x":0})
+`
+},
+{
+ id:'py_dq_validate',cat:'C · Transformación y DQ',kind:'python',diff:'m',xp:20,
+ title:{es:'Validación de reglas de calidad',en:'Data-quality rule validation'},tags:'DQ · validación',
+ context:{es:'Cada registro debe cumplir reglas: id no nulo, edad 0–120, email con \'@\'. Reportas las violaciones.',en:'Each record must satisfy rules: id not null, age 0–120, email contains \'@\'. You report violations.'},
+ task:{es:'Implementa <code>validate(records)</code> → lista de <code>(id, motivo)</code> por la <b>primera</b> regla que falle.',en:'Implement <code>validate(records)</code> → list of <code>(id, reason)</code> for the <b>first</b> failing rule.'},
+ bullets:[{es:'Reglas en orden: <code>"id null"</code>, <code>"age range"</code>, <code>"bad email"</code>.',en:'Rules in order: <code>"id null"</code>, <code>"age range"</code>, <code>"bad email"</code>.'},{es:'Un registro válido no aporta nada a la lista.',en:'A valid record adds nothing to the list.'}],
+ sources:[S('records',['ejemplo'],[['{id:2, age:200, email:"b@x"} → (2,"age range")'],['{id:3, age:40, email:"bad"} → (3,"bad email")']])],
+ expected:'[(2, "age range"), (3, "bad email")]',
+ starter:`def validate(records):\n    out = []\n    for r in records:\n        # id null -> age range -> bad email (primera que falle)\n        ...\n    return out\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+recs=[{"id":1,"age":30,"email":"a@x"},{"id":2,"age":200,"email":"b@x"},{"id":3,"age":40,"email":"bad"}]
+chk("detecta violaciones", validate(recs), [(2,"age range"),(3,"bad email")])
+chk("todo válido -> []", validate([{"id":1,"age":20,"email":"z@y"}]), [])
+`
+},
+/* ===================== GRÁFICAS / ESTADÍSTICA (viz) ===================== */
+{
+ id:'sql_chart_monthly',cat:'J · Estadística para DE',kind:'sql',diff:'e',xp:15,viz:'bar',
+ title:{es:'📊 Ingreso mensual (para gráfica)',en:'📊 Monthly revenue (for a chart)'},tags:'agregación · gráfica',
+ context:{es:'Un dashboard mostrará un gráfico de barras de ingreso por mes. Prepara los datos.',en:'A dashboard will show a bar chart of revenue per month. Prepare the data.'},
+ task:{es:'Agrupa por mes (<code>YYYY-MM</code>) y suma <code>amount</code>; ordena por mes. La consola dibujará las barras.',en:'Group by month (<code>YYYY-MM</code>) and sum <code>amount</code>; order by month. The console will draw the bars.'},
+ bullets:[{es:'Salida: <code>month</code>, <code>revenue</code>. Usa <code>strftime(\'%Y-%m\', d)</code>.',en:'Output: <code>month</code>, <code>revenue</code>. Use <code>strftime(\'%Y-%m\', d)</code>.'}],
+ sources:[S('sales',['d','amount'],[['2024-01-05',100],['2024-01-20',50],['2024-02-03',80],['2024-03-01',60]])],
+ expected:'2024-01 150 | 2024-02 80 | 2024-03 60',
+ datasets:[`CREATE TABLE sales(d TEXT,amount INT);INSERT INTO sales VALUES('2024-01-05',100),('2024-01-20',50),('2024-02-03',80),('2024-03-01',60);`],
+ ref:`SELECT strftime('%Y-%m', d) month, SUM(amount) revenue FROM sales GROUP BY 1 ORDER BY 1`,
+ starter:`SELECT\n  strftime('%Y-%m', d) AS month,\n  SUM(amount) AS revenue\nFROM sales\nGROUP BY 1\nORDER BY 1;`
+},
+{
+ id:'sql_chart_topn',cat:'J · Estadística para DE',kind:'sql',diff:'m',xp:20,viz:'bar',
+ title:{es:'📊 Top-3 categorías (para gráfica)',en:'📊 Top-3 categories (for a chart)'},tags:'ranking · gráfica',
+ context:{es:'Quieren un gráfico de las 3 categorías con más ventas.',en:'They want a chart of the top 3 categories by sales.'},
+ task:{es:'Suma por categoría y devuelve el <b>top 3</b> descendente.',en:'Sum per category and return the <b>top 3</b> descending.'},
+ bullets:[{es:'Salida: <code>cat</code>, <code>total</code>. <code>ORDER BY total DESC LIMIT 3</code>.',en:'Output: <code>cat</code>, <code>total</code>. <code>ORDER BY total DESC LIMIT 3</code>.'}],
+ sources:[S('sales',['cat','amount'],[['A',100],['B',60],['C',200],['A',50],['B',40]])],
+ expected:'C 200 | A 150 | B 100',
+ datasets:[`CREATE TABLE sales(cat TEXT,amount INT);INSERT INTO sales VALUES('A',100),('B',60),('C',200),('A',50),('B',40);`],
+ ref:`SELECT cat, SUM(amount) total FROM sales GROUP BY cat ORDER BY total DESC LIMIT 3`,
+ starter:`SELECT cat, SUM(amount) AS total\nFROM sales\nGROUP BY cat\nORDER BY total DESC\nLIMIT 3;`
+},
+{
+ id:'sql_histogram',cat:'J · Estadística para DE',kind:'sql',diff:'m',xp:20,viz:'bar',
+ title:{es:'📊 Histograma por buckets',en:'📊 Histogram by buckets'},tags:'histograma · CASE · gráfica',
+ context:{es:'Quieres la distribución de notas en 3 rangos para un histograma.',en:'You want the grade distribution in 3 ranges for a histogram.'},
+ task:{es:'Cuenta cuántas notas caen en <code>0-59</code>, <code>60-79</code>, <code>80-100</code> con <code>CASE</code>.',en:'Count how many grades fall in <code>0-59</code>, <code>60-79</code>, <code>80-100</code> using <code>CASE</code>.'},
+ bullets:[{es:'Salida: <code>bucket</code>, <code>n</code>. Orden por <code>bucket</code>.',en:'Output: <code>bucket</code>, <code>n</code>. Order by <code>bucket</code>.'}],
+ sources:[S('scores',['v'],[[45],[55],[72],[88],['…']])],
+ expected:'0-59 3 | 60-79 2 | 80-100 3',
+ datasets:[`CREATE TABLE scores(v INT);INSERT INTO scores VALUES(45),(55),(72),(88),(90),(99),(61),(30);`],
+ ref:`SELECT CASE WHEN v<60 THEN '0-59' WHEN v<80 THEN '60-79' ELSE '80-100' END bucket, COUNT(*) n FROM scores GROUP BY bucket ORDER BY bucket`,
+ starter:`SELECT\n  CASE WHEN v < 60 THEN '0-59'\n       WHEN v < 80 THEN '60-79'\n       ELSE '80-100' END AS bucket,\n  COUNT(*) AS n\nFROM scores\nGROUP BY bucket\nORDER BY bucket;`
+},
+{
+ id:'py_ascii_bar',cat:'J · Estadística para DE',kind:'python',diff:'m',xp:20,
+ title:{es:'📊 Gráfico de barras ASCII',en:'📊 ASCII bar chart'},tags:'gráfica · formateo',
+ context:{es:'Para un reporte en texto plano (logs, email), renderizas un mini gráfico de barras con caracteres.',en:'For a plain-text report (logs, email), you render a mini bar chart with characters.'},
+ task:{es:'Implementa <code>bar_chart(data)</code> donde <code>data</code> = lista de <code>(label, value)</code> → string con <code>value</code> almohadillas <code>#</code> por fila.',en:'Implement <code>bar_chart(data)</code> where <code>data</code> = list of <code>(label, value)</code> → string with <code>value</code> hashes <code>#</code> per row.'},
+ bullets:[{es:'Cada línea: <code>f"{label} | {\'#\'*value}"</code>. Filas unidas por <code>\\n</code>.',en:'Each line: <code>f"{label} | {\'#\'*value}"</code>. Rows joined by <code>\\n</code>.'}],
+ sources:[S('entrada / input',['data'],[['[("a",3),("b",1)]','→ "a | ###\\nb | #"']])],
+ expected:'a | ###\\nb | #',
+ starter:`def bar_chart(data):\n    # una línea por (label, value): f"{label} | {'#'*value}"\n    ...\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("barras", bar_chart([("a",3),("b",1)]), "a | ###\\nb | #")
+chk("valor 0", bar_chart([("x",0)]), "x | ")
+chk("tres filas", bar_chart([("a",1),("b",2),("c",3)]), "a | #\\nb | ##\\nc | ###")
+`
+},
 ];
 /* English overlay for legacy (Spanish-authored) exercises. Resolver: fld() prefers EN[id][field] when lang==='en'. */
 const EN={
@@ -1966,7 +2244,7 @@ const T={
   reset_c:'¿Borrar progreso (XP, resueltos, streak, historial)?',
   loading_py:'Cargando runtime de Python (Pyodide, ~una vez)…',loading_pkg:'Cargando paquetes',py_blocked:'No se pudo cargar Python aquí (el sandbox bloqueó el runtime). Usa <b>Ver solución</b> o <b>Review IA</b>.',
   sql_fail:'No se pudo cargar sql.js',write_q:'Escribe una query.',no_res:'Sin resultados.',tutor_off:'Tutor IA no disponible aquí',hint_sys:'Da UNA pista breve (máx 3 líneas) que oriente sin resolver.',rev_sys:'Eres un Senior Data Engineer revisando código de un colega senior. Feedback directo, máx 8 líneas: correctitud, edge cases, idempotencia/coste/rendimiento, estilo de producción. Señala líneas concretas. No reescribas todo.',
-  expected:'esperado',got:'tu salida',rows:'fila(s)',
+  expected:'esperado',got:'tu salida',rows:'fila(s)',output:'salida',
   toast_xp:'XP',toast_timeup:'⏱ Tiempo agotado — puedes seguir, pero rinde ½ XP',toast_examtime:'⏱ Tiempo del examen agotado'},
  en:{nav_home:'Home',nav_guide:'Guide',nav_practice:'Practice',nav_exam:'Exam',nav_stats:'Stats',
   home_kicker:'Training platform · Data Engineering',home_tag:'Train · Practice · Master',rights:'All rights reserved.',locked_msg:'Complete the easier exercises in this category first 🔒',to_next:'{n} XP → Lv {l}',to_lvl:'to Lv {l}',
@@ -1991,7 +2269,7 @@ const T={
   reset_c:'Clear progress (XP, solved, streak, history)?',
   loading_py:'Loading Python runtime (Pyodide, ~once)…',loading_pkg:'Loading packages',py_blocked:'Could not load Python here (sandbox blocked the runtime). Use <b>Reveal solution</b> or <b>AI review</b>.',
   sql_fail:'Could not load sql.js',write_q:'Write a query.',no_res:'No results.',tutor_off:'AI tutor unavailable here',hint_sys:'Give ONE short hint (max 3 lines) that guides without solving.',rev_sys:'You are a Senior Data Engineer reviewing code from a senior peer. Direct feedback, max 8 lines: correctness, edge cases, idempotency/cost/performance, production style. Point to concrete lines. Do not rewrite everything.',
-  expected:'expected',got:'your output',rows:'row(s)',
+  expected:'expected',got:'your output',rows:'row(s)',output:'output',
   toast_xp:'XP',toast_timeup:'⏱ Time up — you can continue, but it yields ½ XP',toast_examtime:'⏱ Exam time is up'}
 };
 function t(k){return (T[lang]&&T[lang][k])||T.es[k]||k;}
@@ -3450,19 +3728,42 @@ function showConsole(m){$('#cases').innerHTML=`<div class="console">${m}</div>`;
 async function ensureSQL(){if(SQL)return SQL;SQL=await initSqlJs({locateFile:f=>`https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${f}`});return SQL;}
 function rowsEq(a,b,o){const n=r=>JSON.stringify(r);if(a.length!==b.length)return false;if(o)return a.every((r,i)=>n(r)===n(b[i]));const sa=a.map(n).sort(),sb=b.map(n).sort();return sa.every((v,i)=>v===sb[i]);}
 function exec(db,sql){const r=db.exec(sql);return r.length?{cols:r[0].columns,rows:r[0].values}:{cols:[],rows:[]};}
-function preview(r){const x=r.rows.slice(0,3).map(row=>'['+row.join(',')+']').join(' ');return (x||'∅')+(r.rows.length>3?' …':'');}
+function escv(v){return v===null?'<span class="nul">NULL</span>':String(v).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function sqlTable(r,max){max=max||40;
+  if(!r.cols.length&&!r.rows.length)return '<div class="cnote">∅ 0 '+t('rows')+'</div>';
+  const head='<tr>'+r.cols.map(c=>`<th>${escv(c)}</th>`).join('')+'</tr>';
+  const body=r.rows.slice(0,max).map(row=>'<tr>'+row.map(v=>`<td>${escv(v)}</td>`).join('')+'</tr>').join('');
+  const more=r.rows.length>max?`<div class="cnote">… +${r.rows.length-max} ${t('rows')}</div>`:'';
+  return `<table class="cout">${head}${body}</table>${more}<div class="cnote">${r.rows.length} ${t('rows')} × ${r.cols.length} col</div>`;
+}
+function isChartable(r){return r&&r.cols.length>=2&&r.rows.length>0&&r.rows.length<=24&&r.rows.every(row=>row[1]!==null&&!isNaN(parseFloat(row[1])));}
+function barChart(r){const rows=r.rows.slice(0,24).map(row=>[String(row[0]),parseFloat(row[1])||0]);const max=Math.max(...rows.map(x=>Math.abs(x[1])),1);
+  const bars=rows.map(([lab,v])=>`<div class="cbar"><span class="cblab">${escv(lab)}</span><span class="cbtrack"><span class="cbfill" style="width:${Math.round(Math.abs(v)/max*100)}%"></span></span><span class="cbval">${v}</span></div>`).join('');
+  return `<div class="chart">📊 ${escv(r.cols[0])} → ${escv(r.cols[1])}${bars}</div>`;}
+function term(inner){return `<div class="term"><div class="termbar"><i class="d r"></i><i class="d y"></i><i class="d g"></i><span class="ttl">de_dojo · result</span></div><div class="termbody">${inner}</div></div>`;}
+function runStmts(lib,dataset,sql,verify){const db=new lib.Database();try{db.run(dataset);if(verify){db.run(sql);return exec(db,verify);}return exec(db,sql);}finally{db.close();}}
 async function runSQL(){
   const e=cur,userSQL=editor.getValue().trim().replace(/;+\s*$/,'');
   if(!userSQL){showConsole(t('write_q'));return false;}
   let lib;try{lib=await ensureSQL();}catch(err){showConsole(t('sql_fail')+': '+err);return false;}
-  const cases=[],ordered=/order\s+by/i.test(e.ref);
-  for(let i=0;i<e.datasets.length;i++){const db=new lib.Database();
-    try{db.run(e.datasets[i]);let exp;try{exp=exec(db,e.ref);}catch(err){cases.push({name:`dataset ${i+1}`,ok:false,detail:'ref error: '+err});db.close();continue;}
-      let got;try{got=exec(db,userSQL);}catch(err){cases.push({name:`dataset ${i+1}`,ok:false,detail:'SQL error: '+err});db.close();continue;}
-      const ok=rowsEq(got.rows,exp.rows,ordered);
-      cases.push({name:`dataset ${i+1} · ${exp.rows.length} ${t('rows')}`,ok,detail:ok?'':`${t('got')}: ${preview(got)} | ${t('expected')}: ${preview(exp)}`});
-    }finally{db.close();}}
-  const all=showCases(cases);if(all)await award(e);return all;
+  const cases=[],ordered=/order\s+by/i.test(e.verify||e.ref);let g0=null,x0=null,fail=null;
+  for(let i=0;i<e.datasets.length;i++){
+    let exp;try{exp=runStmts(lib,e.datasets[i],e.ref,e.verify);}catch(err){cases.push({name:`dataset ${i+1}`,ok:false});if(!fail)fail={err:'ref error: '+err};continue;}
+    let got;try{got=runStmts(lib,e.datasets[i],userSQL,e.verify);}catch(err){cases.push({name:`dataset ${i+1}`,ok:false});if(!fail)fail={err:String(err.message||err)};continue;}
+    const ok=rowsEq(got.rows,exp.rows,ordered);
+    if(i===0){g0=got;x0=exp;}
+    if(!ok&&!fail)fail={got,exp};
+    cases.push({name:`dataset ${i+1} · ${exp.rows.length} ${t('rows')}`,ok});
+  }
+  const pass=cases.filter(c=>c.ok).length,all=pass===cases.length&&cases.length>0;
+  $('#verdict').textContent=`${pass}/${cases.length}`;$('#verdict').className='verdict '+(all?'pass':'fail');
+  let body=`<div class="prompt">de_dojo=# run · <span class="${all?'okc':'failc'}">${all?'PASS':'FAIL'}</span> ${pass}/${cases.length}</div>`;
+  if(fail&&fail.err){body+=`<div class="cerr">✗ ${escv(fail.err)}</div>`;}
+  const showR=(fail&&fail.got)?fail.got:g0;
+  if(showR){body+=`<div class="clabel">${all?t('output'):t('got')}</div>`+sqlTable(showR);if(e.viz&&isChartable(showR))body+=barChart(showR);}
+  if(!all&&fail&&fail.exp){body+=`<div class="clabel">${t('expected')}</div>`+sqlTable(fail.exp);if(e.viz&&isChartable(fail.exp))body+=barChart(fail.exp);}
+  $('#cases').innerHTML=term(body)+`<div class="caselist">`+cases.map(c=>`<span class="cchip ${c.ok?'ok':'no'}">${c.ok?'✓':'✗'} ${c.name}</span>`).join('')+`</div>`;
+  if(all)await award(e);return all;
 }
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('load fail '+src));document.head.appendChild(s);});}
 async function ensurePy(){if(pyodide)return pyodide;if(pyLoading)return pyLoading;showConsole(t('loading_py')+' <span class="pulse">●</span>');pyLoading=(async()=>{await loadScript('https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js');pyodide=await loadPyodide({indexURL:'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/'});return pyodide;})();return pyLoading;}
@@ -3474,8 +3775,16 @@ async function runPy(){
   try{await py.runPythonAsync(code);}catch(err){showConsole('Error:\n'+(err.message||err));return false;}
   const m=out.indexOf('__RESULTS__');if(m<0){showConsole(t('no_res')+'\n'+out);return false;}
   let list;try{list=JSON.parse(out.slice(m+11));}catch(err){showConsole(out);return false;}
-  const cases=list.map(c=>({name:c.name,ok:c.ok,detail:c.ok?'':`${t('got')} ${c.got} · ${t('expected')} ${c.expected}`}));
-  const all=showCases(cases);if(all)await award(e);return all;
+  const stdout=out.slice(0,m).replace(/\s+$/,'');
+  const cases=list.map(c=>({name:c.name,ok:c.ok,got:c.got,expected:c.expected}));
+  const pass=cases.filter(c=>c.ok).length,all=pass===cases.length&&cases.length>0;
+  $('#verdict').textContent=`${pass}/${cases.length}`;$('#verdict').className='verdict '+(all?'pass':'fail');
+  let body=`<div class="prompt">$ python · <span class="${all?'okc':'failc'}">${all?'PASS':'FAIL'}</span> ${pass}/${cases.length}</div>`;
+  if(stdout)body+=`<div class="clabel">stdout</div><div class="stdout">${escv(stdout)}</div>`;
+  const f=cases.find(c=>!c.ok);
+  if(f)body+=`<div class="clabel">${t('got')} / ${t('expected')}</div><div class="cerr">✗ ${escv(f.name)}\n  ${t('got')}: ${escv(f.got)}\n  ${t('expected')}: ${escv(f.expected)}</div>`;
+  $('#cases').innerHTML=term(body)+`<div class="caselist">`+cases.map(c=>`<span class="cchip ${c.ok?'ok':'no'}">${c.ok?'✓':'✗'} ${escv(c.name)}</span>`).join('')+`</div>`;
+  if(all)await award(e);return all;
 }
 function runQuiz(){const e=cur;if(quizSel==null){showConsole(t('choose'));return;}answered=true;document.querySelectorAll('.opt').forEach(o=>{const oi=+o.dataset.i;o.classList.remove('sel');if(e.options[oi].ok)o.classList.add('correct');if(oi===quizSel&&!e.options[oi].ok)o.classList.add('wrong');});const ok=e.options[quizSel].ok;showCases([{name:ok?t('correct'):t('incorrect'),ok,detail:explainText(e)}]);if(ok)award(e);}
 function runTests(){if(!cur)return;if(cur.kind==='sql')return runSQL();if(cur.kind==='python')return runPy();if(cur.kind==='quiz')return runQuiz();}
