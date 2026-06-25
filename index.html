@@ -1108,6 +1108,146 @@ src=[1,2,3]; batch(src,2); chk("no muta entrada", src, [1,2,3])
    {t:{es:'Aumentar el tamaño del warehouse.',en:'Increasing the warehouse size.'},ok:false}],
  explain:{es:'Idempotencia = reejecutar deja el mismo estado. Se logra con MERGE por clave o delete+insert por partición, no evitando reintentos (los fallos son inevitables). Append-only sin clave duplica al reintentar.',en:'Idempotency = rerunning leaves the same state. Achieved via MERGE on a key or delete+insert per partition, not by avoiding retries (failures are inevitable). Keyless append-only duplicates on retry.'}
 },
+/* ===================== TENDENCIAS 2025-2026 ===================== */
+{
+ id:'q_iceberg',cat:'E · Arquitectura Moderna',kind:'quiz',diff:'m',xp:15,timer:120,
+ title:{es:'Iceberg + REST catalog: ¿qué resuelve?',en:'Iceberg + REST catalog: what does it solve?'},tags:'iceberg · lakehouse',
+ context:{es:'Tu equipo quiere evitar vendor lock-in y usar varios motores sobre el mismo storage.',en:'Your team wants to avoid vendor lock-in and use several engines over the same storage.'},
+ task:{es:'¿Qué describe mejor el valor de Apache Iceberg con un catálogo REST?',en:'What best describes the value of Apache Iceberg with a REST catalog?'},
+ options:[{t:{es:'Tablas ACID sobre Parquet + un catálogo que desacopla el motor del metastore: Spark, Flink, Trino, DuckDB y Snowflake leen/escriben las mismas tablas con permisos centralizados.',en:'ACID tables over Parquet + a catalog that decouples engine from metastore: Spark, Flink, Trino, DuckDB and Snowflake read/write the same tables with centralized permissions.'},ok:true},
+   {t:{es:'Un formato propietario más rápido que Parquet que solo corre en Databricks.',en:'A proprietary format faster than Parquet that only runs on Databricks.'},ok:false},
+   {t:{es:'Una base NoSQL para serving de baja latencia.',en:'A NoSQL store for low-latency serving.'},ok:false},
+   {t:{es:'Un orquestador que reemplaza a Airflow.',en:'An orchestrator that replaces Airflow.'},ok:false}],
+ explain:{es:'Iceberg = capa transaccional (ACID, time travel, evolución de schema/partición) sobre Parquet. El catálogo REST (Polaris/Unity/Nessie) desacopla cómputo de metadatos → fin del vendor lock-in: el motor es intercambiable.',en:'Iceberg = transactional layer (ACID, time travel, schema/partition evolution) over Parquet. The REST catalog (Polaris/Unity/Nessie) decouples compute from metadata → end of vendor lock-in: the engine is swappable.'}
+},
+{
+ id:'q_duckdb',cat:'X · Competitive',kind:'quiz',diff:'e',xp:10,timer:90,
+ title:{es:'¿Cuándo NO necesitas Spark?',en:'When do you NOT need Spark?'},tags:'duckdb · polars · single-node',
+ context:{es:'Tienes que transformar ~40GB de Parquet en S3 una vez al día.',en:'You must transform ~40GB of Parquet on S3 once a day.'},
+ task:{es:'Elección senior con criterio de costo/operación:',en:'Senior choice with cost/ops judgment:'},
+ options:[{t:{es:'DuckDB o Polars en un solo nodo: cabe en memoria/out-of-core, sin ops ni costo de clúster.',en:'DuckDB or Polars on a single node: fits in memory/out-of-core, no cluster ops or cost.'},ok:true},
+   {t:{es:'Un clúster Spark de 20 nodos "por si crece".',en:'A 20-node Spark cluster "in case it grows".'},ok:false},
+   {t:{es:'Un bucle de Python fila por fila.',en:'A row-by-row Python loop.'},ok:false},
+   {t:{es:'Cargar todo a Redis.',en:'Load everything into Redis.'},ok:false}],
+ explain:{es:'La mayoría de datasets caben en una máquina. <100GB → DuckDB/Polars (single binary, out-of-core). Spark se reserva para TB+ o shuffles masivos; usarlo para 40GB es over-engineering y coste injustificado.',en:'Most datasets fit on one machine. <100GB → DuckDB/Polars (single binary, out-of-core). Reserve Spark for TB+ or massive shuffles; using it for 40GB is over-engineering and unjustified cost.'}
+},
+{
+ id:'q_assets',cat:'E · Arquitectura Moderna',kind:'quiz',diff:'m',xp:15,timer:120,
+ title:{es:'Orquestación: tareas vs activos',en:'Orchestration: tasks vs assets'},tags:'airflow · dagster · assets',
+ context:{es:'Migras de DAGs frágiles basados en tareas a un modelo más declarativo.',en:'You migrate from fragile task-based DAGs to a more declarative model.'},
+ task:{es:'¿Qué caracteriza la orquestación asset-based (Dagster / Airflow 3 datasets)?',en:'What characterizes asset-based orchestration (Dagster / Airflow 3 datasets)?'},
+ options:[{t:{es:'Declaras QUÉ activo (tabla) debe existir y su frescura; el orquestador resuelve el orden por dependencias y da linaje.',en:'You declare WHICH asset (table) must exist and its freshness; the orchestrator resolves order by dependencies and yields lineage.'},ok:true},
+   {t:{es:'Escribes manualmente cada secuencia de pasos y sus reintentos, sin dependencias declaradas.',en:'You manually write every step sequence and its retries, with no declared dependencies.'},ok:false},
+   {t:{es:'Eliminas por completo la necesidad de scheduling.',en:'It removes the need for scheduling entirely.'},ok:false},
+   {t:{es:'Obliga a usar streaming en vez de batch.',en:'It forces streaming instead of batch.'},ok:false}],
+ explain:{es:'Asset-first: declaras el resultado (activo + frescura), no el procedimiento. Reduce DAGs frágiles y entrega linaje y observabilidad nativos. Airflow 3 sumó scheduling por datasets; Dagster nació así.',en:'Asset-first: you declare the result (asset + freshness), not the procedure. Fewer fragile DAGs and native lineage/observability. Airflow 3 added dataset scheduling; Dagster was born this way.'}
+},
+{
+ id:'q_contract',cat:'F · Governance / DQ',kind:'quiz',diff:'m',xp:15,timer:120,
+ title:{es:'Data contracts & shift-left',en:'Data contracts & shift-left'},tags:'data contract · DQ',
+ context:{es:'Producto cambia un schema sin avisar y rompe 20 dashboards aguas abajo.',en:'Product changes a schema without warning and breaks 20 downstream dashboards.'},
+ task:{es:'¿Qué hace un data contract con enfoque shift-left?',en:'What does a shift-left data contract do?'},
+ options:[{t:{es:'Define un acuerdo versionado (tipos, nullability, frescura) validado en el CI del productor, atrapando cambios incompatibles antes del merge.',en:'Defines a versioned agreement (types, nullability, freshness) validated in the producer CI, catching incompatible changes before the merge.'},ok:true},
+   {t:{es:'Agrega un dashboard más para vigilar el pipeline al final.',en:'Adds one more dashboard to watch the pipeline at the end.'},ok:false},
+   {t:{es:'Encripta los datos en tránsito.',en:'Encrypts data in transit.'},ok:false},
+   {t:{es:'Reemplaza a dbt y a Airflow.',en:'Replaces dbt and Airflow.'},ok:false}],
+ explain:{es:'Shift-left = validar en el origen. El contrato (YAML: columns, tests, freshness, owner) corre en el PR del productor; un cambio incompatible falla ahí (minutos) en vez de en un dashboard de C-level (crisis).',en:'Shift-left = validate at the source. The contract (YAML: columns, tests, freshness, owner) runs in the producer PR; an incompatible change fails there (minutes) instead of in a C-level dashboard (crisis).'}
+},
+{
+ id:'q_exactly_once',cat:'E · Arquitectura Moderna',kind:'quiz',diff:'h',xp:20,timer:150,
+ title:{es:'Exactly-once: ¿qué lo hace posible?',en:'Exactly-once: what makes it possible?'},tags:'streaming · flink · exactly-once',
+ context:{es:'Un job de Flink debe garantizar exactly-once end-to-end hacia un sink.',en:'A Flink job must guarantee end-to-end exactly-once into a sink.'},
+ task:{es:'¿Qué se requiere de verdad para exactly-once?',en:'What is actually required for exactly-once?'},
+ options:[{t:{es:'Checkpoints de estado consistente + un sink transaccional (commit atómico, p.ej. Kafka tx o commit Iceberg).',en:'Consistent-state checkpoints + a transactional sink (atomic commit, e.g. Kafka tx or an Iceberg commit).'},ok:true},
+   {t:{es:'Desactivar los reintentos para que nada se procese dos veces.',en:'Disable retries so nothing is processed twice.'},ok:false},
+   {t:{es:'Usar processing-time en vez de event-time.',en:'Use processing-time instead of event-time.'},ok:false},
+   {t:{es:'Subir el paralelismo al máximo.',en:'Max out parallelism.'},ok:false}],
+ explain:{es:'Exactly-once = checkpoints (estado recuperable) + sink transaccional (el commit es atómico con el checkpoint). Si el sink NO es transaccional, lo honesto es at-least-once + idempotencia (MERGE por clave) aguas abajo.',en:'Exactly-once = checkpoints (recoverable state) + transactional sink (the commit is atomic with the checkpoint). If the sink is NOT transactional, the honest design is at-least-once + idempotency (MERGE on a key) downstream.'}
+},
+{
+ id:'q_rag_gov',cat:'E · Arquitectura Moderna',kind:'quiz',diff:'h',xp:20,timer:150,
+ title:{es:'Gobernanza de RAG',en:'RAG governance'},tags:'rag · vector · seguridad',
+ context:{es:'Construyes un asistente RAG sobre documentos con datos sensibles por área/rol.',en:'You build a RAG assistant over documents with data sensitive by area/role.'},
+ task:{es:'Riesgo principal y mitigación correcta:',en:'Main risk and the right mitigation:'},
+ options:[{t:{es:'La búsqueda vectorial puede saltarse el row-level security: guarda las políticas como metadata junto al vector y filtra el retrieval por permisos del usuario.',en:'Vector search can bypass row-level security: store policies as metadata alongside the vector and filter retrieval by the user permissions.'},ok:true},
+   {t:{es:'Ninguno: el LLM nunca devuelve datos que no debería.',en:'None: the LLM never returns data it shouldn\'t.'},ok:false},
+   {t:{es:'Subir el top-k para devolver más contexto siempre.',en:'Raise top-k to always return more context.'},ok:false},
+   {t:{es:'Re-embeddear todo en cada consulta.',en:'Re-embed everything on every query.'},ok:false}],
+ explain:{es:'El vector DB es un serving layer fuera del lakehouse: ignora el RBAC/RLS de origen. Senior: políticas de acceso como metadata del vector + filtro por permisos en el retrieval. Sin control de acceso, un RAG es una fuga esperando a ocurrir.',en:'The vector DB is a serving layer outside the lakehouse: it ignores source RBAC/RLS. Senior: access policies as vector metadata + permission filter at retrieval. Without access control, a RAG is a leak waiting to happen.'}
+},
+{
+ id:'py_cosine',cat:'L · Lógica / Algoritmos DE',kind:'python',diff:'m',xp:20,
+ title:{es:'Similaridad coseno (retrieval RAG)',en:'Cosine similarity (RAG retrieval)'},tags:'rag · vectores',
+ context:{es:'El núcleo del retrieval en RAG es comparar embeddings por similaridad coseno.',en:'The core of RAG retrieval is comparing embeddings by cosine similarity.'},
+ task:{es:'Implementa <code>cosine(a, b)</code> entre dos vectores (listas de floats).',en:'Implement <code>cosine(a, b)</code> between two vectors (lists of floats).'},
+ bullets:[{es:'Coseno = producto punto / (norma(a)·norma(b)).',en:'Cosine = dot / (norm(a)·norm(b)).'},{es:'Si alguna norma es 0 → devuelve <code>0.0</code>.',en:'If either norm is 0 → return <code>0.0</code>.'},{es:'Rango: [-1, 1].',en:'Range: [-1, 1].'}],
+ sources:[S('entrada / input',['a','b'],[['[1,2,3]','[1,2,3] → 1.0'],['[1,0]','[0,1] → 0.0']])],
+ expected:'1.0 / 0.0 / -1.0',
+ starter:`import math\n\ndef cosine(a, b):\n    # dot / (||a|| * ||b||); si una norma es 0 -> 0.0\n    ...\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp):
+    if isinstance(got,float): got=round(got,6)
+    if isinstance(exp,float): exp=round(exp,6)
+    cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("identicos -> 1", cosine([1,2,3],[1,2,3]), 1.0)
+chk("ortogonales -> 0", cosine([1,0],[0,1]), 0.0)
+chk("opuestos -> -1", cosine([1,0],[-1,0]), -1.0)
+chk("norma 0 -> 0", cosine([0,0],[1,1]), 0.0)
+`
+},
+{
+ id:'py_chunk_text',cat:'L · Lógica / Algoritmos DE',kind:'python',diff:'m',xp:20,
+ title:{es:'Chunking de texto con solape (RAG)',en:'Text chunking with overlap (RAG)'},tags:'rag · chunking',
+ context:{es:'Antes de embeddear, un documento se parte en chunks con solape para no cortar el contexto.',en:'Before embedding, a document is split into overlapping chunks so context is not cut.'},
+ task:{es:'Implementa <code>chunk_text(text, size, overlap)</code> → lista de substrings de longitud <code>size</code>, avanzando <code>size-overlap</code>.',en:'Implement <code>chunk_text(text, size, overlap)</code> → list of substrings of length <code>size</code>, stepping by <code>size-overlap</code>.'},
+ bullets:[{es:'El último chunk puede ser más corto.',en:'The last chunk may be shorter.'},{es:'<code>overlap</code> < <code>size</code>. Texto vacío → <code>[]</code>.',en:'<code>overlap</code> < <code>size</code>. Empty text → <code>[]</code>.'},{es:'Detén la generación cuando un chunk alcanza el final del texto (sin colas redundantes ya cubiertas por el solape).',en:'Stop once a chunk reaches the end of the text (no redundant tail already covered by the overlap).'}],
+ sources:[S('entrada / input',['text','size','overlap'],[['"abcdefg"','4, 1 → ["abcd","defg"]'],['"abcde"','3, 1 → ["abc","cde"]']])],
+ expected:'["abcd","defg"]',
+ starter:`def chunk_text(text, size, overlap):\n    step = size - overlap\n    out = []\n    # recorre el texto en pasos de 'step'\n    ...\n    return out\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("solape 1", chunk_text("abcdefg",4,1), ["abcd","defg"])
+chk("solape paso 2", chunk_text("abcde",3,1), ["abc","cde"])
+chk("texto vacio", chunk_text("",4,1), [])
+chk("sin solape", chunk_text("abcd",2,0), ["ab","cd"])
+`
+},
+{
+ id:'py_psi',cat:'J · Estadística para DE',kind:'python',diff:'h',xp:30,
+ title:{es:'PSI: detección de drift de distribución',en:'PSI: distribution drift detection'},tags:'observabilidad · drift',
+ context:{es:'Para detectar que una columna cambió de distribución (drift) se usa el Population Stability Index.',en:'To detect that a column changed distribution (drift) you use the Population Stability Index.'},
+ task:{es:'Implementa <code>psi(expected, actual)</code> sobre dos listas de proporciones por bin (ya normalizadas).',en:'Implement <code>psi(expected, actual)</code> over two lists of per-bin proportions (already normalized).'},
+ bullets:[{es:'PSI = Σ (a−e)·ln(a/e) por bin.',en:'PSI = Σ (a−e)·ln(a/e) per bin.'},{es:'Si un bin es 0, sustitúyelo por <code>1e-6</code> para evitar log(0)/división por 0.',en:'If a bin is 0, replace it with <code>1e-6</code> to avoid log(0)/division by 0.'},{es:'Regla: PSI &gt; 0.2 ⇒ cambio significativo.',en:'Rule: PSI &gt; 0.2 ⇒ significant change.'}],
+ sources:[S('entrada / input',['expected','actual'],[['[0.5,0.5]','[0.5,0.5] → 0.0'],['[0.5,0.5]','[0.7,0.3] → >0']])],
+ expected:'0.0 cuando las distribuciones son iguales',
+ starter:`import math\n\ndef psi(expected, actual):\n    eps = 1e-6\n    total = 0.0\n    for e, a in zip(expected, actual):\n        # e = max(e, eps); a = max(a, eps); total += (a-e)*ln(a/e)\n        ...\n    return total\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp):
+    if isinstance(got,float): got=round(got,6)
+    if isinstance(exp,float): exp=round(exp,6)
+    cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("sin drift -> 0", psi([0.5,0.5],[0.5,0.5]), 0.0)
+import math
+exp=(0.7-0.5)*math.log(0.7/0.5)+(0.3-0.5)*math.log(0.3/0.5)
+chk("drift conocido", psi([0.5,0.5],[0.7,0.3]), round(exp,6))
+chk("drift > sin drift", psi([0.5,0.5],[0.9,0.1])>psi([0.5,0.5],[0.55,0.45]), True)
+`
+},
+{
+ id:'sql_cdc_state',cat:'C · Transformación y DQ',kind:'sql',diff:'h',xp:30,
+ title:{es:'CDC: estado final desde un changelog (I/U/D)',en:'CDC: final state from a changelog (I/U/D)'},tags:'cdc · idempotencia · ROW_NUMBER',
+ context:{es:'Un stream CDC entrega inserts/updates/deletes. Para materializar la tabla Silver necesitas el estado final por clave.',en:'A CDC stream delivers inserts/updates/deletes. To materialize the Silver table you need the final state per key.'},
+ task:{es:'Por cada <code>k</code> conserva la última versión por <code>ts</code>; si la última operación es <code>D</code> (delete), excluye la clave.',en:'For each <code>k</code> keep the latest version by <code>ts</code>; if the latest op is <code>D</code> (delete), exclude the key.'},
+ bullets:[{es:'Salida: <code>k</code>, <code>val</code>.',en:'Output: <code>k</code>, <code>val</code>.'},{es:'Empate en <code>ts</code> → desempata por <code>rowid</code> mayor.',en:'Tie on <code>ts</code> → break by greater <code>rowid</code>.'},{es:'Patrón base de incremental loading idempotente (MERGE).',en:'Base pattern of idempotent incremental loading (MERGE).'}],
+ sources:[S('changelog',['k','op','ts','val'],[[1,'I',100,'a'],[1,'U',200,'a2'],[2,'I',150,'b'],[2,'D',300,'b'],[3,'I',120,'c']],"op = I/U/D")],
+ expected:'1 a2\n3 c',
+ datasets:[`CREATE TABLE changelog(k INT,op TEXT,ts INT,val TEXT);INSERT INTO changelog VALUES (1,'I',100,'a'),(1,'U',200,'a2'),(2,'I',150,'b'),(2,'D',300,'b'),(3,'I',120,'c');`],
+ ref:`WITH r AS (SELECT k,op,val,ROW_NUMBER() OVER(PARTITION BY k ORDER BY ts DESC, rowid DESC) rn FROM changelog) SELECT k,val FROM r WHERE rn=1 AND op<>'D'`,
+ starter:`WITH ranked AS (\n  SELECT k, op, val,\n    ROW_NUMBER() OVER (/* PARTITION BY k ORDER BY ts DESC ... */) AS rn\n  FROM changelog\n)\nSELECT k, val\nFROM ranked\nWHERE rn = 1 AND op <> 'D';`
+},
 ];
 /* English overlay for legacy (Spanish-authored) exercises. Resolver: fld() prefers EN[id][field] when lang==='en'. */
 const EN={
