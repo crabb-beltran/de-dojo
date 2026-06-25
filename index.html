@@ -1248,6 +1248,191 @@ chk("drift > sin drift", psi([0.5,0.5],[0.9,0.1])>psi([0.5,0.5],[0.55,0.45]), Tr
  ref:`WITH r AS (SELECT k,op,val,ROW_NUMBER() OVER(PARTITION BY k ORDER BY ts DESC, rowid DESC) rn FROM changelog) SELECT k,val FROM r WHERE rn=1 AND op<>'D'`,
  starter:`WITH ranked AS (\n  SELECT k, op, val,\n    ROW_NUMBER() OVER (/* PARTITION BY k ORDER BY ts DESC ... */) AS rn\n  FROM changelog\n)\nSELECT k, val\nFROM ranked\nWHERE rn = 1 AND op <> 'D';`
 },
+/* ===================== AVANZADO: SQL ===================== */
+{
+ id:'sql_ntile',cat:'D · SQL avanzado',kind:'sql',diff:'m',xp:20,
+ title:{es:'Cuartiles de gasto con NTILE',en:'Spend quartiles with NTILE'},tags:'window · NTILE',
+ context:{es:'Marketing quiere segmentar a los usuarios en 4 cuartiles por gasto para campañas diferenciadas.',en:'Marketing wants to segment users into 4 quartiles by spend for tiered campaigns.'},
+ task:{es:'Asigna a cada usuario su <b>cuartil (1–4)</b> según <code>amount</code> ascendente.',en:'Assign each user their <b>quartile (1–4)</b> by ascending <code>amount</code>.'},
+ bullets:[{es:'Salida: <code>user_id</code>, <code>quartile</code>.',en:'Output: <code>user_id</code>, <code>quartile</code>.'},{es:'Usa <code>NTILE(4) OVER (ORDER BY amount)</code>.',en:'Use <code>NTILE(4) OVER (ORDER BY amount)</code>.'},{es:'Ordena la salida por <code>user_id</code>.',en:'Order output by <code>user_id</code>.'}],
+ sources:[S('spend',['user_id','amount'],[[1,10],[2,20],[3,30],[4,40],['…','…']])],
+ expected:'1 1\n2 1\n3 2\n4 2 …',
+ datasets:[`CREATE TABLE spend(user_id INT,amount INT);INSERT INTO spend VALUES (1,10),(2,20),(3,30),(4,40),(5,50),(6,60),(7,70),(8,80);`],
+ ref:`SELECT user_id, NTILE(4) OVER(ORDER BY amount) AS quartile FROM spend ORDER BY user_id`,
+ starter:`SELECT\n  user_id,\n  -- NTILE(4) OVER ( ORDER BY amount ) AS quartile\nFROM spend\nORDER BY user_id;`
+},
+{
+ id:'sql_pct_total',cat:'D · SQL avanzado',kind:'sql',diff:'e',xp:15,
+ title:{es:'Porcentaje del total (window SUM)',en:'Percent of total (window SUM)'},tags:'window · ratio-to-report',
+ context:{es:'Un reporte necesita qué porción del total representa cada venta, sin un segundo query para el total.',en:'A report needs what share of the total each sale represents, without a second query for the total.'},
+ task:{es:'Calcula <code>pct_of_total</code> = porcentaje del gran total, redondeado a 1 decimal.',en:'Compute <code>pct_of_total</code> = percent of the grand total, rounded to 1 decimal.'},
+ bullets:[{es:'Salida: <code>cat</code>, <code>amount</code>, <code>pct_of_total</code>.',en:'Output: <code>cat</code>, <code>amount</code>, <code>pct_of_total</code>.'},{es:'Total con <code>SUM(amount) OVER ()</code> (sin <code>GROUP BY</code>).',en:'Total via <code>SUM(amount) OVER ()</code> (no <code>GROUP BY</code>).'},{es:'<code>ROUND(100.0*amount/total, 1)</code>. Orden: <code>cat, amount</code>.',en:'<code>ROUND(100.0*amount/total, 1)</code>. Order: <code>cat, amount</code>.'}],
+ sources:[S('sales',['cat','amount'],[['a',10],['a',30],['b',60]])],
+ expected:'a 10 10.0\na 30 30.0\nb 60 60.0',
+ datasets:[`CREATE TABLE sales(cat TEXT,amount INT);INSERT INTO sales VALUES ('a',10),('a',30),('b',60);`],
+ ref:`SELECT cat, amount, ROUND(100.0*amount/SUM(amount) OVER(),1) AS pct_of_total FROM sales ORDER BY cat, amount`,
+ starter:`SELECT\n  cat,\n  amount,\n  -- ROUND(100.0 * amount / SUM(amount) OVER (), 1) AS pct_of_total\nFROM sales\nORDER BY cat, amount;`
+},
+{
+ id:'sql_lead_gap',cat:'D · SQL avanzado',kind:'sql',diff:'m',xp:20,
+ title:{es:'Días hasta la siguiente compra (LEAD)',en:'Days until next purchase (LEAD)'},tags:'window · LEAD · churn',
+ context:{es:'Para una señal de churn, calcula cuántos días pasan hasta la siguiente compra de cada cliente.',en:'For a churn signal, compute how many days until each customer\'s next purchase.'},
+ task:{es:'Devuelve <code>gap_to_next</code> = días hasta la próxima compra; la última compra del cliente queda en <code>NULL</code>.',en:'Return <code>gap_to_next</code> = days to the next purchase; the customer\'s last purchase is <code>NULL</code>.'},
+ bullets:[{es:'Salida: <code>cust</code>, <code>d</code>, <code>gap_to_next</code>.',en:'Output: <code>cust</code>, <code>d</code>, <code>gap_to_next</code>.'},{es:'<code>LEAD(d) OVER (PARTITION BY cust ORDER BY d) - d</code>.',en:'<code>LEAD(d) OVER (PARTITION BY cust ORDER BY d) - d</code>.'},{es:'Orden: <code>cust, d</code>.',en:'Order: <code>cust, d</code>.'}],
+ sources:[S('purchases',['cust','d'],[[1,1],[1,5],[1,20],[2,3],[2,4]],'d = número de día / day number')],
+ expected:'1 1 4\n1 5 15\n1 20 (null)\n2 3 1\n2 4 (null)',
+ datasets:[`CREATE TABLE purchases(cust INT,d INT);INSERT INTO purchases VALUES (1,1),(1,5),(1,20),(2,3),(2,4);`],
+ ref:`SELECT cust, d, LEAD(d) OVER(PARTITION BY cust ORDER BY d) - d AS gap_to_next FROM purchases ORDER BY cust, d`,
+ starter:`SELECT\n  cust,\n  d,\n  -- LEAD(d) OVER ( PARTITION BY cust ORDER BY d ) - d AS gap_to_next\nFROM purchases\nORDER BY cust, d;`
+},
+/* ===================== AVANZADO: PYTHON ===================== */
+{
+ id:'py_toposort',cat:'L · Lógica / Algoritmos DE',kind:'python',diff:'h',xp:30,
+ title:{es:'Orden topológico de un DAG (orquestación)',en:'Topological sort of a DAG (orchestration)'},tags:'DAG · orquestación',
+ context:{es:'Un orquestador (Airflow/Dagster) debe ejecutar tareas en un orden que respete las dependencias del DAG.',en:'An orchestrator (Airflow/Dagster) must run tasks in an order that respects the DAG dependencies.'},
+ task:{es:'Implementa <code>toposort(graph)</code> donde <code>graph[nodo]</code> = lista de prerequisitos. Devuelve un orden válido; si hay ciclo, <code>[]</code>.',en:'Implement <code>toposort(graph)</code> where <code>graph[node]</code> = list of prerequisites. Return a valid order; if there is a cycle, <code>[]</code>.'},
+ bullets:[{es:'Cada nodo aparece DESPUÉS de todos sus prerequisitos.',en:'Each node appears AFTER all its prerequisites.'},{es:'Usa el algoritmo de Kahn (in-degree + cola).',en:'Use Kahn\'s algorithm (in-degree + queue).'},{es:'Ciclo detectado (no se ordenan todos) → <code>[]</code>.',en:'Cycle detected (not all ordered) → <code>[]</code>.'}],
+ sources:[S('graph (dict)',['nodo','prerequisitos'],[['b','["a"]'],['d','["b","c"]']],'nodo -> lista de deps')],
+ expected:'un orden válido, p.ej. [a, b, c, d]',
+ starter:`from collections import deque\n\ndef toposort(graph):\n    # in-degree por nodo; cola con los de in-degree 0; algoritmo de Kahn\n    ...\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+g={"a":[],"b":["a"],"c":["a"],"d":["b","c"]}
+order=toposort(g); pos={n:i for i,n in enumerate(order)}
+chk("contiene todos los nodos", sorted(order)==sorted(list(g.keys())), True)
+chk("respeta dependencias", all(pos[dep]<pos[n] for n,deps in g.items() for dep in deps), True)
+chk("ciclo -> []", toposort({"x":["y"],"y":["x"]}), [])
+`
+},
+{
+ id:'py_running_median',cat:'L · Lógica / Algoritmos DE',kind:'python',diff:'h',xp:30,
+ title:{es:'Mediana móvil de un stream',en:'Running median of a stream'},tags:'streaming · estadística',
+ context:{es:'Monitoreas la latencia de un pipeline en streaming y necesitas la mediana acumulada tras cada evento.',en:'You monitor a streaming pipeline\'s latency and need the cumulative median after each event.'},
+ task:{es:'Implementa <code>running_median(stream)</code> → lista con la mediana de los primeros k elementos para cada k.',en:'Implement <code>running_median(stream)</code> → list with the median of the first k elements for each k.'},
+ bullets:[{es:'Impar → elemento central; par → promedio de los dos centrales.',en:'Odd → middle element; even → average of the two middle ones.'},{es:'La salida tiene la misma longitud que la entrada.',en:'The output has the same length as the input.'},{es:'Puedes ordenar en cada paso (o usar dos heaps para O(log n)).',en:'You may sort at each step (or use two heaps for O(log n)).'}],
+ sources:[S('entrada / input',['stream'],[['[2,1,5,3]','→ [2, 1.5, 2, 2.5]']])],
+ expected:'[2, 1.5, 2, 2.5]',
+ starter:`def running_median(stream):\n    out = []\n    seen = []\n    for x in stream:\n        seen.append(x)\n        # mediana de 'seen' tras cada elemento\n        ...\n    return out\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp):
+    if isinstance(got,float): got=round(got,6)
+    if isinstance(exp,float): exp=round(exp,6)
+    cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("stream mixto", running_median([2,1,5,3]), [2,1.5,2,2.5])
+chk("un elemento", running_median([7]), [7])
+chk("longitud", len(running_median([4,2,6])), 3)
+`
+},
+{
+ id:'py_upsert',cat:'Q · Python + Bases de Datos',kind:'python',diff:'m',xp:20,
+ title:{es:'MERGE/upsert idempotente por clave',en:'Idempotent MERGE/upsert by key'},tags:'idempotencia · MERGE',
+ context:{es:'Un loader incremental debe fusionar un lote en una tabla destino por <code>id</code>, sin duplicar al reejecutar.',en:'An incremental loader must merge a batch into a target table by <code>id</code>, without duplicating on rerun.'},
+ task:{es:'Implementa <code>upsert(target, batch)</code>: actualiza por <code>id</code> existente, inserta los nuevos al final; no muta las entradas.',en:'Implement <code>upsert(target, batch)</code>: update by existing <code>id</code>, append new ones; do not mutate the inputs.'},
+ bullets:[{es:'Cada elemento es un <code>dict</code> con clave <code>id</code>.',en:'Each item is a <code>dict</code> with an <code>id</code> key.'},{es:'Conserva el orden: existentes primero (actualizados), luego los nuevos.',en:'Preserve order: existing first (updated), then the new ones.'},{es:'Reejecutar con el mismo lote deja el mismo resultado (idempotente).',en:'Rerunning with the same batch yields the same result (idempotent).'}],
+ sources:[S('entrada / input',['target','batch'],[['[{id:1,v:"a"}]','[{id:1,v:"b"}] → v actualizado'],['[{id:1}]','[{id:2}] → insertado']])],
+ expected:'[{"id":1,"v":"b"}]',
+ starter:`def upsert(target, batch):\n    out = [dict(r) for r in target]\n    idx = {r["id"]: i for i, r in enumerate(out)}\n    for r in batch:\n        # si r["id"] está en idx -> reemplaza; si no -> append\n        ...\n    return out\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("actualiza existente", upsert([{"id":1,"v":"a"}],[{"id":1,"v":"b"}]), [{"id":1,"v":"b"}])
+chk("inserta nuevo", upsert([{"id":1,"v":"a"}],[{"id":2,"v":"c"}]), [{"id":1,"v":"a"},{"id":2,"v":"c"}])
+chk("idempotente", upsert([{"id":1,"v":"a"}],[{"id":1,"v":"a"}]), [{"id":1,"v":"a"}])
+src=[{"id":1,"v":"a"}]; upsert(src,[{"id":1,"v":"z"}]); chk("no muta entrada", src, [{"id":1,"v":"a"}])
+`
+},
+/* ===================== AVANZADO: SNOWFLAKE ===================== */
+{
+ id:'q_sf_streams',cat:'S · Snowflake Avanzado',kind:'quiz',diff:'m',xp:15,timer:120,
+ title:{es:'Streams + Tasks para CDC',en:'Streams + Tasks for CDC'},tags:'snowflake · streams · tasks',
+ context:{es:'Quieres un pipeline incremental nativo en Snowflake, sin Debezium ni Kafka.',en:'You want a native incremental pipeline in Snowflake, without Debezium or Kafka.'},
+ task:{es:'¿Qué combinación lo logra dentro de Snowflake?',en:'Which combination achieves it inside Snowflake?'},
+ options:[{t:{es:'<b>Stream</b> (registra inserts/updates/deletes desde un offset) + <b>Task</b> (scheduler que aplica un MERGE cuando el stream tiene datos).',en:'<b>Stream</b> (records inserts/updates/deletes from an offset) + <b>Task</b> (scheduler that applies a MERGE when the stream has data).'},ok:true},
+   {t:{es:'Un cron externo que hace <code>SELECT *</code> completo cada hora.',en:'An external cron doing a full <code>SELECT *</code> every hour.'},ok:false},
+   {t:{es:'Time Travel para leer el pasado en cada corrida.',en:'Time Travel to read the past on each run.'},ok:false},
+   {t:{es:'Un warehouse más grande.',en:'A bigger warehouse.'},ok:false}],
+ explain:{es:'Un Stream expone el changelog (CDC) de una tabla desde un offset; un Task lo consume en schedule y aplica <code>MERGE</code> a la tabla destino. <code>SYSTEM$STREAM_HAS_DATA</code> evita correr en vacío. Es el patrón CDC nativo de Snowflake.',en:'A Stream exposes a table\'s changelog (CDC) from an offset; a Task consumes it on a schedule and applies <code>MERGE</code> to the target. <code>SYSTEM$STREAM_HAS_DATA</code> avoids empty runs. It is Snowflake\'s native CDC pattern.'}
+},
+{
+ id:'q_sf_qualify',cat:'S · Snowflake Avanzado',kind:'quiz',diff:'m',xp:15,timer:120,
+ title:{es:'QUALIFY: dedup en una pasada',en:'QUALIFY: dedup in one pass'},tags:'snowflake · qualify · window',
+ context:{es:'Necesitas la última fila por <code>id</code> sin un CTE extra.',en:'You need the latest row per <code>id</code> without an extra CTE.'},
+ task:{es:'¿Qué hace <code>QUALIFY ROW_NUMBER() OVER(PARTITION BY id ORDER BY ts DESC)=1</code>?',en:'What does <code>QUALIFY ROW_NUMBER() OVER(PARTITION BY id ORDER BY ts DESC)=1</code> do?'},
+ options:[{t:{es:'Filtra por el resultado de una window function en el mismo SELECT (como un WHERE para windows): conserva la fila más reciente por id.',en:'Filters by a window function result in the same SELECT (like a WHERE for windows): keeps the most recent row per id.'},ok:true},
+   {t:{es:'Crea un índice sobre id.',en:'Creates an index on id.'},ok:false},
+   {t:{es:'Es un sinónimo de GROUP BY id.',en:'It is a synonym for GROUP BY id.'},ok:false},
+   {t:{es:'Valida tipos de datos.',en:'Validates data types.'},ok:false}],
+ explain:{es:'QUALIFY filtra por el valor de una window function sin envolver en subquery/CTE (SQLite no lo tiene; Snowflake/BigQuery sí). <code>QUALIFY ROW_NUMBER()...=1</code> = deduplicación a la última versión en una sola pasada.',en:'QUALIFY filters by a window function value without a subquery/CTE wrapper (SQLite lacks it; Snowflake/BigQuery have it). <code>QUALIFY ROW_NUMBER()...=1</code> = dedup to the latest version in a single pass.'}
+},
+{
+ id:'q_sf_cluster',cat:'S · Snowflake Avanzado',kind:'quiz',diff:'h',xp:20,timer:150,
+ title:{es:'Clustering keys: ¿cuándo sí?',en:'Clustering keys: when worth it?'},tags:'snowflake · micro-particiones · pruning',
+ context:{es:'Una tabla de 5 TB se filtra casi siempre por <code>event_date</code> pero las queries escanean de más.',en:'A 5 TB table is almost always filtered by <code>event_date</code> but queries over-scan.'},
+ task:{es:'Acción senior correcta:',en:'Correct senior action:'},
+ options:[{t:{es:'Definir un <b>clustering key</b> por <code>event_date</code>: Snowflake reordena micro-particiones → mejor pruning por min/max. Solo vale en tablas grandes con patrón de filtro claro (el reclustering cuesta).',en:'Define a <b>clustering key</b> on <code>event_date</code>: Snowflake reorders micro-partitions → better min/max pruning. Only worth it on large tables with a clear filter pattern (reclustering has a cost).'},ok:true},
+   {t:{es:'Crear un índice B-tree como en PostgreSQL.',en:'Create a B-tree index like in PostgreSQL.'},ok:false},
+   {t:{es:'Hacer <code>SELECT *</code> para forzar caché.',en:'Run <code>SELECT *</code> to force caching.'},ok:false},
+   {t:{es:'Clusterizar por una columna de alta cardinalidad como <code>user_id</code>.',en:'Cluster by a high-cardinality column like <code>user_id</code>.'},ok:false}],
+ explain:{es:'Snowflake no usa índices clásicos: el pruning se basa en metadata (min/max) por micro-partición. <code>CLUSTER BY (event_date)</code> reordena físicamente para que el filtro por fecha salte micro-particiones. Reclustering tiene costo → solo tablas grandes con filtros frecuentes y predecibles.',en:'Snowflake has no classic indexes: pruning relies on per-micro-partition metadata (min/max). <code>CLUSTER BY (event_date)</code> physically reorders so a date filter skips micro-partitions. Reclustering costs → only large tables with frequent, predictable filters.'}
+},
+{
+ id:'q_sf_wh',cat:'S · Snowflake Avanzado',kind:'quiz',diff:'m',xp:15,timer:120,
+ title:{es:'Multi-cluster vs escalar el warehouse',en:'Multi-cluster vs scaling the warehouse'},tags:'snowflake · warehouse · concurrencia',
+ context:{es:'A las 9am, 200 analistas lanzan dashboards y las queries hacen cola (queuing).',en:'At 9am, 200 analysts fire dashboards and queries are queuing.'},
+ task:{es:'¿Qué resuelve la <b>concurrencia</b> sin desperdiciar cómputo?',en:'What fixes <b>concurrency</b> without wasting compute?'},
+ options:[{t:{es:'Warehouse <b>multi-cluster</b> (escala horizontal): añade clusters para repartir muchas queries simultáneas y se contrae cuando bajan.',en:'A <b>multi-cluster</b> warehouse (scale-out): adds clusters to spread many simultaneous queries and contracts when load drops.'},ok:true},
+   {t:{es:'Subir el tamaño (XS→4XL): eso acelera UNA query pesada, no la concurrencia.',en:'Increase size (XS→4XL): that speeds up ONE heavy query, not concurrency.'},ok:false},
+   {t:{es:'Desactivar el result cache.',en:'Disable the result cache.'},ok:false},
+   {t:{es:'Convertir todo a tablas materializadas.',en:'Convert everything to materialized tables.'},ok:false}],
+ explain:{es:'Escalar de tamaño (scale-up) acelera una query grande; multi-cluster (scale-out) resuelve concurrencia (muchos usuarios a la vez) añadiendo/quitando clusters con auto-scale. El queuing de 200 usuarios es problema de concurrencia → multi-cluster.',en:'Scaling up speeds a big query; multi-cluster (scale-out) solves concurrency (many users at once) by auto-adding/removing clusters. 200 users queuing is a concurrency problem → multi-cluster.'}
+},
+/* ===================== AVANZADO: dbt ===================== */
+{
+ id:'q_dbt_incremental',cat:'R · dbt Avanzado',kind:'quiz',diff:'h',xp:20,timer:150,
+ title:{es:'Modelos incrementales en dbt',en:'Incremental models in dbt'},tags:'dbt · incremental · merge',
+ context:{es:'Una tabla de eventos crece millones de filas/día; recalcularla entera en cada run es caro.',en:'An events table grows millions of rows/day; recomputing it fully each run is expensive.'},
+ task:{es:'¿Cómo se hace incremental correctamente en dbt?',en:'How do you make it incremental correctly in dbt?'},
+ options:[{t:{es:'<code>materialized=\'incremental\'</code> + bloque <code>is_incremental()</code> que filtra solo lo nuevo + <code>unique_key</code> para el MERGE; full-refresh periódico contra el drift.',en:'<code>materialized=\'incremental\'</code> + an <code>is_incremental()</code> block filtering only new rows + <code>unique_key</code> for the MERGE; periodic full-refresh against drift.'},ok:true},
+   {t:{es:'Materializar como <code>view</code> para que siempre esté fresca.',en:'Materialize as a <code>view</code> so it is always fresh.'},ok:false},
+   {t:{es:'Un <code>INSERT</code> append-only sin clave.',en:'An append-only <code>INSERT</code> with no key.'},ok:false},
+   {t:{es:'Borrar y recrear la tabla en cada run.',en:'Drop and recreate the table each run.'},ok:false}],
+ explain:{es:'En incremental, el <code>is_incremental()</code> filtra (<code>WHERE updated_at &gt; (SELECT max ... FROM {{ this }})</code>) y <code>unique_key</code> hace el MERGE (upsert) idempotente. El riesgo es el drift (datos tardíos/correcciones) → se mitiga con <code>full-refresh</code> periódico.',en:'In incremental, <code>is_incremental()</code> filters (<code>WHERE updated_at &gt; (SELECT max ... FROM {{ this }})</code>) and <code>unique_key</code> drives the idempotent MERGE (upsert). The risk is drift (late/corrected data) → mitigated with a periodic <code>full-refresh</code>.'}
+},
+{
+ id:'q_dbt_snapshot',cat:'R · dbt Avanzado',kind:'quiz',diff:'m',xp:15,timer:120,
+ title:{es:'dbt snapshots = SCD Tipo 2',en:'dbt snapshots = SCD Type 2'},tags:'dbt · snapshot · SCD2',
+ context:{es:'Negocio quiere "¿qué región tenía el cliente cuando compró?" (historial de dimensión).',en:'The business wants "which region did the customer have when they bought?" (dimension history).'},
+ task:{es:'¿Qué construyen los <code>dbt snapshots</code>?',en:'What do <code>dbt snapshots</code> build?'},
+ options:[{t:{es:'Una dimensión <b>SCD Tipo 2</b>: dbt gestiona <code>dbt_valid_from/valid_to</code> e inserta una fila nueva por cada cambio detectado en la clave + estrategia (timestamp/check).',en:'An <b>SCD Type 2</b> dimension: dbt manages <code>dbt_valid_from/valid_to</code> and inserts a new row per detected change on the key + strategy (timestamp/check).'},ok:true},
+   {t:{es:'Un backup comprimido de la tabla.',en:'A compressed backup of the table.'},ok:false},
+   {t:{es:'Una vista materializada que sobrescribe el valor (SCD Tipo 1).',en:'A materialized view that overwrites the value (SCD Type 1).'},ok:false},
+   {t:{es:'Un test de calidad de datos.',en:'A data quality test.'},ok:false}],
+ explain:{es:'Los snapshots implementan SCD2: defines <code>unique_key</code> y <code>strategy</code> (timestamp o check de columnas); dbt expira la fila vieja (<code>dbt_valid_to</code>) e inserta la nueva activa. Es el historial punto-en-tiempo sin escribir el MERGE a mano.',en:'Snapshots implement SCD2: you define <code>unique_key</code> and <code>strategy</code> (timestamp or column check); dbt expires the old row (<code>dbt_valid_to</code>) and inserts the new active one. It is point-in-time history without hand-writing the MERGE.'}
+},
+{
+ id:'q_dbt_tests',cat:'R · dbt Avanzado',kind:'quiz',diff:'m',xp:15,timer:120,
+ title:{es:'Tests en dbt: genérico vs singular',en:'dbt tests: generic vs singular'},tags:'dbt · tests · severity',
+ context:{es:'Quieres bloquear PRs cuando la calidad cae y además reglas de negocio específicas.',en:'You want to block PRs when quality drops, plus specific business rules.'},
+ task:{es:'¿Qué afirmación es correcta sobre los tests de dbt?',en:'Which statement about dbt tests is correct?'},
+ options:[{t:{es:'<b>Genéricos</b> (unique, not_null, accepted_values, relationships) se declaran en YAML; <b>singulares</b> son consultas SQL que deben devolver 0 filas. <code>severity</code> (warn/error) y <code>store_failures</code> controlan el gate y el debug.',en:'<b>Generic</b> (unique, not_null, accepted_values, relationships) are declared in YAML; <b>singular</b> are SQL queries that must return 0 rows. <code>severity</code> (warn/error) and <code>store_failures</code> control the gate and debugging.'},ok:true},
+   {t:{es:'Solo existen los 4 tests genéricos; no se pueden escribir reglas custom.',en:'Only the 4 generic tests exist; you cannot write custom rules.'},ok:false},
+   {t:{es:'Un test que pasa devuelve muchas filas.',en:'A passing test returns many rows.'},ok:false},
+   {t:{es:'Los tests corren en producción, nunca en CI.',en:'Tests run in production, never in CI.'},ok:false}],
+ explain:{es:'Test genérico = reutilizable vía YAML (o macro). Test singular = un .sql que falla si devuelve filas. <code>severity: error</code> rompe el build/PR; <code>warn</code> avisa; <code>store_failures</code> guarda las filas malas para investigar. Esto es el gate de DQ en CI/CD.',en:'Generic test = reusable via YAML (or macro). Singular test = a .sql that fails if it returns rows. <code>severity: error</code> breaks the build/PR; <code>warn</code> notifies; <code>store_failures</code> persists bad rows to investigate. This is the DQ gate in CI/CD.'}
+},
+{
+ id:'q_dbt_materialization',cat:'R · dbt Avanzado',kind:'quiz',diff:'e',xp:10,timer:90,
+ title:{es:'Materializations: el trade-off',en:'Materializations: the trade-off'},tags:'dbt · materialization',
+ context:{es:'Eliges cómo persiste cada modelo en el warehouse.',en:'You choose how each model persists in the warehouse.'},
+ task:{es:'¿Qué emparejamiento es correcto?',en:'Which pairing is correct?'},
+ options:[{t:{es:'<b>view</b>: ligera/siempre fresca · <b>table</b>: marts muy consultados · <b>incremental</b>: tablas grandes append/upsert · <b>ephemeral</b>: CTE reutilizable no materializado.',en:'<b>view</b>: light/always fresh · <b>table</b>: heavily queried marts · <b>incremental</b>: large append/upsert tables · <b>ephemeral</b>: reusable non-materialized CTE.'},ok:true},
+   {t:{es:'<b>view</b> es siempre la más rápida para downstream pesado.',en:'<b>view</b> is always fastest for heavy downstream.'},ok:false},
+   {t:{es:'<b>incremental</b> recalcula todo en cada run.',en:'<b>incremental</b> recomputes everything each run.'},ok:false},
+   {t:{es:'<b>ephemeral</b> crea una tabla física consultable.',en:'<b>ephemeral</b> creates a queryable physical table.'},ok:false}],
+ explain:{es:'view = recalcula en cada query (lento si downstream pesado); table = re-materializa en cada run (rápido de leer); incremental = solo procesa lo nuevo (complejo pero escalable); ephemeral = se inyecta como CTE, no se persiste. Elegir es balancear frescura, costo y rendimiento.',en:'view = recomputes on each query (slow if heavy downstream); table = re-materializes each run (fast to read); incremental = only processes new data (complex but scalable); ephemeral = injected as a CTE, not persisted. Choosing balances freshness, cost and performance.'}
+},
 ];
 /* English overlay for legacy (Spanish-authored) exercises. Resolver: fld() prefers EN[id][field] when lang==='en'. */
 const EN={
@@ -1447,8 +1632,8 @@ function L(v){if(v&&typeof v==='object'&&!Array.isArray(v)&&('es'in v||'en'in v)
 const DIFFL={es:{e:'easy',m:'medium',h:'hard'},en:{e:'easy',m:'medium',h:'hard'}};
 function dl(d){return DIFFL[lang][d];}
 /* clean category taxonomy (data keeps legacy cat strings; map at runtime) */
-const CATMAP={'D · SQL avanzado':'sql','C · Transformación y DQ':'dq','E · Arquitectura Moderna':'arch','F · Governance / DQ':'dq','B · Modelado de Datos':'model','J · Estadística para DE':'stats','P · pandas / DataFrames':'pandas','Q · Python + Bases de Datos':'pydb','L · Lógica / Algoritmos DE':'logic','A · Infraestructura Cloud':'arch','K · NoSQL':'nosql','X · Competitive':'comp','Y · DBA / Administración':'dba'};
-const CAT=[{k:'sql',es:'SQL Avanzado',en:'Advanced SQL'},{k:'joins',es:'SQL · Joins y CTEs',en:'SQL · Joins & CTEs'},{k:'pandas',es:'pandas',en:'pandas'},{k:'pydb',es:'Python + Bases de Datos',en:'Python + Databases'},{k:'logic',es:'Lógica y Algoritmos',en:'Logic & Algorithms'},{k:'comp',es:'Competitivo (Hackathon)',en:'Competitive (Hackathon)'},{k:'dq',es:'Calidad de Datos',en:'Data Quality'},{k:'model',es:'Modelado',en:'Data Modeling'},{k:'arch',es:'Arquitectura y Cloud',en:'Architecture & Cloud'},{k:'stats',es:'Estadística',en:'Statistics'},{k:'nosql',es:'NoSQL',en:'NoSQL'},{k:'dba',es:'DBA / Administración',en:'DBA / Administration'}];
+const CATMAP={'D · SQL avanzado':'sql','C · Transformación y DQ':'dq','E · Arquitectura Moderna':'arch','F · Governance / DQ':'dq','B · Modelado de Datos':'model','J · Estadística para DE':'stats','P · pandas / DataFrames':'pandas','Q · Python + Bases de Datos':'pydb','L · Lógica / Algoritmos DE':'logic','A · Infraestructura Cloud':'arch','K · NoSQL':'nosql','X · Competitive':'comp','Y · DBA / Administración':'dba','S · Snowflake Avanzado':'snowflake','R · dbt Avanzado':'dbt'};
+const CAT=[{k:'sql',es:'SQL Avanzado',en:'Advanced SQL'},{k:'joins',es:'SQL · Joins y CTEs',en:'SQL · Joins & CTEs'},{k:'snowflake',es:'Snowflake Avanzado',en:'Advanced Snowflake'},{k:'dbt',es:'dbt Avanzado',en:'Advanced dbt'},{k:'pydb',es:'Python + Bases de Datos',en:'Python + Databases'},{k:'pandas',es:'pandas',en:'pandas'},{k:'logic',es:'Lógica y Algoritmos',en:'Logic & Algorithms'},{k:'stats',es:'Estadística',en:'Statistics'},{k:'dq',es:'Calidad de Datos',en:'Data Quality'},{k:'model',es:'Modelado',en:'Data Modeling'},{k:'arch',es:'Arquitectura y Cloud',en:'Architecture & Cloud'},{k:'comp',es:'Competitivo (Hackathon)',en:'Competitive (Hackathon)'},{k:'nosql',es:'NoSQL',en:'NoSQL'},{k:'dba',es:'DBA / Administración',en:'DBA / Administration'}];
 function catKey(e){return CATMAP[e.cat]||e.cat;}
 function catLabel(k){const c=CAT.find(x=>x.k===k);return c?c[lang]:k;}
 function orderedCats(){const present=[...new Set(EX.map(catKey))];const ord=CAT.map(c=>c.k).filter(k=>present.includes(k));present.forEach(k=>{if(!ord.includes(k))ord.push(k);});return ord;}
