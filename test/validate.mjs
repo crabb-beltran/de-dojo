@@ -92,7 +92,8 @@ for (const e of sqlEx) {
     const db = new SQL.Database();
     try {
       db.run(ds);
-      db.exec(e.ref); // throws if the reference query is invalid
+      db.run(e.ref); // throws if the reference query is invalid (handles DML/DDL/TCL multi-statement)
+      if (e.verify) db.exec(e.verify); // verify query must also be valid
     } catch (err) {
       fail(e.id, `ref failed on dataset ${i + 1}: ${err.message}`);
     } finally {
