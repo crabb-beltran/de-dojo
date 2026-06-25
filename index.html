@@ -2078,6 +2078,319 @@ chk("valor 0", bar_chart([("x",0)]), "x | ")
 chk("tres filas", bar_chart([("a",1),("b",2),("c",3)]), "a | #\\nb | ##\\nc | ###")
 `
 },
+/* ===================== PYTHON + BASES DE DATOS (sqlite3) +7 ===================== */
+{
+ id:'py_sqlite_agg',cat:'Q · Python + Bases de Datos',kind:'python',diff:'e',xp:15,
+ title:{es:'sqlite3: GROUP BY desde Python',en:'sqlite3: GROUP BY from Python'},tags:'sqlite3 · agregación',
+ context:{es:'Cargas filas en una base SQLite en memoria y devuelves un agregado.',en:'You load rows into an in-memory SQLite DB and return an aggregate.'},
+ task:{es:'Implementa <code>sqlite_agg(rows)</code>: crea <code>s(cat,amt)</code>, inserta <code>rows</code> y devuelve <code>SUM(amt)</code> por <code>cat</code> ordenado.',en:'Implement <code>sqlite_agg(rows)</code>: create <code>s(cat,amt)</code>, insert <code>rows</code> and return <code>SUM(amt)</code> per <code>cat</code> ordered.'},
+ bullets:[{es:'Usa <code>executemany</code> y <code>fetchall()</code>; salida lista de <code>(cat, total)</code>.',en:'Use <code>executemany</code> and <code>fetchall()</code>; output a list of <code>(cat, total)</code>.'}],
+ sources:[S('rows',['cat','amt'],[['a',1],['a',2],['b',3]])],
+ expected:'[("a", 3), ("b", 3)]',
+ starter:`import sqlite3\n\ndef sqlite_agg(rows):\n    con = sqlite3.connect(":memory:")\n    con.execute("CREATE TABLE s(cat TEXT, amt INT)")\n    # executemany INSERT ... ; luego SELECT cat,SUM(amt) GROUP BY cat ORDER BY cat\n    ...\n`,
+ pytests:`
+import sqlite3
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("suma por cat", sqlite_agg([("a",1),("a",2),("b",3)]), [("a",3),("b",3)])
+chk("una categoria", sqlite_agg([("x",5)]), [("x",5)])
+`
+},
+{
+ id:'py_param_query',cat:'Q · Python + Bases de Datos',kind:'python',diff:'e',xp:15,
+ title:{es:'Consulta parametrizada (anti SQL-injection)',en:'Parametrized query (anti SQL-injection)'},tags:'sqlite3 · seguridad',
+ context:{es:'Nunca concatenes input en SQL. Usa placeholders <code>?</code> para evitar inyección.',en:'Never concatenate input into SQL. Use <code>?</code> placeholders to prevent injection.'},
+ task:{es:'Implementa <code>param_query(rows, name)</code>: devuelve las edades de las filas <code>u(name,age)</code> cuyo <code>name</code> coincide, usando un placeholder.',en:'Implement <code>param_query(rows, name)</code>: return the ages of rows in <code>u(name,age)</code> matching <code>name</code>, using a placeholder.'},
+ bullets:[{es:'Usa <code>execute("... WHERE name=?", (name,))</code>. Nunca f-strings con el input.',en:'Use <code>execute("... WHERE name=?", (name,))</code>. Never f-strings with the input.'}],
+ sources:[S('rows',['name','age'],[['ana',30],['bob',25]])],
+ expected:'param_query(rows, "ana") → [30]',
+ starter:`import sqlite3\n\ndef param_query(rows, name):\n    con = sqlite3.connect(":memory:")\n    con.execute("CREATE TABLE u(name TEXT, age INT)")\n    con.executemany("INSERT INTO u VALUES(?,?)", rows)\n    # SELECT age FROM u WHERE name = ?  (placeholder!)\n    ...\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("match", param_query([("ana",30),("bob",25)],"ana"), [30])
+chk("sin match", param_query([("ana",30)],"zoe"), [])
+chk("injection-safe", param_query([("ana",30)],"ana' OR '1'='1"), [])
+`
+},
+{
+ id:'py_bulk_insert',cat:'Q · Python + Bases de Datos',kind:'python',diff:'m',xp:20,
+ title:{es:'Carga masiva con executemany',en:'Bulk load with executemany'},tags:'sqlite3 · bulk',
+ context:{es:'Insertar fila por fila es lento; <code>executemany</code> hace una carga eficiente.',en:'Inserting row by row is slow; <code>executemany</code> does an efficient load.'},
+ task:{es:'Implementa <code>bulk_insert(values)</code>: crea <code>t(x)</code>, inserta todos los valores con <code>executemany</code> y devuelve el conteo.',en:'Implement <code>bulk_insert(values)</code>: create <code>t(x)</code>, insert all values with <code>executemany</code> and return the count.'},
+ bullets:[{es:'Recuerda: <code>executemany</code> espera una secuencia de tuplas <code>[(v,), ...]</code>.',en:'Remember: <code>executemany</code> expects a sequence of tuples <code>[(v,), ...]</code>.'}],
+ sources:[S('entrada / input',['values'],[['[1,2,3,4]','→ 4']])],
+ expected:'4',
+ starter:`import sqlite3\n\ndef bulk_insert(values):\n    con = sqlite3.connect(":memory:")\n    con.execute("CREATE TABLE t(x INT)")\n    # executemany con [(v,) for v in values]; devuelve COUNT(*)\n    ...\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("cuenta", bulk_insert([1,2,3,4]), 4)
+chk("vacio", bulk_insert([]), 0)
+`
+},
+{
+ id:'py_upsert_sqlite',cat:'Q · Python + Bases de Datos',kind:'python',diff:'m',xp:20,
+ title:{es:'UPSERT idempotente con sqlite3',en:'Idempotent UPSERT with sqlite3'},tags:'sqlite3 · upsert',
+ context:{es:'Un loader aplica reabastecimientos: SKU existente suma; nuevo se inserta.',en:'A loader applies restocks: existing SKU adds; a new one is inserted.'},
+ task:{es:'Implementa <code>upsert(rows)</code> sobre <code>inv</code> (ya tiene <code>(\'a\',10)</code>): aplica cada <code>(sku,qty)</code> con <code>ON CONFLICT</code> sumando.',en:'Implement <code>upsert(rows)</code> over <code>inv</code> (already has <code>(\'a\',10)</code>): apply each <code>(sku,qty)</code> with <code>ON CONFLICT</code> adding.'},
+ bullets:[{es:'Salida: estado final <code>(sku, qty)</code> ordenado. Usa <code>excluded.qty</code>.',en:'Output: final state <code>(sku, qty)</code> ordered. Use <code>excluded.qty</code>.'}],
+ sources:[S('inv (inicial)',['sku (PK)','qty'],[['a',10]],'lote: a+5, b+3')],
+ expected:'[("a", 15), ("b", 3)]',
+ starter:`import sqlite3\n\ndef upsert(rows):\n    con = sqlite3.connect(":memory:")\n    con.execute("CREATE TABLE inv(sku TEXT PRIMARY KEY, qty INT)")\n    con.execute("INSERT INTO inv VALUES('a',10)")\n    for sku, q in rows:\n        # INSERT ... ON CONFLICT(sku) DO UPDATE SET qty=qty+excluded.qty\n        ...\n    return con.execute("SELECT sku,qty FROM inv ORDER BY sku").fetchall()\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("upsert", upsert([("a",5),("b",3)]), [("a",15),("b",3)])
+chk("idempotente-ish", upsert([("a",0)]), [("a",10)])
+`
+},
+{
+ id:'py_txn_rollback',cat:'Q · Python + Bases de Datos',kind:'python',diff:'m',xp:20,
+ title:{es:'Transacción con ROLLBACK ante error',en:'Transaction with ROLLBACK on error'},tags:'sqlite3 · TCL',
+ context:{es:'Si una operación falla a mitad, la transacción debe revertirse (atomicidad).',en:'If an operation fails midway, the transaction must revert (atomicity).'},
+ task:{es:'Implementa <code>txn_rollback()</code>: en <code>acct(id,bal)</code> con <code>(1,100)</code>, dentro de una transacción resta 50 y luego ocurre un error → revierte; devuelve el saldo final.',en:'Implement <code>txn_rollback()</code>: in <code>acct(id,bal)</code> with <code>(1,100)</code>, inside a transaction subtract 50 then an error occurs → revert; return the final balance.'},
+ bullets:[{es:'Usa <code>con.isolation_level=None</code> + <code>BEGIN</code>/<code>ROLLBACK</code> explícitos en <code>try/except</code>.',en:'Use <code>con.isolation_level=None</code> + explicit <code>BEGIN</code>/<code>ROLLBACK</code> in <code>try/except</code>.'},{es:'Resultado esperado: 100 (el débito se revierte).',en:'Expected: 100 (the debit reverts).'}],
+ sources:[S('acct (inicial)',['id','bal'],[[1,100]])],
+ expected:'100',
+ starter:`import sqlite3\n\ndef txn_rollback():\n    con = sqlite3.connect(":memory:")\n    con.isolation_level = None\n    con.execute("CREATE TABLE acct(id INT, bal INT)")\n    con.execute("INSERT INTO acct VALUES(1,100)")\n    try:\n        con.execute("BEGIN")\n        con.execute("UPDATE acct SET bal=bal-50 WHERE id=1")\n        raise ValueError("boom")\n    except ValueError:\n        # ROLLBACK\n        ...\n    return con.execute("SELECT bal FROM acct WHERE id=1").fetchone()[0]\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("revierte el debito", txn_rollback(), 100)
+`
+},
+{
+ id:'py_etl_clean',cat:'Q · Python + Bases de Datos',kind:'python',diff:'m',xp:20,
+ title:{es:'ETL: limpiar nulos source→target',en:'ETL: clean nulls source→target'},tags:'sqlite3 · ETL · NULL',
+ context:{es:'Un mini-ETL copia de <code>src</code> a <code>tgt</code> rellenando los <code>v</code> nulos con 0.',en:'A mini-ETL copies from <code>src</code> to <code>tgt</code> filling null <code>v</code> with 0.'},
+ task:{es:'Implementa <code>etl_clean(rows)</code>: inserta <code>rows</code> en <code>src(id,v)</code>, copia a <code>tgt</code> con <code>COALESCE(v,0)</code>, devuelve <code>tgt</code>.',en:'Implement <code>etl_clean(rows)</code>: insert <code>rows</code> into <code>src(id,v)</code>, copy to <code>tgt</code> with <code>COALESCE(v,0)</code>, return <code>tgt</code>.'},
+ bullets:[{es:'Salida: lista <code>(id, v)</code> ordenada por <code>id</code>.',en:'Output: list of <code>(id, v)</code> ordered by <code>id</code>.'}],
+ sources:[S('rows',['id','v'],[[1,5],[2,'∅']])],
+ expected:'[(1, 5), (2, 0)]',
+ starter:`import sqlite3\n\ndef etl_clean(rows):\n    con = sqlite3.connect(":memory:")\n    con.execute("CREATE TABLE src(id INT, v INT)")\n    con.executemany("INSERT INTO src VALUES(?,?)", rows)\n    con.execute("CREATE TABLE tgt(id INT, v INT)")\n    # INSERT INTO tgt SELECT id, COALESCE(v,0) FROM src\n    ...\n    return con.execute("SELECT id,v FROM tgt ORDER BY id").fetchall()\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("rellena nulos", etl_clean([(1,5),(2,None)]), [(1,5),(2,0)])
+`
+},
+{
+ id:'py_idempotent_load',cat:'Q · Python + Bases de Datos',kind:'python',diff:'m',xp:20,
+ title:{es:'Carga idempotente (INSERT OR IGNORE)',en:'Idempotent load (INSERT OR IGNORE)'},tags:'sqlite3 · idempotencia',
+ context:{es:'Reejecutar un loader no debe duplicar: una PK + INSERT OR IGNORE lo hacen idempotente.',en:'Re-running a loader must not duplicate: a PK + INSERT OR IGNORE make it idempotent.'},
+ task:{es:'Implementa <code>idempotent_load(sku)</code>: crea <code>p(sku PRIMARY KEY)</code> si no existe e inserta el mismo sku DOS veces con <code>INSERT OR IGNORE</code>; devuelve el conteo.',en:'Implement <code>idempotent_load(sku)</code>: create <code>p(sku PRIMARY KEY)</code> if missing and insert the same sku TWICE with <code>INSERT OR IGNORE</code>; return the count.'},
+ bullets:[{es:'Resultado esperado: 1 (el segundo insert se ignora).',en:'Expected: 1 (the second insert is ignored).'}],
+ sources:[S('entrada / input',['sku'],[['"x"','→ 1 fila']])],
+ expected:'1',
+ starter:`import sqlite3\n\ndef idempotent_load(sku):\n    con = sqlite3.connect(":memory:")\n    con.execute("CREATE TABLE IF NOT EXISTS p(sku TEXT PRIMARY KEY)")\n    # INSERT OR IGNORE el mismo sku dos veces\n    ...\n    return con.execute("SELECT COUNT(*) FROM p").fetchone()[0]\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("no duplica", idempotent_load("x"), 1)
+`
+},
+/* ===================== pandas / DataFrames +7 ===================== */
+{
+ id:'py_pd_dedup',cat:'P · pandas / DataFrames',kind:'python',diff:'e',xp:15,
+ title:{es:'pandas: deduplicar por clave (keep last)',en:'pandas: dedupe by key (keep last)'},tags:'pandas · drop_duplicates',
+ context:{es:'Un reintento dejó duplicados por <code>id</code>; conserva la última versión.',en:'A retry left duplicates by <code>id</code>; keep the latest version.'},
+ task:{es:'Implementa <code>pd_dedup(df)</code> que conserve la última fila por <code>id</code> y reindexe.',en:'Implement <code>pd_dedup(df)</code> keeping the last row per <code>id</code> and reindexing.'},
+ bullets:[{es:'Usa <code>drop_duplicates(subset="id", keep="last")</code> + <code>reset_index(drop=True)</code>.',en:'Use <code>drop_duplicates(subset="id", keep="last")</code> + <code>reset_index(drop=True)</code>.'}],
+ sources:[S('df',['id','v'],[[1,'a'],[1,'b'],[2,'c']])],
+ expected:'quedan v = ["b", "c"]',
+ pyPackages:['pandas'],
+ starter:`import pandas as pd\n\ndef pd_dedup(df):\n    # última fila por id, índice reseteado\n    ...\n`,
+ pytests:`
+import pandas as pd
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+df=pd.DataFrame({"id":[1,1,2],"v":["a","b","c"]})
+chk("keep last", list(pd_dedup(df)["v"]), ["b","c"])
+chk("longitud", len(pd_dedup(df)), 2)
+`
+},
+{
+ id:'py_pd_fillna',cat:'P · pandas / DataFrames',kind:'python',diff:'e',xp:15,
+ title:{es:'pandas: imputar NaN con la media',en:'pandas: impute NaN with the mean'},tags:'pandas · fillna',
+ context:{es:'Faltan valores numéricos; los imputas con la media de la columna.',en:'Numeric values are missing; you impute them with the column mean.'},
+ task:{es:'Implementa <code>pd_fillna(df)</code> que rellene los <code>NaN</code> de columnas numéricas con su media (no muta la entrada).',en:'Implement <code>pd_fillna(df)</code> filling <code>NaN</code> in numeric columns with their mean (without mutating the input).'},
+ bullets:[{es:'Pista: <code>df[c].fillna(df[c].mean())</code> sobre una copia.',en:'Hint: <code>df[c].fillna(df[c].mean())</code> on a copy.'}],
+ sources:[S('df',['x'],[[1.0],['∅'],[3.0]],'media = 2.0')],
+ expected:'x = [1.0, 2.0, 3.0]',
+ pyPackages:['pandas'],
+ starter:`import pandas as pd\n\ndef pd_fillna(df):\n    d = df.copy()\n    for c in d.columns:\n        if pd.api.types.is_numeric_dtype(d[c]):\n            # d[c] = d[c].fillna(media)\n            ...\n    return d\n`,
+ pytests:`
+import pandas as pd
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("imputa media", list(pd_fillna(pd.DataFrame({"x":[1.0,None,3.0]}))["x"]), [1.0,2.0,3.0])
+`
+},
+{
+ id:'py_pd_groupby',cat:'P · pandas / DataFrames',kind:'python',diff:'m',xp:20,
+ title:{es:'pandas: groupby + suma',en:'pandas: groupby + sum'},tags:'pandas · groupby',
+ context:{es:'Agrega el monto por categoría para un reporte.',en:'Aggregate the amount per category for a report.'},
+ task:{es:'Implementa <code>pd_groupby(df)</code> → <code>dict</code> <code>{cat: suma de amt}</code>.',en:'Implement <code>pd_groupby(df)</code> → <code>dict</code> <code>{cat: sum of amt}</code>.'},
+ bullets:[{es:'Pista: <code>df.groupby("cat")["amt"].sum().to_dict()</code>.',en:'Hint: <code>df.groupby("cat")["amt"].sum().to_dict()</code>.'}],
+ sources:[S('df',['cat','amt'],[['a',1],['a',2],['b',3]])],
+ expected:'{"a": 3, "b": 3}',
+ pyPackages:['pandas'],
+ starter:`import pandas as pd\n\ndef pd_groupby(df):\n    # {cat: suma de amt}\n    ...\n`,
+ pytests:`
+import pandas as pd
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("suma por cat", pd_groupby(pd.DataFrame({"cat":["a","a","b"],"amt":[1,2,3]})), {"a":3,"b":3})
+`
+},
+{
+ id:'py_pd_merge',cat:'P · pandas / DataFrames',kind:'python',diff:'m',xp:20,
+ title:{es:'pandas: merge (join) de DataFrames',en:'pandas: merge (join) DataFrames'},tags:'pandas · merge',
+ context:{es:'Unes dos DataFrames por <code>id</code> (inner join), como un JOIN de SQL.',en:'You merge two DataFrames on <code>id</code> (inner join), like a SQL JOIN.'},
+ task:{es:'Implementa <code>pd_merge(a, b)</code> = inner merge por <code>id</code>.',en:'Implement <code>pd_merge(a, b)</code> = inner merge on <code>id</code>.'},
+ bullets:[{es:'Pista: <code>pd.merge(a, b, on="id", how="inner")</code>.',en:'Hint: <code>pd.merge(a, b, on="id", how="inner")</code>.'}],
+ sources:[S('a',['id','x'],[[1,10],[2,20]]),S('b',['id','y'],[[1,99]])],
+ expected:'1 fila: id=1, x=10, y=99',
+ pyPackages:['pandas'],
+ starter:`import pandas as pd\n\ndef pd_merge(a, b):\n    # inner join por id\n    ...\n`,
+ pytests:`
+import pandas as pd
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+m=pd_merge(pd.DataFrame({"id":[1,2],"x":[10,20]}), pd.DataFrame({"id":[1],"y":[99]}))
+chk("filas", len(m), 1)
+chk("valor y", int(m.iloc[0]["y"]), 99)
+`
+},
+{
+ id:'py_pd_pivot',cat:'P · pandas / DataFrames',kind:'python',diff:'m',xp:20,
+ title:{es:'pandas: pivot_table',en:'pandas: pivot_table'},tags:'pandas · pivot',
+ context:{es:'Pivotas filas largas a una matriz <code>r × c</code> con suma de <code>v</code>.',en:'You pivot long rows into an <code>r × c</code> matrix with sum of <code>v</code>.'},
+ task:{es:'Implementa <code>pd_pivot(df)</code> = <code>pivot_table</code> index=<code>r</code>, columns=<code>c</code>, values=<code>v</code>, sum, rellenando 0.',en:'Implement <code>pd_pivot(df)</code> = <code>pivot_table</code> index=<code>r</code>, columns=<code>c</code>, values=<code>v</code>, sum, fill 0.'},
+ bullets:[{es:'Pista: <code>pivot_table(index="r",columns="c",values="v",aggfunc="sum",fill_value=0)</code>.',en:'Hint: <code>pivot_table(index="r",columns="c",values="v",aggfunc="sum",fill_value=0)</code>.'}],
+ sources:[S('df',['r','c','v'],[['x','a',1],['x','b',2],['y','a',3]])],
+ expected:'x,a=1 · x,b=2 · y,a=3 · y,b=0',
+ pyPackages:['pandas'],
+ starter:`import pandas as pd\n\ndef pd_pivot(df):\n    # pivot_table sum, fill_value=0\n    ...\n`,
+ pytests:`
+import pandas as pd
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+pv=pd_pivot(pd.DataFrame({"r":["x","x","y"],"c":["a","b","a"],"v":[1,2,3]}))
+chk("x,a", int(pv.loc["x","a"]), 1)
+chk("y,b rellenado", int(pv.loc["y","b"]), 0)
+`
+},
+{
+ id:'py_pd_dtypes',cat:'P · pandas / DataFrames',kind:'python',diff:'m',xp:20,
+ title:{es:'pandas: castear tipos y parsear fechas',en:'pandas: cast types and parse dates'},tags:'pandas · dtypes',
+ context:{es:'Datos crudos vienen como texto; debes castear a entero y a fecha.',en:'Raw data comes as text; you must cast to int and to date.'},
+ task:{es:'Implementa <code>pd_dtypes(df)</code>: <code>n</code> a <code>int</code> y <code>dt</code> a datetime.',en:'Implement <code>pd_dtypes(df)</code>: <code>n</code> to <code>int</code> and <code>dt</code> to datetime.'},
+ bullets:[{es:'Pista: <code>.astype(int)</code> y <code>pd.to_datetime(...)</code>.',en:'Hint: <code>.astype(int)</code> and <code>pd.to_datetime(...)</code>.'}],
+ sources:[S('df',['n','dt'],[['1','2020-01-01'],['2','2021-06-15']])],
+ expected:'n entero; dt.year[1] = 2021',
+ pyPackages:['pandas'],
+ starter:`import pandas as pd\n\ndef pd_dtypes(df):\n    d = df.copy()\n    # d["n"] = ... astype int ; d["dt"] = pd.to_datetime(...)\n    ...\n    return d\n`,
+ pytests:`
+import pandas as pd
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+d=pd_dtypes(pd.DataFrame({"n":["1","2"],"dt":["2020-01-01","2021-06-15"]}))
+chk("n es entero", str(d["n"].dtype).startswith("int"), True)
+chk("año parseado", int(d["dt"].dt.year.iloc[1]), 2021)
+`
+},
+{
+ id:'py_pd_reconcile',cat:'P · pandas / DataFrames',kind:'python',diff:'h',xp:30,
+ title:{es:'pandas: reconciliación source vs target',en:'pandas: source-vs-target reconciliation'},tags:'pandas · DQ · reconciliación',
+ context:{es:'Comparas montos por <code>id</code> entre origen y destino para detectar discrepancias.',en:'You compare amounts per <code>id</code> between source and target to detect discrepancies.'},
+ task:{es:'Implementa <code>pd_reconcile(src, tgt)</code> → <code>dict</code> <code>{id: src−tgt}</code> solo de los <code>id</code> que difieren (faltantes cuentan como 0).',en:'Implement <code>pd_reconcile(src, tgt)</code> → <code>dict</code> <code>{id: src−tgt}</code> only for differing <code>id</code> (missing counts as 0).'},
+ bullets:[{es:'Une por <code>id</code> (union de índices), resta y filtra los iguales.',en:'Align by <code>id</code> (index union), subtract and filter equals.'}],
+ sources:[S('src',['id','amt'],[[1,10],[2,20]]),S('tgt',['id','amt'],[[1,10],[2,15]])],
+ expected:'{2: 5}',
+ pyPackages:['pandas'],
+ starter:`import pandas as pd\n\ndef pd_reconcile(src, tgt):\n    s = src.set_index("id")["amt"]\n    t = tgt.set_index("id")["amt"]\n    # union de ids; {id: s-t} donde difieren\n    ...\n`,
+ pytests:`
+import pandas as pd
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("detecta diff", pd_reconcile(pd.DataFrame({"id":[1,2],"amt":[10,20]}), pd.DataFrame({"id":[1,2],"amt":[10,15]})), {2:5})
+chk("sin diff -> {}", pd_reconcile(pd.DataFrame({"id":[1],"amt":[5]}), pd.DataFrame({"id":[1],"amt":[5]})), {})
+`
+},
+/* ===================== LÓGICA / ALGORITMOS +2 ===================== */
+{
+ id:'py_rle',cat:'L · Lógica / Algoritmos DE',kind:'python',diff:'m',xp:20,
+ title:{es:'Run-Length Encoding (compresión)',en:'Run-Length Encoding (compression)'},tags:'algoritmos · compresión',
+ context:{es:'RLE comprime secuencias con muchas repeticiones (base de formatos columnar).',en:'RLE compresses sequences with many repeats (basis of columnar formats).'},
+ task:{es:'Implementa <code>rle(s)</code> → lista de <code>(char, count)</code> de runs consecutivos.',en:'Implement <code>rle(s)</code> → list of <code>(char, count)</code> of consecutive runs.'},
+ bullets:[{es:'<code>"aaabbc"</code> → <code>[("a",3),("b",2),("c",1)]</code>. Vacío → <code>[]</code>.',en:'<code>"aaabbc"</code> → <code>[("a",3),("b",2),("c",1)]</code>. Empty → <code>[]</code>.'}],
+ sources:[S('entrada / input',['s'],[['"aaabbc"','→ [(a,3),(b,2),(c,1)]']])],
+ expected:'[("a", 3), ("b", 2), ("c", 1)]',
+ starter:`def rle(s):\n    out = []\n    i = 0\n    while i < len(s):\n        # cuenta el run que empieza en i\n        ...\n    return out\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("runs", rle("aaabbc"), [("a",3),("b",2),("c",1)])
+chk("vacio", rle(""), [])
+chk("uno", rle("x"), [("x",1)])
+`
+},
+{
+ id:'py_sliding_max',cat:'L · Lógica / Algoritmos DE',kind:'python',diff:'h',xp:30,
+ title:{es:'Máximo en ventana deslizante',en:'Sliding-window maximum'},tags:'algoritmos · deque · ventana',
+ context:{es:'Para métricas en streaming necesitas el máximo de cada ventana de tamaño k.',en:'For streaming metrics you need the max of each window of size k.'},
+ task:{es:'Implementa <code>sliding_max(a, k)</code> → lista con el máximo de cada ventana contigua de tamaño <code>k</code>.',en:'Implement <code>sliding_max(a, k)</code> → list with the max of each contiguous window of size <code>k</code>.'},
+ bullets:[{es:'Eficiente con un <code>deque</code> de índices (O(n)).',en:'Efficient with a <code>deque</code> of indices (O(n)).'},{es:'<code>[1,3,2,5,4], k=2</code> → <code>[3,3,5,5]</code>.',en:'<code>[1,3,2,5,4], k=2</code> → <code>[3,3,5,5]</code>.'}],
+ sources:[S('entrada / input',['a','k'],[['[1,3,2,5,4]','2 → [3,3,5,5]']])],
+ expected:'[3, 3, 5, 5]',
+ starter:`from collections import deque\n\ndef sliding_max(a, k):\n    dq = deque()  # índices, valores decrecientes\n    out = []\n    for i, x in enumerate(a):\n        ...\n    return out\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("ventana 2", sliding_max([1,3,2,5,4],2), [3,3,5,5])
+chk("ventana 3", sliding_max([1,3,2,5,4],3), [3,5,5])
+chk("k=1", sliding_max([4,2,6],1), [4,2,6])
+`
+},
+/* ===================== ESTADÍSTICA +2 ===================== */
+{
+ id:'py_iqr_outliers',cat:'J · Estadística para DE',kind:'python',diff:'m',xp:20,
+ title:{es:'Outliers por IQR (robusto)',en:'IQR outliers (robust)'},tags:'estadística · IQR · DQ',
+ context:{es:'Para DQ sin asumir normalidad, detectas outliers con el rango intercuartílico.',en:'For DQ without assuming normality, you detect outliers with the interquartile range.'},
+ task:{es:'Implementa <code>iqr_outliers(vals)</code> → índices fuera de <code>[Q1−1.5·IQR, Q3+1.5·IQR]</code>.',en:'Implement <code>iqr_outliers(vals)</code> → indices outside <code>[Q1−1.5·IQR, Q3+1.5·IQR]</code>.'},
+ bullets:[{es:'Q1/Q3 = percentiles 25/75 (interpolación lineal). IQR = Q3−Q1.',en:'Q1/Q3 = 25th/75th percentiles (linear interpolation). IQR = Q3−Q1.'}],
+ sources:[S('entrada / input',['vals'],[['[10,12,11,13,100]','→ [4]']])],
+ expected:'[4]',
+ starter:`def iqr_outliers(vals):\n    s = sorted(vals); n = len(s)\n    def pct(p):\n        idx = p*(n-1); lo = int(idx); frac = idx-lo\n        return s[lo] if lo+1>=n else s[lo]*(1-frac)+s[lo+1]*frac\n    q1, q3 = pct(.25), pct(.75); iqr = q3-q1\n    # índices fuera de [q1-1.5*iqr, q3+1.5*iqr]\n    ...\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("outlier alto", iqr_outliers([10,12,11,13,100]), [4])
+chk("sin outliers", iqr_outliers([5,6,5,6,5]), [])
+`
+},
+{
+ id:'py_pearson',cat:'J · Estadística para DE',kind:'python',diff:'h',xp:30,
+ title:{es:'Coeficiente de correlación de Pearson',en:'Pearson correlation coefficient'},tags:'estadística · correlación',
+ context:{es:'Mides la relación lineal entre dos métricas (p.ej. carga vs latencia).',en:'You measure the linear relationship between two metrics (e.g. load vs latency).'},
+ task:{es:'Implementa <code>pearson(x, y)</code> → coeficiente en <code>[-1, 1]</code>; si la varianza es 0 → <code>0.0</code>.',en:'Implement <code>pearson(x, y)</code> → coefficient in <code>[-1, 1]</code>; if variance is 0 → <code>0.0</code>.'},
+ bullets:[{es:'r = Σ(xi−x̄)(yi−ȳ) / √(Σ(xi−x̄)²·Σ(yi−ȳ)²).',en:'r = Σ(xi−x̄)(yi−ȳ) / √(Σ(xi−x̄)²·Σ(yi−ȳ)²).'}],
+ sources:[S('entrada / input',['x','y'],[['[1,2,3]','[2,4,6] → 1.0'],['[1,2,3]','[3,2,1] → -1.0']])],
+ expected:'1.0 / -1.0',
+ starter:`import math\n\ndef pearson(x, y):\n    n = len(x)\n    mx = sum(x)/n; my = sum(y)/n\n    # num / den ; den==0 -> 0.0\n    ...\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp):
+    if isinstance(got,float): got=round(got,6)
+    if isinstance(exp,float): exp=round(exp,6)
+    cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("correlacion perfecta", pearson([1,2,3],[2,4,6]), 1.0)
+chk("correlacion negativa", pearson([1,2,3],[3,2,1]), -1.0)
+chk("varianza 0 -> 0", pearson([5,5,5],[1,2,3]), 0.0)
+`
+},
 ];
 /* English overlay for legacy (Spanish-authored) exercises. Resolver: fld() prefers EN[id][field] when lang==='en'. */
 const EN={
