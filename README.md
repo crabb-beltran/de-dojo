@@ -11,7 +11,7 @@ A browser-based training platform to **practice and self-assess Data Engineering
 - **Concept drills** — multiple-choice trade-off questions (Kafka vs Kinesis, SCD types, CAP/NoSQL, skew vs compute) graded against an answer key with explanations.
 - **Countdown timer** per exercise (interview pressure). Solving after time-up yields ½ XP.
 - **Visible sources** — every exercise shows the table schemas and sample rows so you reason from the actual data.
-- **AI tutor** — optional hint / senior-level code review (only when hosted where the Anthropic API is reachable).
+- **AI tutor** — optional hint / senior-level code review. Ships with a free serverless proxy (Cloudflare Worker, see `workers/ai-tutor/`) so the key stays server-side; falls back gracefully when no endpoint is configured.
 - **Gamification** — XP, levels, streaks; progress persisted locally.
 
 ### Training modes
@@ -41,6 +41,28 @@ python3 -m http.server 8000
 
 Opening `index.html` via `file://` also works, except the AI tutor and (in some browsers) the Python runtime, which need an `http(s)` origin.
 
+## Testing / content validation
+
+Exercise content is gated by a validator that runs in CI on every push
+(`.github/workflows/validate.yml`, free GitHub Actions):
+
+```bash
+cd test && npm install && node validate.mjs
+```
+
+It extracts the `EX`/`EN` data straight from `index.html` and checks: required
+fields per kind, exactly one correct answer per quiz, valid category mapping,
+translation completeness, and — using `sql.js` — that **every SQL reference
+query actually executes** on each of its datasets. Broken content fails the
+build instead of shipping.
+
+## AI tutor proxy (optional, free to host)
+
+`workers/ai-tutor/` is a Cloudflare Worker (free tier) that proxies the tutor to
+the Anthropic API with a server-side key. Hosting is free; the only cost is
+Anthropic usage, and only once you add a key. See `workers/ai-tutor/README.md`.
+Point the app at it with `localStorage.setItem('ai_endpoint', '<worker-url>')`.
+
 ## Deploy (GitHub Pages)
 
 Pushing to `main` triggers `.github/workflows/pages.yml`, which publishes the site. Then enable Pages in **Settings → Pages → Source: GitHub Actions**. Live URL: `https://<user>.github.io/<repo>/`.
@@ -56,7 +78,7 @@ Pushing to `main` triggers `.github/workflows/pages.yml`, which publishes the si
 - Per-exercise **extra hidden datasets** for stronger grading.
 - Author exercises from JSON files + a contribution flow (see `docs/AUTHORING.md`).
 - Spaced-repetition: resurface weak categories automatically.
-- Optional backend for accounts/leaderboards and a secure AI-tutor proxy.
+- Optional backend for accounts/leaderboards (AI-tutor proxy ✅ done — see `workers/ai-tutor/`).
 
 ## Tech
 

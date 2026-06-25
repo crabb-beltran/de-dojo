@@ -998,6 +998,72 @@ chk("3x7", count_paths(3,7), 28)
    {t:{es:'Un bucle de Python fila por fila.',en:'A row-by-row Python loop.'},ok:false}],
  explain:{es:'A escala que no cabe en RAM, PySpark (o SQL distribuido en el warehouse) es la opción. Trade-off: overhead/coste; para datos chicos pandas o SQL puro son más simples y rápidos.',en:'At scale beyond RAM, PySpark (or distributed SQL in the warehouse) is the choice. Trade-off: overhead/cost; for small data pandas or plain SQL are simpler and faster.'}
 },
+{
+ id:'sql_rolling7',cat:'D · SQL avanzado',kind:'sql',diff:'m',xp:20,
+ title:{es:'Media móvil de 7 días',en:'7-day rolling average'},tags:'window · ROWS frame',
+ context:{es:'Un panel de salud de pipeline grafica la media móvil de 7 días de filas cargadas para suavizar el ruido diario.',en:'A pipeline-health dashboard plots the 7-day rolling average of rows loaded to smooth daily noise.'},
+ task:{es:'Devuelve por día la <b>media móvil de los últimos 7 días</b> (incluido el día actual).',en:'Return per day the <b>rolling average over the last 7 days</b> (current day included).'},
+ bullets:[{es:'Salida: <code>d</code>, <code>rolling_avg</code>.',en:'Output: <code>d</code>, <code>rolling_avg</code>.'},{es:'Usa un frame <code>ROWS BETWEEN 6 PRECEDING AND CURRENT ROW</code> ordenado por <code>d</code>.',en:'Use a <code>ROWS BETWEEN 6 PRECEDING AND CURRENT ROW</code> frame ordered by <code>d</code>.'},{es:'Los primeros días promedian solo los días disponibles.',en:'Early days average only the available days.'}],
+ sources:[S('metrics',['d','val'],[['2024-01-01',10],['2024-01-02',20],['2024-01-03',30],['…','…']],'val = filas cargadas / rows loaded')],
+ expected:'d            rolling_avg\n2024-01-01   10.0\n2024-01-02   15.0  …',
+ datasets:[`CREATE TABLE metrics(d TEXT,val INT);INSERT INTO metrics VALUES ('2024-01-01',10),('2024-01-02',20),('2024-01-03',30),('2024-01-04',40),('2024-01-05',50),('2024-01-06',60),('2024-01-07',70),('2024-01-08',80);`,
+           `CREATE TABLE metrics(d TEXT,val INT);INSERT INTO metrics VALUES ('2024-03-01',5),('2024-03-02',5),('2024-03-03',20);`],
+ ref:`SELECT d, AVG(val) OVER(ORDER BY d ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS rolling_avg FROM metrics ORDER BY d`,
+ starter:`SELECT\n  d,\n  -- AVG(val) OVER ( ... ROWS BETWEEN 6 PRECEDING AND CURRENT ROW ) AS rolling_avg\nFROM metrics\nORDER BY d;`
+},
+{
+ id:'sql_mom',cat:'D · SQL avanzado',kind:'sql',diff:'e',xp:15,
+ title:{es:'Variación mes a mes (MoM) con LAG',en:'Month-over-month delta with LAG'},tags:'window · LAG',
+ context:{es:'Finanzas quiere ver cuánto cambió el ingreso respecto al mes anterior para detectar caídas.',en:'Finance wants to see how revenue changed versus the previous month to spot drops.'},
+ task:{es:'Devuelve por mes el <b>delta absoluto contra el mes anterior</b> (<code>amount − mes previo</code>).',en:'Return per month the <b>absolute delta vs the previous month</b> (<code>amount − prior month</code>).'},
+ bullets:[{es:'Salida: <code>month</code>, <code>mom_delta</code>.',en:'Output: <code>month</code>, <code>mom_delta</code>.'},{es:'El primer mes no tiene previo → <code>mom_delta</code> es <code>NULL</code>.',en:'The first month has no prior → <code>mom_delta</code> is <code>NULL</code>.'},{es:'Ordena por <code>month</code>.',en:'Order by <code>month</code>.'}],
+ sources:[S('rev',['month','amount'],[['2024-01',100],['2024-02',150],['2024-03',120],['2024-04',240]])],
+ expected:'2024-01  (null)\n2024-02  50\n2024-03  -30\n2024-04  120',
+ datasets:[`CREATE TABLE rev(month TEXT,amount INT);INSERT INTO rev VALUES ('2024-01',100),('2024-02',150),('2024-03',120),('2024-04',240);`],
+ ref:`SELECT month, amount - LAG(amount) OVER(ORDER BY month) AS mom_delta FROM rev ORDER BY month`,
+ starter:`SELECT\n  month,\n  -- amount - LAG(amount) OVER ( ORDER BY month ) AS mom_delta\nFROM rev\nORDER BY month;`
+},
+{
+ id:'py_batch',cat:'L · Lógica / Algoritmos DE',kind:'python',diff:'e',xp:15,
+ title:{es:'Particionar en lotes (chunking)',en:'Partition into batches (chunking)'},tags:'batching · generators',
+ context:{es:'Antes de escribir a una API o a una base, los registros se envían en lotes de tamaño fijo para no exceder límites de payload.',en:'Before writing to an API or a database, records are sent in fixed-size batches to stay under payload limits.'},
+ task:{es:'Implementa <code>batch(items, n)</code> que devuelva una lista de sublistas de tamaño máximo <code>n</code>, en orden.',en:'Implement <code>batch(items, n)</code> returning a list of sublists of max size <code>n</code>, in order.'},
+ bullets:[{es:'Firma: <code>def batch(items: list, n: int) -> list[list]</code>.',en:'Signature: <code>def batch(items: list, n: int) -> list[list]</code>.'},{es:'Lista vacía → <code>[]</code>. Si <code>n</code> ≥ longitud → un solo lote.',en:'Empty list → <code>[]</code>. If <code>n</code> ≥ length → a single batch.'},{es:'No mutes la entrada.',en:'Do not mutate the input.'}],
+ sources:[S('entrada / input',['items','n'],[['[1,2,3,4,5]','2 → [[1,2],[3,4],[5]]'],['[]','3 → []']])],
+ expected:'[[1,2],[3,4],[5]]',
+ starter:`def batch(items, n):\n    # devuelve sublistas de tamaño <= n, en orden\n    ...\n`,
+ pytests:`
+cases=[]
+def chk(name,got,exp): cases.append({"name":name,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("tamano 2", batch([1,2,3,4,5],2), [[1,2],[3,4],[5]])
+chk("division exacta", batch([1,2,3,4],2), [[1,2],[3,4]])
+chk("lista vacia", batch([],3), [])
+chk("n mayor que la lista", batch([1,2],5), [[1,2]])
+src=[1,2,3]; batch(src,2); chk("no muta entrada", src, [1,2,3])
+`
+},
+{
+ id:'q_fileformat',cat:'A · Infraestructura Cloud',kind:'quiz',diff:'e',xp:10,timer:120,
+ title:{es:'Parquet vs CSV en un data lake',en:'Parquet vs CSV in a data lake'},tags:'formatos · columnar',
+ context:{es:'Guardas tablas analíticas grandes en S3 y las consultas seleccionan pocas columnas con filtros.',en:'You store large analytical tables in S3 and queries select few columns with filters.'},
+ task:{es:'¿Por qué Parquet suele ganar a CSV para analítica?',en:'Why does Parquet usually beat CSV for analytics?'},
+ options:[{t:{es:'Columnar + compresión + pushdown de predicados: lee solo las columnas/filas necesarias y ocupa menos.',en:'Columnar + compression + predicate pushdown: reads only the needed columns/rows and is smaller.'},ok:true},
+   {t:{es:'CSV es siempre más rápido porque es texto plano.',en:'CSV is always faster because it is plain text.'},ok:false},
+   {t:{es:'Parquet no soporta tipos, por eso es más liviano.',en:'Parquet does not support types, hence lighter.'},ok:false},
+   {t:{es:'Son equivalentes; solo cambia la extensión del archivo.',en:'They are equivalent; only the file extension changes.'},ok:false}],
+ explain:{es:'Parquet es columnar: el motor lee solo las columnas del SELECT, aplica compresión por columna y salta row-groups con estadísticas (min/max) → menos I/O y coste. CSV obliga a escanear todo y reparsear texto.',en:'Parquet is columnar: the engine reads only selected columns, compresses per column, and skips row-groups via min/max stats → less I/O and cost. CSV forces a full scan and text re-parsing.'}
+},
+{
+ id:'q_idempotency',cat:'E · Arquitectura Moderna',kind:'quiz',diff:'m',xp:15,timer:150,
+ title:{es:'Carga idempotente y exactly-once',en:'Idempotent loads and exactly-once'},tags:'idempotencia · MERGE',
+ context:{es:'Un job de ingesta puede reintentarse tras un fallo parcial y reprocesar el mismo lote.',en:'An ingestion job may retry after a partial failure and reprocess the same batch.'},
+ task:{es:'¿Qué hace la carga segura ante reintentos?',en:'What makes the load safe against retries?'},
+ options:[{t:{es:'MERGE/upsert por clave de negocio (o delete+insert de la partición): reejecutar produce el mismo estado final.',en:'MERGE/upsert on a business key (or delete+insert of the partition): rerunning yields the same final state.'},ok:true},
+   {t:{es:'Un <code>INSERT</code> append-only sin clave, confiando en que no haya reintentos.',en:'An append-only <code>INSERT</code> with no key, trusting there are no retries.'},ok:false},
+   {t:{es:'Desactivar los reintentos del orquestador.',en:'Disabling the orchestrator retries.'},ok:false},
+   {t:{es:'Aumentar el tamaño del warehouse.',en:'Increasing the warehouse size.'},ok:false}],
+ explain:{es:'Idempotencia = reejecutar deja el mismo estado. Se logra con MERGE por clave o delete+insert por partición, no evitando reintentos (los fallos son inevitables). Append-only sin clave duplica al reintentar.',en:'Idempotency = rerunning leaves the same state. Achieved via MERGE on a key or delete+insert per partition, not by avoiding retries (failures are inevitable). Keyless append-only duplicates on retry.'}
+},
 ];
 /* English overlay for legacy (Spanish-authored) exercises. Resolver: fld() prefers EN[id][field] when lang==='en'. */
 const EN={
@@ -1362,8 +1428,16 @@ async function ai(modeAi){const e=cur,panel=$('#tutor');panel.classList.add('sho
   const code=e.kind==='quiz'?'(conceptual)':(editor?editor.getValue():'');
   const sys=modeAi==='hint'?t('hint_sys'):t('rev_sys');
   const prompt=`${sys}\n\n${e.kind}: ${fld(e,'title')}\n${(fld(e,'task')||fld(e,'context')||'').replace(/<[^>]+>/g,'')}\n\n${code}`;
-  try{const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
-    const d=await r.json();const txt=(d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();panel.classList.remove('pulse');panel.textContent=txt||'—';
+  // Optional serverless proxy (Cloudflare Worker, see workers/ai-tutor). Set once:
+  //   localStorage.setItem('ai_endpoint','https://<your-worker>.workers.dev')
+  // When unset, falls back to the direct call (works inside hosts that inject auth).
+  const endpoint=(()=>{try{return localStorage.getItem('ai_endpoint');}catch{return null;}})();
+  try{let txt;
+    if(endpoint){const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
+      const d=await r.json();if(!r.ok)throw new Error(d.error||('HTTP '+r.status));txt=(d.text||'').trim();}
+    else{const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
+      const d=await r.json();txt=(d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();}
+    panel.classList.remove('pulse');panel.textContent=txt||'—';
   }catch(err){panel.classList.remove('pulse');panel.textContent=t('tutor_off')+': '+err.message;}}
 
 /* ===========================  exam  =========================== */

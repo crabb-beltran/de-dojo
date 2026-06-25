@@ -1,0 +1,7 @@
+{
+  "name": "de-lab-tests",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node validate.mjs" },
+  "dependencies": { "sql.js": "1.8.0" }
+}
