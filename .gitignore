@@ -14,3 +14,5 @@ test/en_arr.mjs
 test/en_res.mjs
 test/en_struct.mjs
 test/tpl_struct.json
+test/dump_missing.mjs
+test/missing_es.json
