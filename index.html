@@ -2596,21 +2596,18 @@ const T={
   sql_fail:'No se pudo cargar sql.js',write_q:'Escribe una query.',no_res:'Sin resultados.',tutor_off:'Tutor IA no disponible aquí',hint_sys:'Da UNA pista breve (máx 3 líneas) que oriente sin resolver.',rev_sys:'Eres un Senior Data Engineer revisando código de un colega senior. Feedback directo, máx 8 líneas: correctitud, edge cases, idempotencia/coste/rendimiento, estilo de producción. Señala líneas concretas. No reescribas todo.',
   expected:'esperado',got:'tu salida',rows:'fila(s)',output:'salida',
   toast_xp:'XP',toast_timeup:'⏱ Tiempo agotado — puedes seguir, pero rinde ½ XP',toast_examtime:'⏱ Tiempo del examen agotado',
-  acct_title:'Usuarios y progreso',acct_sub:'Cada perfil guarda su propio XP, ejercicios resueltos e historial.',
-  acct_local:'Perfiles en este dispositivo',acct_active:'activo',acct_use:'Usar',
-  acct_new_ph:'Nombre del nuevo perfil…',acct_new:'Crear perfil',acct_name_dup:'Ya existe un perfil con ese nombre.',
-  acct_ren_p:'Nuevo nombre del perfil:',acct_del_c:'¿Eliminar el perfil "{n}" y TODO su progreso local? No se puede deshacer.',
-  acct_cloud:'Cuenta en la nube (opcional)',acct_cloud_sub:'Regístrate o inicia sesión para respaldar tu progreso y sincronizarlo entre dispositivos. Tu cuenta usa un perfil propio: nunca se mezcla con los perfiles locales.',
+  acct_title:'Tu cuenta',acct_sub:'Cada usuario guarda su propio XP, ejercicios resueltos e historial.',
+  acct_guest:'Invitado',
+  acct_guest_note:'Estás practicando como <b>invitado</b>: tu progreso se guarda solo en este navegador. Crea una cuenta o inicia sesión para guardarlo en la nube, sincronizarlo entre dispositivos y no perderlo. El progreso de invitado y el de tu cuenta no se mezclan.',
   acct_email:'email',acct_pass:'contraseña (mín. 6)',acct_signin:'Entrar',acct_signup:'Crear cuenta',acct_signout:'Cerrar sesión',
-  acct_signed:'Sesión activa',acct_last:'última sync',acct_never:'nunca',acct_sync_now:'Sincronizar ahora',
+  acct_last:'última sync',acct_never:'nunca',acct_sync_now:'Sincronizar ahora',
   acct_synced:'Progreso sincronizado ✓',acct_sync_err:'Error de sincronización — el progreso sigue guardado en este dispositivo.',
   acct_confirm:'Cuenta creada. Revisa tu correo para confirmarla y luego pulsa Entrar.',
   acct_badcred:'Credenciales inválidas o cuenta sin confirmar.',acct_off:'Sin conexión con el servidor.',
   acct_nocfg:'La sincronización en la nube no está configurada. El administrador debe crear un proyecto gratuito en Supabase y pegar aquí la URL y la anon key (se guardan solo en este navegador). Pasos completos en <code>docs/ACCOUNTS.md</code>.',
   acct_cfg:'⚙ Configurar servidor (admin)',acct_cfg_url:'Supabase URL (https://xxxx.supabase.co)',acct_cfg_key:'Supabase anon key',acct_cfg_save:'Guardar configuración',
   acct_expired:'Sesión expirada — vuelve a entrar para seguir sincronizando.',
-  acct_welcome:'Perfil activo: {n}',acct_pass_short:'La contraseña debe tener al menos 6 caracteres.',acct_email_bad:'Escribe un email válido.',
-  acct_exam_warn:'Hay un examen en curso; cambiar de perfil lo cancelará. ¿Continuar?'},
+  acct_welcome:'Sesión iniciada: {n}',acct_pass_short:'La contraseña debe tener al menos 6 caracteres.',acct_email_bad:'Escribe un email válido.'},
  en:{nav_home:'Home',nav_guide:'Guide',nav_practice:'Practice',nav_exam:'Exam',nav_stats:'Stats',
   home_kicker:'Training platform · Data Engineering',home_tag:'Train · Practice · Master',rights:'All rights reserved.',locked_msg:'Complete the easier exercises in this category first 🔒',to_next:'{n} XP → Lv {l}',to_lvl:'to Lv {l}',
   home_title:'Master the <em>Data Engineer</em> craft, one problem at a time.',
@@ -2636,21 +2633,18 @@ const T={
   sql_fail:'Could not load sql.js',write_q:'Write a query.',no_res:'No results.',tutor_off:'AI tutor unavailable here',hint_sys:'Give ONE short hint (max 3 lines) that guides without solving.',rev_sys:'You are a Senior Data Engineer reviewing code from a senior peer. Direct feedback, max 8 lines: correctness, edge cases, idempotency/cost/performance, production style. Point to concrete lines. Do not rewrite everything.',
   expected:'expected',got:'your output',rows:'row(s)',output:'output',
   toast_xp:'XP',toast_timeup:'⏱ Time up — you can continue, but it yields ½ XP',toast_examtime:'⏱ Exam time is up',
-  acct_title:'Users & progress',acct_sub:'Each profile keeps its own XP, solved exercises and history.',
-  acct_local:'Profiles on this device',acct_active:'active',acct_use:'Use',
-  acct_new_ph:'New profile name…',acct_new:'Create profile',acct_name_dup:'A profile with that name already exists.',
-  acct_ren_p:'New profile name:',acct_del_c:'Delete profile "{n}" and ALL of its local progress? This cannot be undone.',
-  acct_cloud:'Cloud account (optional)',acct_cloud_sub:'Sign up or sign in to back up your progress and sync it across devices. Your account gets its own profile: it never mixes with local profiles.',
+  acct_title:'Your account',acct_sub:'Each user keeps their own XP, solved exercises and history.',
+  acct_guest:'Guest',
+  acct_guest_note:'You are practicing as a <b>guest</b>: progress is saved only in this browser. Create an account or sign in to store it in the cloud, sync it across devices and never lose it. Guest and account progress never mix.',
   acct_email:'email',acct_pass:'password (min. 6)',acct_signin:'Sign in',acct_signup:'Sign up',acct_signout:'Sign out',
-  acct_signed:'Signed in',acct_last:'last sync',acct_never:'never',acct_sync_now:'Sync now',
+  acct_last:'last sync',acct_never:'never',acct_sync_now:'Sync now',
   acct_synced:'Progress synced ✓',acct_sync_err:'Sync error — progress is still saved on this device.',
   acct_confirm:'Account created. Check your email to confirm it, then press Sign in.',
   acct_badcred:'Invalid credentials or unconfirmed account.',acct_off:'Could not reach the server.',
   acct_nocfg:'Cloud sync is not configured. The admin needs to create a free Supabase project and paste the URL and anon key here (stored only in this browser). Full steps in <code>docs/ACCOUNTS.md</code>.',
   acct_cfg:'⚙ Configure server (admin)',acct_cfg_url:'Supabase URL (https://xxxx.supabase.co)',acct_cfg_key:'Supabase anon key',acct_cfg_save:'Save configuration',
   acct_expired:'Session expired — sign in again to keep syncing.',
-  acct_welcome:'Active profile: {n}',acct_pass_short:'Password must be at least 6 characters.',acct_email_bad:'Enter a valid email.',
-  acct_exam_warn:'An exam is in progress; switching profiles will cancel it. Continue?'}
+  acct_welcome:'Signed in: {n}',acct_pass_short:'Password must be at least 6 characters.',acct_email_bad:'Enter a valid email.'}
 };
 function t(k){return (T[lang]&&T[lang][k])||T.es[k]||k;}
 function L(v){if(v&&typeof v==='object'&&!Array.isArray(v)&&('es'in v||'en'in v))return v[lang]!=null?v[lang]:v.es;return v;}
@@ -2703,7 +2697,7 @@ function setLang(l){lang=l;$('#langEs').classList.toggle('on',l==='es');$('#lang
   else if(mode==='exam'&&exam&&!exam.finished)loadExamQuestion(exam.idx);
   else if(mode==='exam')buildSetup();
   else if(mode==='stats')renderStats();
-  applyGuideLang();
+  applyGuideLang();userChip();
   if($('#ovUser')&&$('#ovUser').classList.contains('show'))renderAccount();
   saveLang();
 }
@@ -4606,62 +4600,47 @@ const store={
   async set(k,v){let host=false;try{if(window.storage&&window.storage.set){await window.storage.set(k,v,false);host=true;}}catch(e){}try{localStorage.setItem(k,v);}catch(e){}return host;},
   async get(k){try{if(window.storage&&window.storage.get){const r=await window.storage.get(k,false);if(r&&r.value!=null)return r.value;}}catch(e){}try{const v=localStorage.getItem(k);if(v!=null)return v;}catch(e){}return null;}
 };
-/* ---------- multi-user profiles ----------
-   Every piece of progress (state, stats, cloud session) lives under a
-   per-profile key so users on the same device never mix or clobber each
-   other. Language & theme stay device-global on purpose. */
-let users=[],uid=null;
+/* ---------- users & progress buckets ----------
+   Online accounts are the user model. Each account's progress lives in its
+   own storage bucket keyed by the Supabase user id ('c_<uuid>'), backed up
+   to the cloud. Anonymous visitors use the local 'guest' bucket (this
+   browser only) so nothing is lost before signing in — but guest and
+   account progress never mix. Language & theme stay device-global. */
+let uid='guest';
 const ukey=k=>`delab:u:${uid}:${k}`;
-const newUid=()=>'u'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-function curUser(){return users.find(u=>u.id===uid);}
-async function saveUsers(){await store.set('delab:users',JSON.stringify(users));await store.set('delab:uid',uid);}
-async function initUsers(){
-  try{users=JSON.parse(await store.get('delab:users'))||[];}catch(e){users=[];}
-  uid=await store.get('delab:uid');
-  if(!users.length){
-    // first run, or migration from the pre-profiles single-user storage
-    users=[{id:newUid(),name:lang==='en'?'Profile 1':'Perfil 1',created:Date.now(),cloud:null}];
-    uid=users[0].id;
+async function initUser(){
+  const saved=await store.get('delab:uid');
+  if(saved==='guest'||(saved&&saved.startsWith('c_'))){uid=saved;}
+  else if(saved){
+    // migration from the short-lived local-profiles version
+    let reg=[];try{reg=JSON.parse(await store.get('delab:users'))||[];}catch(e){}
+    const act=reg.find(u=>u.id===saved)||reg[0];
+    uid=act&&act.cloud?'c_'+act.cloud.userId:'guest';
+    if(act)for(const k of ['state','stats','session']){
+      const v=await store.get(`delab:u:${act.id}:${k}`);
+      if(v&&!(await store.get(ukey(k))))await store.set(ukey(k),v);
+    }
+    await store.set('delab:uid',uid);
+  }else{
+    // first run, or migration from the original single-user storage
+    uid='guest';
     const legacy=await store.get('delab:state');
-    if(legacy){await store.set(ukey('state'),legacy);const ls=await store.get('delab:stats');if(ls)await store.set(ukey('stats'),ls);}
-    await saveUsers();
+    if(legacy&&!(await store.get(ukey('state')))){
+      await store.set(ukey('state'),legacy);
+      const ls=await store.get('delab:stats');if(ls)await store.set(ukey('stats'),ls);
+    }
+    await store.set('delab:uid',uid);
   }
-  if(!users.find(u=>u.id===uid)){uid=users[0].id;await saveUsers();}
   userChip();
 }
-function userChip(){const b=$('#userBtn');if(!b)return;const u=curUser();b.textContent='👤 '+(u?u.name:'—');b.title=u?u.name:'';}
+function userChip(){const b=$('#userBtn');if(!b)return;const s=getSession();
+  b.textContent='👤 '+(s?s.email.split('@')[0]:t('acct_guest'));b.title=s?s.email:t('acct_guest');}
 function abortSessionUI(){cur=null;quizSel=null;answered=false;stopTimer();if(exam&&!exam.finished){exam=null;stopExamTimer();}}
-async function useProfile(id){
-  if(id===uid){closeAccount();return;}
-  if(exam&&!exam.finished&&!confirm(t('acct_exam_warn')))return;
-  await save();await saveStats();          // persist the outgoing profile
-  if(getSession())await cloudPushNow().catch(()=>{});
-  uid=id;await saveUsers();
+async function switchBucket(nid){
+  await save();await saveStats();          // persist the outgoing bucket
+  uid=nid;await store.set('delab:uid',uid);
   await load();await loadStats();
-  abortSessionUI();renderXP();userChip();closeAccount();switchMode('home');
-  toast(t('acct_welcome').replace('{n}',curUser().name));
-  cloudAutoSync();
-}
-async function createProfile(){
-  const inp=$('#npName'),name=(inp&&inp.value||'').trim();if(!name)return;
-  if(users.some(u=>u.name.toLowerCase()===name.toLowerCase())){toast(t('acct_name_dup'));return;}
-  const u={id:newUid(),name,created:Date.now(),cloud:null};
-  users.push(u);await saveUsers();await useProfile(u.id);
-}
-async function renameProfile(id){
-  const u=users.find(x=>x.id===id);if(!u)return;
-  const n=prompt(t('acct_ren_p'),u.name);if(!n||!n.trim())return;
-  u.name=n.trim();await saveUsers();userChip();renderAccount();
-}
-async function deleteProfile(id){
-  const u=users.find(x=>x.id===id);if(!u)return;
-  if(!confirm(t('acct_del_c').replace('{n}',u.name)))return;
-  users=users.filter(x=>x.id!==id);
-  try{['state','stats','session'].forEach(k=>localStorage.removeItem(`delab:u:${id}:${k}`));}catch(e){}
-  if(!users.length)users=[{id:newUid(),name:lang==='en'?'Profile 1':'Perfil 1',created:Date.now(),cloud:null}];
-  if(uid===id){uid=users[0].id;await saveUsers();await load();await loadStats();abortSessionUI();renderXP();userChip();switchMode('home');}
-  else await saveUsers();
-  renderAccount();
+  abortSessionUI();renderXP();userChip();switchMode('home');
 }
 
 /* ---------- account modal ---------- */
@@ -4671,33 +4650,26 @@ function fmtAgo(ts){if(!ts)return t('acct_never');const m=Math.round((Date.now()
 function renderAccount(){
   const box=$('#accBody');if(!box)return;
   $('#accTitle').textContent=t('acct_title');$('#accSub').textContent=t('acct_sub');
-  const rows=users.map(u=>{
-    const cu=u.id===uid;
-    return `<div class="prow ${cu?'cur':''}">
-      <span class="pname">${escv(u.name)}</span>
-      ${u.cloud?`<span class="pmeta cloudtag">☁ ${escv(u.cloud.email)}</span>`:''}
-      ${cu?`<span class="pmeta">● ${t('acct_active')}</span>`:`<button onclick="useProfile('${u.id}')">${t('acct_use')}</button>`}
-      <button class="ghost" title="rename" onclick="renameProfile('${u.id}')">✎</button>
-      <button class="ghost" title="delete" onclick="deleteProfile('${u.id}')">🗑</button>
-    </div>`;}).join('');
   const cfg=sbCfg(),sess=getSession();
-  let cloud='';
   if(!cfg){
-    cloud=`<div class="mnote">${t('acct_nocfg')}</div>
+    box.innerHTML=`<div class="mnote">${t('acct_nocfg')}</div>
       <details class="mcfg"><summary>${t('acct_cfg')}</summary>
         <div class="mrow"><input class="minput" id="sbUrl" placeholder="${t('acct_cfg_url')}"></div>
         <div class="mrow"><input class="minput" id="sbKey" placeholder="${t('acct_cfg_key')}"></div>
         <button class="primary" onclick="saveSbCfg()">${t('acct_cfg_save')}</button>
       </details>`;
   }else if(sess){
-    cloud=`<div class="mnote">${t('acct_signed')}: <b>${escv(sess.email)}</b> · ${t('acct_last')}: ${fmtAgo(lastSync)}</div>
+    box.innerHTML=`<div class="prow cur"><span class="pname">${escv(sess.email.split('@')[0])}</span>
+      <span class="pmeta cloudtag">☁ ${escv(sess.email)}</span></div>
+      <div class="mnote">${t('acct_last')}: ${fmtAgo(lastSync)}</div>
       <div class="mrow"><button class="primary" onclick="cloudSyncNow()">${t('acct_sync_now')}</button>
       <button class="ghost" onclick="cloudLogout()">${t('acct_signout')}</button></div>
       <div class="syncst" id="cStatus"></div>`;
   }else{
-    cloud=`<div class="mnote">${t('acct_cloud_sub')}</div>
+    box.innerHTML=`<div class="mnote">${t('acct_guest_note')}</div>
       <div class="mrow"><input class="minput" id="cEmail" type="email" autocomplete="username" placeholder="${t('acct_email')}">
-      <input class="minput" id="cPass" type="password" autocomplete="current-password" placeholder="${t('acct_pass')}"></div>
+      <input class="minput" id="cPass" type="password" autocomplete="current-password" placeholder="${t('acct_pass')}"
+        onkeydown="if(event.key==='Enter')cloudLogin('signin')"></div>
       <div class="mrow"><button class="primary" onclick="cloudLogin('signin')">${t('acct_signin')}</button>
       <button onclick="cloudLogin('signup')">${t('acct_signup')}</button></div>
       <div class="syncst" id="cStatus"></div>
@@ -4707,10 +4679,6 @@ function renderAccount(){
         <button class="primary" onclick="saveSbCfg()">${t('acct_cfg_save')}</button>
       </details>`;
   }
-  box.innerHTML=`<div class="field"><label>${t('acct_local')}</label><div class="plist">${rows}</div>
-    <div class="mrow"><input class="minput" id="npName" maxlength="24" placeholder="${t('acct_new_ph')}" onkeydown="if(event.key==='Enter')createProfile()">
-    <button class="primary" onclick="createProfile()">${t('acct_new')}</button></div></div>
-    <div class="msep"><span>☁ ${t('acct_cloud')}</span></div>${cloud}`;
 }
 
 /* ---------- optional cloud accounts (Supabase free tier, plain fetch) ----
@@ -4718,8 +4686,15 @@ function renderAccount(){
    table guarantees each user can only read/write their own row.
    Offline-first: local storage is the source of truth; cloud is a synced
    backup. See docs/ACCOUNTS.md for the one-time server setup. */
-const SB_DEFAULT={url:'',key:''}; // optionally hardcode at deploy time
-function sbCfg(){try{const url=localStorage.getItem('delab:sb_url')||SB_DEFAULT.url,key=localStorage.getItem('delab:sb_key')||SB_DEFAULT.key;return url&&key?{url:url.replace(/\/+$/,''),key}:null;}catch(e){return null;}}
+/* Default backend for this deployment. The anon key is PUBLIC by design
+   (it grants nothing by itself — RLS policies are the actual protection),
+   so shipping it in the client is the intended Supabase pattern. */
+const SB_DEFAULT={
+  url:'https://yxsemyzwydzqoxjnngue.supabase.co',
+  key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4c2VteXp3eWR6cW94am5uZ3VlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MTg2MTQsImV4cCI6MjA5OTA5NDYxNH0.RBWUQrzTapMXRp7Rw9R-cDHS9vzl9Z9_Vg3eNI3PwmE'
+};
+function sbCfg(){try{const url=localStorage.getItem('delab:sb_url')||SB_DEFAULT.url,key=localStorage.getItem('delab:sb_key')||SB_DEFAULT.key;
+  return url&&key?{url:url.replace(/\/+(rest|auth)\/v1\/?$/,'').replace(/\/+$/,''),key}:null;}catch(e){return null;}}
 function saveSbCfg(){
   const url=($('#sbUrl')&&$('#sbUrl').value||'').trim(),key=($('#sbKey')&&$('#sbKey').value||'').trim();
   try{if(url&&key){localStorage.setItem('delab:sb_url',url);localStorage.setItem('delab:sb_key',key);}else{localStorage.removeItem('delab:sb_url');localStorage.removeItem('delab:sb_key');}}catch(e){}
@@ -4794,17 +4769,20 @@ async function cloudLogin(kind){
     cloudStatus('err',msg||t('acct_badcred'));return;
   }
   const sess=packSession(r.data);
-  // a cloud account maps to its OWN dedicated profile — never mixes with local ones
-  let u=users.find(x=>x.cloud&&x.cloud.userId===sess.user_id);
-  if(!u){u={id:newUid(),name:email.split('@')[0],created:Date.now(),cloud:{email,userId:sess.user_id}};users.push(u);}
-  await save();await saveStats();          // persist the outgoing profile
-  uid=u.id;await saveUsers();setSession(sess);
-  await load();await loadStats();
+  // each account has its OWN progress bucket — never mixes with guest progress
+  await switchBucket('c_'+sess.user_id);
+  setSession(sess);
   try{const remote=await cloudPull();const m=mergeProgress({state,stats},remote);state=m.state;stats=m.stats;await save();await saveStats();await cloudPushNow();}catch(e){}
-  abortSessionUI();renderXP();userChip();renderAccount();switchMode('home');
-  toast(t('acct_welcome').replace('{n}',u.name));
+  renderXP();userChip();renderAccount();
+  toast(t('acct_welcome').replace('{n}',sess.email.split('@')[0]));
 }
-function cloudLogout(){clearTimeout(pushT);setSession(null);lastSync=0;renderAccount();}
+async function cloudLogout(){
+  clearTimeout(pushT);
+  try{await cloudPushNow();}catch(e){}     // last backup before signing out
+  setSession(null);lastSync=0;
+  await switchBucket('guest');
+  renderAccount();
+}
 
 /* ---------- per-profile persistence ---------- */
 async function save(){await store.set(ukey('state'),JSON.stringify(state));queueCloudPush();}
@@ -4821,7 +4799,7 @@ $('#menub').onclick=()=>document.querySelector('.rail').classList.toggle('open')
 $('#resetBtn').onclick=async()=>{if(confirm(t('reset_c'))){state={solved:{},xp:0,streak:0,lastDay:null};stats={history:[]};await save();await saveStats();renderXP();if(mode==='practice')renderRail();if(mode==='stats')renderStats();}};
 
 window.addEventListener('load',async()=>{
-  await loadLang();await initUsers();       // profiles first: state/stats are per-profile
+  await loadLang();await initUser();        // user bucket first: state/stats are per-user
   await load();await loadStats();
   try{const th=await store.get('delab:theme');if(th==='light'){document.documentElement.setAttribute('data-theme','light');$('#themeBtn').textContent='☀️';}}catch(e){}
   setLang(lang);renderXP();renderRail();switchMode('home');

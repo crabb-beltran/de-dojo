@@ -13,7 +13,7 @@ A browser-based training platform to **practice and self-assess Data Engineering
 - **Visible sources** — every exercise shows the table schemas and sample rows so you reason from the actual data.
 - **AI tutor** — optional hint / senior-level code review. Ships with a free serverless proxy (Cloudflare Worker, see `workers/ai-tutor/`) so the key stays server-side; falls back gracefully when no endpoint is configured.
 - **Gamification** — XP, levels (with a "XP to next level" progress bar), streaks; progress persisted locally.
-- **Multi-user profiles & sign-in** — named profiles per device with fully isolated progress (no mixing on shared computers), plus optional **email + password accounts** (Supabase free tier) that back up and sync progress across devices with a grow-only merge. Offline-first: the cloud is a backup, not a dependency. See `docs/ACCOUNTS.md`.
+- **User accounts (sign-up / sign-in)** — email + password accounts (Supabase free tier) with per-user progress buckets, backed up to the cloud and synced across devices with a grow-only merge (two devices can never erase each other). Visitors without an account practice in an isolated local guest mode. Offline-first: the cloud is a backup, not a dependency. See `docs/ACCOUNTS.md`.
 - **Progressive unlock** — within each category, medium exercises stay locked until all easy ones are solved, and hard until all medium are. Keeps the difficulty curve honest.
 - **Shuffled quiz options** — the correct answer is randomized per attempt (no "always A"), with ✓/✗ marks on each option after grading.
 
@@ -118,7 +118,7 @@ Pushing to `main` triggers `.github/workflows/pages.yml`, which publishes the si
 
 - **SQLite dialect for SQL.** Window functions, CTEs, `LAG/LEAD`, anti-joins and the islands trick all work. Engine-specific syntax (`QUALIFY`, `MERGE`, Snowflake time-travel) is intentionally taught via concept drills instead of execution. Trade-off: real execution vs. dialect portability in the browser.
 - **Pyodide loads from a CDN (~6 MB, lazy).** If the host sandbox blocks it, Python exercises degrade gracefully to "reveal solution / AI review" without breaking the app.
-- **No mandatory backend.** Keeps it free to host on Pages. Multi-user profiles work fully offline; real accounts + cross-device sync plug into a free Supabase project via its REST API (no SDK) — see `docs/ACCOUNTS.md`. Leaderboards and payments would still need a fuller backend.
+- **Thin backend.** Hosting stays free on Pages; accounts + cross-device sync run on a free Supabase project via its REST API (no SDK), with an offline guest mode when signed out — see `docs/ACCOUNTS.md`. Leaderboards and payments would still need a fuller backend.
 
 ## Roadmap
 
