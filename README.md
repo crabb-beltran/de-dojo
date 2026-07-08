@@ -13,6 +13,7 @@ A browser-based training platform to **practice and self-assess Data Engineering
 - **Visible sources** — every exercise shows the table schemas and sample rows so you reason from the actual data.
 - **AI tutor** — optional hint / senior-level code review. Ships with a free serverless proxy (Cloudflare Worker, see `workers/ai-tutor/`) so the key stays server-side; falls back gracefully when no endpoint is configured.
 - **Gamification** — XP, levels (with a "XP to next level" progress bar), streaks; progress persisted locally.
+- **Multi-user profiles & sign-in** — named profiles per device with fully isolated progress (no mixing on shared computers), plus optional **email + password accounts** (Supabase free tier) that back up and sync progress across devices with a grow-only merge. Offline-first: the cloud is a backup, not a dependency. See `docs/ACCOUNTS.md`.
 - **Progressive unlock** — within each category, medium exercises stay locked until all easy ones are solved, and hard until all medium are. Keeps the difficulty curve honest.
 - **Shuffled quiz options** — the correct answer is randomized per attempt (no "always A"), with ✓/✗ marks on each option after grading.
 
@@ -117,14 +118,14 @@ Pushing to `main` triggers `.github/workflows/pages.yml`, which publishes the si
 
 - **SQLite dialect for SQL.** Window functions, CTEs, `LAG/LEAD`, anti-joins and the islands trick all work. Engine-specific syntax (`QUALIFY`, `MERGE`, Snowflake time-travel) is intentionally taught via concept drills instead of execution. Trade-off: real execution vs. dialect portability in the browser.
 - **Pyodide loads from a CDN (~6 MB, lazy).** If the host sandbox blocks it, Python exercises degrade gracefully to "reveal solution / AI review" without breaking the app.
-- **No backend by design.** Keeps it free to host on Pages. Multi-user accounts, leaderboards and payments would require a real backend (Supabase/Postgres + auth) — see roadmap.
+- **No mandatory backend.** Keeps it free to host on Pages. Multi-user profiles work fully offline; real accounts + cross-device sync plug into a free Supabase project via its REST API (no SDK) — see `docs/ACCOUNTS.md`. Leaderboards and payments would still need a fuller backend.
 
 ## Roadmap
 
 - Per-exercise **extra hidden datasets** for stronger grading.
 - Author exercises from JSON files + a contribution flow (see `docs/AUTHORING.md`).
 - Spaced-repetition: resurface weak categories automatically.
-- Optional backend for accounts/leaderboards (AI-tutor proxy ✅ done — see `workers/ai-tutor/`).
+- Optional backend for leaderboards (AI-tutor proxy ✅ · accounts & cross-device sync ✅ — see `workers/ai-tutor/` and `docs/ACCOUNTS.md`).
 
 ## Tech
 
