@@ -242,6 +242,32 @@
   .pulse{animation:pulse 1s infinite}@keyframes pulse{50%{opacity:.45}}
   .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--coral);padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:60}
   .toast.show{opacity:1}
+  /* account / user profiles */
+  .userbtn{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .modal{position:fixed;inset:0;background:color-mix(in srgb,var(--ink) 55%,rgba(0,0,0,.35));backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:none;z-index:70;align-items:flex-start;justify-content:center;overflow:auto;padding:6vh 14px 40px}
+  .modal.show{display:flex}
+  .modal .mbox{background:var(--panel);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);width:min(500px,100%);padding:22px 22px 18px}
+  .modal h2{font-family:var(--display);font-weight:700;font-size:21px;margin:0 0 2px}
+  .modal .msub{color:var(--muted);font-size:12px;font-family:var(--mono);margin-bottom:14px}
+  .modal .mclose{float:right;padding:2px 9px;font-size:14px;line-height:1.4}
+  .plist{display:flex;flex-direction:column;gap:8px;margin:10px 0}
+  .prow{display:flex;align-items:center;gap:9px;padding:9px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+  .prow.cur{border-color:var(--coral);box-shadow:inset 0 0 14px -9px var(--coral)}
+  .prow .pname{flex:1;min-width:0;font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .prow .pmeta{font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap}
+  .prow .pmeta.cloudtag{color:var(--blue)}
+  .prow button{padding:4px 9px;font-size:11.5px;flex:none}
+  .minput{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text);font-family:var(--ui);font-size:13.5px}
+  .minput:focus{outline:none;border-color:var(--coral)}
+  .mrow{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}
+  .mrow .minput{flex:1;min-width:150px;width:auto}
+  .msep{border-top:1px dashed var(--border);margin:18px 0 14px;position:relative}
+  .msep span{position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--panel);padding:0 10px;font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+  .mnote{font-size:12px;color:var(--muted);line-height:1.55;margin:8px 0}
+  .mnote code{font-family:var(--mono);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:0 4px;font-size:11px}
+  .syncst{font-family:var(--mono);font-size:11px;margin-top:8px;min-height:14px}
+  .syncst.ok{color:var(--mint)}.syncst.err{color:var(--bad)}
+  details.mcfg{margin-top:10px}details.mcfg summary{cursor:pointer;font-family:var(--mono);font-size:11px;color:var(--muted)}
   /* overlays */
   .overlay{position:absolute;left:0;right:0;top:0;bottom:0;background:var(--ink);overflow:auto;display:none;z-index:30;padding:28px 30px}
   .overlay.show{display:block}
@@ -287,6 +313,7 @@
   <div class="spacer"></div>
   <div class="lang"><button id="langEs" class="on" onclick="setLang('es')">ES</button><button id="langEn" onclick="setLang('en')">EN</button></div>
   <div class="xpmini">Lv <b id="lvl">1</b> · <span id="xptxt">0 XP</span></div>
+  <button class="ghostbtn userbtn" id="userBtn" onclick="openAccount()">👤</button>
   <button class="ghostbtn" id="themeBtn" title="theme">🌙</button>
   <button class="ghostbtn" id="resetBtn">reset</button>
 </div>
@@ -321,6 +348,16 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ACCOUNT / PROFILES -->
+<div class="modal" id="ovUser" onclick="if(event.target===this)closeAccount()">
+  <div class="mbox">
+    <button class="ghostbtn mclose" onclick="closeAccount()">✕</button>
+    <h2 id="accTitle"></h2>
+    <div class="msub" id="accSub"></div>
+    <div id="accBody"></div>
+  </div>
+</div>
 
 <script>
 
@@ -2554,11 +2591,26 @@ const T={
   rep_weak:'A reforzar:',rep_weak2:'Practica estos temas en modo Práctica antes del próximo intento.',rep_solid:'Sólido en todas las categorías evaluadas.',rep_solid2:'Sube la dificultad o el número de preguntas.',
   rep_new:'Nuevo examen',rep_prog:'Ver progreso',rep_prac:'Ir a práctica',skipped:'saltada',
   stats_title:'Progreso',stats_sub:'Dominio en práctica + historial de exámenes',stats_mastery:'Dominio por categoría (práctica)',stats_hist:'Historial de exámenes',stats_best:'mejor examen',stats_none:'Sin exámenes aún. Inicia uno para registrar tu progreso.',stats_start:'Iniciar examen',
-  reset_c:'¿Borrar progreso (XP, resueltos, streak, historial)?',
+  reset_c:'¿Borrar el progreso de ESTE perfil (XP, resueltos, streak, historial)?',
   loading_py:'Cargando runtime de Python (Pyodide, ~una vez)…',loading_pkg:'Cargando paquetes',py_blocked:'No se pudo cargar Python aquí (el sandbox bloqueó el runtime). Usa <b>Ver solución</b> o <b>Review IA</b>.',
   sql_fail:'No se pudo cargar sql.js',write_q:'Escribe una query.',no_res:'Sin resultados.',tutor_off:'Tutor IA no disponible aquí',hint_sys:'Da UNA pista breve (máx 3 líneas) que oriente sin resolver.',rev_sys:'Eres un Senior Data Engineer revisando código de un colega senior. Feedback directo, máx 8 líneas: correctitud, edge cases, idempotencia/coste/rendimiento, estilo de producción. Señala líneas concretas. No reescribas todo.',
   expected:'esperado',got:'tu salida',rows:'fila(s)',output:'salida',
-  toast_xp:'XP',toast_timeup:'⏱ Tiempo agotado — puedes seguir, pero rinde ½ XP',toast_examtime:'⏱ Tiempo del examen agotado'},
+  toast_xp:'XP',toast_timeup:'⏱ Tiempo agotado — puedes seguir, pero rinde ½ XP',toast_examtime:'⏱ Tiempo del examen agotado',
+  acct_title:'Usuarios y progreso',acct_sub:'Cada perfil guarda su propio XP, ejercicios resueltos e historial.',
+  acct_local:'Perfiles en este dispositivo',acct_active:'activo',acct_use:'Usar',
+  acct_new_ph:'Nombre del nuevo perfil…',acct_new:'Crear perfil',acct_name_dup:'Ya existe un perfil con ese nombre.',
+  acct_ren_p:'Nuevo nombre del perfil:',acct_del_c:'¿Eliminar el perfil "{n}" y TODO su progreso local? No se puede deshacer.',
+  acct_cloud:'Cuenta en la nube (opcional)',acct_cloud_sub:'Regístrate o inicia sesión para respaldar tu progreso y sincronizarlo entre dispositivos. Tu cuenta usa un perfil propio: nunca se mezcla con los perfiles locales.',
+  acct_email:'email',acct_pass:'contraseña (mín. 6)',acct_signin:'Entrar',acct_signup:'Crear cuenta',acct_signout:'Cerrar sesión',
+  acct_signed:'Sesión activa',acct_last:'última sync',acct_never:'nunca',acct_sync_now:'Sincronizar ahora',
+  acct_synced:'Progreso sincronizado ✓',acct_sync_err:'Error de sincronización — el progreso sigue guardado en este dispositivo.',
+  acct_confirm:'Cuenta creada. Revisa tu correo para confirmarla y luego pulsa Entrar.',
+  acct_badcred:'Credenciales inválidas o cuenta sin confirmar.',acct_off:'Sin conexión con el servidor.',
+  acct_nocfg:'La sincronización en la nube no está configurada. El administrador debe crear un proyecto gratuito en Supabase y pegar aquí la URL y la anon key (se guardan solo en este navegador). Pasos completos en <code>docs/ACCOUNTS.md</code>.',
+  acct_cfg:'⚙ Configurar servidor (admin)',acct_cfg_url:'Supabase URL (https://xxxx.supabase.co)',acct_cfg_key:'Supabase anon key',acct_cfg_save:'Guardar configuración',
+  acct_expired:'Sesión expirada — vuelve a entrar para seguir sincronizando.',
+  acct_welcome:'Perfil activo: {n}',acct_pass_short:'La contraseña debe tener al menos 6 caracteres.',acct_email_bad:'Escribe un email válido.',
+  acct_exam_warn:'Hay un examen en curso; cambiar de perfil lo cancelará. ¿Continuar?'},
  en:{nav_home:'Home',nav_guide:'Guide',nav_practice:'Practice',nav_exam:'Exam',nav_stats:'Stats',
   home_kicker:'Training platform · Data Engineering',home_tag:'Train · Practice · Master',rights:'All rights reserved.',locked_msg:'Complete the easier exercises in this category first 🔒',to_next:'{n} XP → Lv {l}',to_lvl:'to Lv {l}',
   home_title:'Master the <em>Data Engineer</em> craft, one problem at a time.',
@@ -2579,11 +2631,26 @@ const T={
   rep_weak:'To reinforce:',rep_weak2:'Practice these topics before your next attempt.',rep_solid:'Solid across all assessed categories.',rep_solid2:'Raise difficulty or question count.',
   rep_new:'New exam',rep_prog:'View progress',rep_prac:'Go to practice',skipped:'skipped',
   stats_title:'Progress',stats_sub:'Practice mastery + exam history',stats_mastery:'Category mastery (practice)',stats_hist:'Exam history',stats_best:'best exam',stats_none:'No exams yet. Start one to track your progress.',stats_start:'Start exam',
-  reset_c:'Clear progress (XP, solved, streak, history)?',
+  reset_c:'Clear THIS profile\'s progress (XP, solved, streak, history)?',
   loading_py:'Loading Python runtime (Pyodide, ~once)…',loading_pkg:'Loading packages',py_blocked:'Could not load Python here (sandbox blocked the runtime). Use <b>Reveal solution</b> or <b>AI review</b>.',
   sql_fail:'Could not load sql.js',write_q:'Write a query.',no_res:'No results.',tutor_off:'AI tutor unavailable here',hint_sys:'Give ONE short hint (max 3 lines) that guides without solving.',rev_sys:'You are a Senior Data Engineer reviewing code from a senior peer. Direct feedback, max 8 lines: correctness, edge cases, idempotency/cost/performance, production style. Point to concrete lines. Do not rewrite everything.',
   expected:'expected',got:'your output',rows:'row(s)',output:'output',
-  toast_xp:'XP',toast_timeup:'⏱ Time up — you can continue, but it yields ½ XP',toast_examtime:'⏱ Exam time is up'}
+  toast_xp:'XP',toast_timeup:'⏱ Time up — you can continue, but it yields ½ XP',toast_examtime:'⏱ Exam time is up',
+  acct_title:'Users & progress',acct_sub:'Each profile keeps its own XP, solved exercises and history.',
+  acct_local:'Profiles on this device',acct_active:'active',acct_use:'Use',
+  acct_new_ph:'New profile name…',acct_new:'Create profile',acct_name_dup:'A profile with that name already exists.',
+  acct_ren_p:'New profile name:',acct_del_c:'Delete profile "{n}" and ALL of its local progress? This cannot be undone.',
+  acct_cloud:'Cloud account (optional)',acct_cloud_sub:'Sign up or sign in to back up your progress and sync it across devices. Your account gets its own profile: it never mixes with local profiles.',
+  acct_email:'email',acct_pass:'password (min. 6)',acct_signin:'Sign in',acct_signup:'Sign up',acct_signout:'Sign out',
+  acct_signed:'Signed in',acct_last:'last sync',acct_never:'never',acct_sync_now:'Sync now',
+  acct_synced:'Progress synced ✓',acct_sync_err:'Sync error — progress is still saved on this device.',
+  acct_confirm:'Account created. Check your email to confirm it, then press Sign in.',
+  acct_badcred:'Invalid credentials or unconfirmed account.',acct_off:'Could not reach the server.',
+  acct_nocfg:'Cloud sync is not configured. The admin needs to create a free Supabase project and paste the URL and anon key here (stored only in this browser). Full steps in <code>docs/ACCOUNTS.md</code>.',
+  acct_cfg:'⚙ Configure server (admin)',acct_cfg_url:'Supabase URL (https://xxxx.supabase.co)',acct_cfg_key:'Supabase anon key',acct_cfg_save:'Save configuration',
+  acct_expired:'Session expired — sign in again to keep syncing.',
+  acct_welcome:'Active profile: {n}',acct_pass_short:'Password must be at least 6 characters.',acct_email_bad:'Enter a valid email.',
+  acct_exam_warn:'An exam is in progress; switching profiles will cancel it. Continue?'}
 };
 function t(k){return (T[lang]&&T[lang][k])||T.es[k]||k;}
 function L(v){if(v&&typeof v==='object'&&!Array.isArray(v)&&('es'in v||'en'in v))return v[lang]!=null?v[lang]:v.es;return v;}
@@ -2637,6 +2704,7 @@ function setLang(l){lang=l;$('#langEs').classList.toggle('on',l==='es');$('#lang
   else if(mode==='exam')buildSetup();
   else if(mode==='stats')renderStats();
   applyGuideLang();
+  if($('#ovUser')&&$('#ovUser').classList.contains('show'))renderAccount();
   saveLang();
 }
 function applyNav(){document.querySelectorAll('#nav .navbtn').forEach(b=>{b.textContent=t('nav_'+b.dataset.m);});
@@ -4538,10 +4606,211 @@ const store={
   async set(k,v){let host=false;try{if(window.storage&&window.storage.set){await window.storage.set(k,v,false);host=true;}}catch(e){}try{localStorage.setItem(k,v);}catch(e){}return host;},
   async get(k){try{if(window.storage&&window.storage.get){const r=await window.storage.get(k,false);if(r&&r.value!=null)return r.value;}}catch(e){}try{const v=localStorage.getItem(k);if(v!=null)return v;}catch(e){}return null;}
 };
-async function save(){await store.set('delab:state',JSON.stringify(state));}
-async function load(){const v=await store.get('delab:state');if(v)try{state=Object.assign(state,JSON.parse(v));}catch(e){}}
-async function saveStats(){await store.set('delab:stats',JSON.stringify(stats));}
-async function loadStats(){const v=await store.get('delab:stats');if(v)try{stats=Object.assign({history:[]},JSON.parse(v));}catch(e){}}
+/* ---------- multi-user profiles ----------
+   Every piece of progress (state, stats, cloud session) lives under a
+   per-profile key so users on the same device never mix or clobber each
+   other. Language & theme stay device-global on purpose. */
+let users=[],uid=null;
+const ukey=k=>`delab:u:${uid}:${k}`;
+const newUid=()=>'u'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function curUser(){return users.find(u=>u.id===uid);}
+async function saveUsers(){await store.set('delab:users',JSON.stringify(users));await store.set('delab:uid',uid);}
+async function initUsers(){
+  try{users=JSON.parse(await store.get('delab:users'))||[];}catch(e){users=[];}
+  uid=await store.get('delab:uid');
+  if(!users.length){
+    // first run, or migration from the pre-profiles single-user storage
+    users=[{id:newUid(),name:lang==='en'?'Profile 1':'Perfil 1',created:Date.now(),cloud:null}];
+    uid=users[0].id;
+    const legacy=await store.get('delab:state');
+    if(legacy){await store.set(ukey('state'),legacy);const ls=await store.get('delab:stats');if(ls)await store.set(ukey('stats'),ls);}
+    await saveUsers();
+  }
+  if(!users.find(u=>u.id===uid)){uid=users[0].id;await saveUsers();}
+  userChip();
+}
+function userChip(){const b=$('#userBtn');if(!b)return;const u=curUser();b.textContent='👤 '+(u?u.name:'—');b.title=u?u.name:'';}
+function abortSessionUI(){cur=null;quizSel=null;answered=false;stopTimer();if(exam&&!exam.finished){exam=null;stopExamTimer();}}
+async function useProfile(id){
+  if(id===uid){closeAccount();return;}
+  if(exam&&!exam.finished&&!confirm(t('acct_exam_warn')))return;
+  await save();await saveStats();          // persist the outgoing profile
+  if(getSession())await cloudPushNow().catch(()=>{});
+  uid=id;await saveUsers();
+  await load();await loadStats();
+  abortSessionUI();renderXP();userChip();closeAccount();switchMode('home');
+  toast(t('acct_welcome').replace('{n}',curUser().name));
+  cloudAutoSync();
+}
+async function createProfile(){
+  const inp=$('#npName'),name=(inp&&inp.value||'').trim();if(!name)return;
+  if(users.some(u=>u.name.toLowerCase()===name.toLowerCase())){toast(t('acct_name_dup'));return;}
+  const u={id:newUid(),name,created:Date.now(),cloud:null};
+  users.push(u);await saveUsers();await useProfile(u.id);
+}
+async function renameProfile(id){
+  const u=users.find(x=>x.id===id);if(!u)return;
+  const n=prompt(t('acct_ren_p'),u.name);if(!n||!n.trim())return;
+  u.name=n.trim();await saveUsers();userChip();renderAccount();
+}
+async function deleteProfile(id){
+  const u=users.find(x=>x.id===id);if(!u)return;
+  if(!confirm(t('acct_del_c').replace('{n}',u.name)))return;
+  users=users.filter(x=>x.id!==id);
+  try{['state','stats','session'].forEach(k=>localStorage.removeItem(`delab:u:${id}:${k}`));}catch(e){}
+  if(!users.length)users=[{id:newUid(),name:lang==='en'?'Profile 1':'Perfil 1',created:Date.now(),cloud:null}];
+  if(uid===id){uid=users[0].id;await saveUsers();await load();await loadStats();abortSessionUI();renderXP();userChip();switchMode('home');}
+  else await saveUsers();
+  renderAccount();
+}
+
+/* ---------- account modal ---------- */
+function openAccount(){$('#ovUser').classList.add('show');renderAccount();}
+function closeAccount(){$('#ovUser').classList.remove('show');}
+function fmtAgo(ts){if(!ts)return t('acct_never');const m=Math.round((Date.now()-ts)/60000);return m<1?'<1 min':m<60?m+' min':Math.round(m/60)+' h';}
+function renderAccount(){
+  const box=$('#accBody');if(!box)return;
+  $('#accTitle').textContent=t('acct_title');$('#accSub').textContent=t('acct_sub');
+  const rows=users.map(u=>{
+    const cu=u.id===uid;
+    return `<div class="prow ${cu?'cur':''}">
+      <span class="pname">${escv(u.name)}</span>
+      ${u.cloud?`<span class="pmeta cloudtag">☁ ${escv(u.cloud.email)}</span>`:''}
+      ${cu?`<span class="pmeta">● ${t('acct_active')}</span>`:`<button onclick="useProfile('${u.id}')">${t('acct_use')}</button>`}
+      <button class="ghost" title="rename" onclick="renameProfile('${u.id}')">✎</button>
+      <button class="ghost" title="delete" onclick="deleteProfile('${u.id}')">🗑</button>
+    </div>`;}).join('');
+  const cfg=sbCfg(),sess=getSession();
+  let cloud='';
+  if(!cfg){
+    cloud=`<div class="mnote">${t('acct_nocfg')}</div>
+      <details class="mcfg"><summary>${t('acct_cfg')}</summary>
+        <div class="mrow"><input class="minput" id="sbUrl" placeholder="${t('acct_cfg_url')}"></div>
+        <div class="mrow"><input class="minput" id="sbKey" placeholder="${t('acct_cfg_key')}"></div>
+        <button class="primary" onclick="saveSbCfg()">${t('acct_cfg_save')}</button>
+      </details>`;
+  }else if(sess){
+    cloud=`<div class="mnote">${t('acct_signed')}: <b>${escv(sess.email)}</b> · ${t('acct_last')}: ${fmtAgo(lastSync)}</div>
+      <div class="mrow"><button class="primary" onclick="cloudSyncNow()">${t('acct_sync_now')}</button>
+      <button class="ghost" onclick="cloudLogout()">${t('acct_signout')}</button></div>
+      <div class="syncst" id="cStatus"></div>`;
+  }else{
+    cloud=`<div class="mnote">${t('acct_cloud_sub')}</div>
+      <div class="mrow"><input class="minput" id="cEmail" type="email" autocomplete="username" placeholder="${t('acct_email')}">
+      <input class="minput" id="cPass" type="password" autocomplete="current-password" placeholder="${t('acct_pass')}"></div>
+      <div class="mrow"><button class="primary" onclick="cloudLogin('signin')">${t('acct_signin')}</button>
+      <button onclick="cloudLogin('signup')">${t('acct_signup')}</button></div>
+      <div class="syncst" id="cStatus"></div>
+      <details class="mcfg"><summary>${t('acct_cfg')}</summary>
+        <div class="mrow"><input class="minput" id="sbUrl" placeholder="${t('acct_cfg_url')}"></div>
+        <div class="mrow"><input class="minput" id="sbKey" placeholder="${t('acct_cfg_key')}"></div>
+        <button class="primary" onclick="saveSbCfg()">${t('acct_cfg_save')}</button>
+      </details>`;
+  }
+  box.innerHTML=`<div class="field"><label>${t('acct_local')}</label><div class="plist">${rows}</div>
+    <div class="mrow"><input class="minput" id="npName" maxlength="24" placeholder="${t('acct_new_ph')}" onkeydown="if(event.key==='Enter')createProfile()">
+    <button class="primary" onclick="createProfile()">${t('acct_new')}</button></div></div>
+    <div class="msep"><span>☁ ${t('acct_cloud')}</span></div>${cloud}`;
+}
+
+/* ---------- optional cloud accounts (Supabase free tier, plain fetch) ----
+   The anon key is public by design; Row Level Security on the `progress`
+   table guarantees each user can only read/write their own row.
+   Offline-first: local storage is the source of truth; cloud is a synced
+   backup. See docs/ACCOUNTS.md for the one-time server setup. */
+const SB_DEFAULT={url:'',key:''}; // optionally hardcode at deploy time
+function sbCfg(){try{const url=localStorage.getItem('delab:sb_url')||SB_DEFAULT.url,key=localStorage.getItem('delab:sb_key')||SB_DEFAULT.key;return url&&key?{url:url.replace(/\/+$/,''),key}:null;}catch(e){return null;}}
+function saveSbCfg(){
+  const url=($('#sbUrl')&&$('#sbUrl').value||'').trim(),key=($('#sbKey')&&$('#sbKey').value||'').trim();
+  try{if(url&&key){localStorage.setItem('delab:sb_url',url);localStorage.setItem('delab:sb_key',key);}else{localStorage.removeItem('delab:sb_url');localStorage.removeItem('delab:sb_key');}}catch(e){}
+  renderAccount();
+}
+async function sbFetch(path,opt={},token){
+  const cfg=sbCfg();if(!cfg)throw new Error('no_cfg');
+  const headers={'Content-Type':'application/json',apikey:cfg.key,...(token?{Authorization:'Bearer '+token}:{}),...(opt.headers||{})};
+  const r=await fetch(cfg.url+path,{...opt,headers});
+  let d=null;try{d=await r.json();}catch(e){}
+  return {ok:r.ok,status:r.status,data:d};
+}
+function getSession(){try{const v=localStorage.getItem(ukey('session'));return v?JSON.parse(v):null;}catch(e){return null;}}
+function setSession(s){try{s?localStorage.setItem(ukey('session'),JSON.stringify(s)):localStorage.removeItem(ukey('session'));}catch(e){}}
+function packSession(d){return{access_token:d.access_token,refresh_token:d.refresh_token,expires_at:Date.now()+((d.expires_in||3600)-60)*1000,email:(d.user&&d.user.email)||'',user_id:(d.user&&d.user.id)||''};}
+async function liveToken(){
+  let s=getSession();if(!s)return null;
+  if(Date.now()<s.expires_at)return s;
+  try{const r=await sbFetch('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:JSON.stringify({refresh_token:s.refresh_token})});
+    if(r.ok&&r.data&&r.data.access_token){const ns=packSession(r.data);if(!ns.email)ns.email=s.email;if(!ns.user_id)ns.user_id=s.user_id;setSession(ns);return ns;}
+  }catch(e){}
+  cloudStatus('err',t('acct_expired'));return null;
+}
+function cloudStatus(cls,msg){const el=$('#cStatus');if(!el)return;el.className='syncst '+(cls||'');el.textContent=msg!=null?msg:(cls==='ok'?t('acct_synced'):cls==='err'?t('acct_sync_err'):'');}
+/* merge: progress only ever grows — union solved, max XP, dedup history */
+function mergeProgress(a,b){
+  const A=a||{},B=b||{};
+  const sa=A.state||{},sb=B.state||{};
+  const solved={...(sb.solved||{}),...(sa.solved||{})};
+  const xp=Math.max(sa.xp||0,sb.xp||0);
+  const lead=(sa.lastDay||'')>=(sb.lastDay||'')?sa:sb;
+  const seen=new Set();
+  const history=[...((A.stats||{}).history||[]),...((B.stats||{}).history||[])]
+    .filter(h=>{const k=JSON.stringify(h);if(seen.has(k))return false;seen.add(k);return true;})
+    .sort((x,y)=>(y.date||'').localeCompare(x.date||''));
+  return {state:{solved,xp,streak:lead.streak||0,lastDay:lead.lastDay||null},stats:{history}};
+}
+async function cloudPull(){
+  const s=await liveToken();if(!s)return null;
+  const r=await sbFetch(`/rest/v1/progress?user_id=eq.${encodeURIComponent(s.user_id)}&select=data`,{},s.access_token);
+  if(r.ok)return (Array.isArray(r.data)&&r.data.length&&r.data[0].data)||null;
+  throw new Error('pull '+r.status);
+}
+let pushT=null,lastSync=0;
+async function cloudPushNow(){
+  const s=await liveToken();if(!s)return false;
+  const r=await sbFetch('/rest/v1/progress',{method:'POST',headers:{Prefer:'resolution=merge-duplicates'},
+    body:JSON.stringify([{user_id:s.user_id,data:{state,stats,v:1},updated_at:new Date().toISOString()}])},s.access_token);
+  if(r.ok){lastSync=Date.now();cloudStatus('ok');return true;}
+  cloudStatus('err');return false;
+}
+function queueCloudPush(){if(!uid||!getSession())return;clearTimeout(pushT);pushT=setTimeout(()=>{cloudPushNow().catch(()=>{});},4000);}
+async function cloudSyncNow(){
+  cloudStatus('',' …');
+  try{const remote=await cloudPull();
+    if(remote){const m=mergeProgress({state,stats},remote);state=m.state;stats=m.stats;await save();await saveStats();renderXP();}
+    await cloudPushNow();renderAccount();
+  }catch(e){cloudStatus('err');}
+}
+async function cloudAutoSync(){if(!getSession())return;try{await cloudSyncNow();}catch(e){}}
+async function cloudLogin(kind){
+  const email=($('#cEmail')&&$('#cEmail').value||'').trim(),pass=($('#cPass')&&$('#cPass').value)||'';
+  if(!/^\S+@\S+\.\S+$/.test(email)){cloudStatus('err',t('acct_email_bad'));return;}
+  if(pass.length<6){cloudStatus('err',t('acct_pass_short'));return;}
+  cloudStatus('','…');
+  let r;
+  try{r=await sbFetch(kind==='signup'?'/auth/v1/signup':'/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password:pass})});}
+  catch(e){cloudStatus('err',t('acct_off'));return;}
+  if(kind==='signup'&&r.ok&&r.data&&!r.data.access_token){cloudStatus('ok',t('acct_confirm'));return;} // email confirmation flow
+  if(!r.ok||!r.data||!r.data.access_token){
+    const msg=r.data&&(r.data.msg||r.data.error_description||r.data.message);
+    cloudStatus('err',msg||t('acct_badcred'));return;
+  }
+  const sess=packSession(r.data);
+  // a cloud account maps to its OWN dedicated profile — never mixes with local ones
+  let u=users.find(x=>x.cloud&&x.cloud.userId===sess.user_id);
+  if(!u){u={id:newUid(),name:email.split('@')[0],created:Date.now(),cloud:{email,userId:sess.user_id}};users.push(u);}
+  await save();await saveStats();          // persist the outgoing profile
+  uid=u.id;await saveUsers();setSession(sess);
+  await load();await loadStats();
+  try{const remote=await cloudPull();const m=mergeProgress({state,stats},remote);state=m.state;stats=m.stats;await save();await saveStats();await cloudPushNow();}catch(e){}
+  abortSessionUI();renderXP();userChip();renderAccount();switchMode('home');
+  toast(t('acct_welcome').replace('{n}',u.name));
+}
+function cloudLogout(){clearTimeout(pushT);setSession(null);lastSync=0;renderAccount();}
+
+/* ---------- per-profile persistence ---------- */
+async function save(){await store.set(ukey('state'),JSON.stringify(state));queueCloudPush();}
+async function load(){state={solved:{},xp:0,streak:0,lastDay:null};const v=await store.get(ukey('state'));if(v)try{state=Object.assign(state,JSON.parse(v));}catch(e){}}
+async function saveStats(){await store.set(ukey('stats'),JSON.stringify(stats));queueCloudPush();}
+async function loadStats(){stats={history:[]};const v=await store.get(ukey('stats'));if(v)try{stats=Object.assign({history:[]},JSON.parse(v));}catch(e){}}
 async function saveLang(){await store.set('delab:lang',lang);}
 async function loadLang(){const v=await store.get('delab:lang');if(v)lang=v;}
 function toast(m){const el=$('#toast');el.innerHTML=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2400);}
@@ -4552,9 +4821,11 @@ $('#menub').onclick=()=>document.querySelector('.rail').classList.toggle('open')
 $('#resetBtn').onclick=async()=>{if(confirm(t('reset_c'))){state={solved:{},xp:0,streak:0,lastDay:null};stats={history:[]};await save();await saveStats();renderXP();if(mode==='practice')renderRail();if(mode==='stats')renderStats();}};
 
 window.addEventListener('load',async()=>{
-  await load();await loadStats();await loadLang();
+  await loadLang();await initUsers();       // profiles first: state/stats are per-profile
+  await load();await loadStats();
   try{const th=await store.get('delab:theme');if(th==='light'){document.documentElement.setAttribute('data-theme','light');$('#themeBtn').textContent='☀️';}}catch(e){}
   setLang(lang);renderXP();renderRail();switchMode('home');
+  cloudAutoSync();                          // pull+merge if this profile has a live session
 });
 
 </script>
