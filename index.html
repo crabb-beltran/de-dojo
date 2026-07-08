@@ -405,7 +405,7 @@ const EX=[
  task:'Devuelve por <code>dept</code> el <b>segundo salario más alto distinto</b>.',
  bullets:['Salida: <code>dept</code>, <code>second_salary</code>.','Salarios repetidos = un solo nivel (usa <code>DENSE_RANK</code> sobre valores distintos).','Si un dept no tiene 2.º distinto, se omite. Orden libre.'],
  sources:[S('employees',['id','name','dept','salary'],[[1,'A','data',100],[2,'B','data',100],[3,'C','data',90],[4,'D','data',80],['…','…','plat / ml','…']])],
- expected:'dept   second_salary\ndata   90\nml     55',
+ expected:'data 90\nml 55',
  datasets:[`CREATE TABLE employees(id INT,name TEXT,dept TEXT,salary INT);INSERT INTO employees VALUES (1,'A','data',100),(2,'B','data',100),(3,'C','data',90),(4,'D','data',80),(5,'E','plat',70),(6,'F','plat',70),(7,'G','ml',50),(8,'H','ml',60),(9,'I','ml',55);`,
            `CREATE TABLE employees(id INT,name TEXT,dept TEXT,salary INT);INSERT INTO employees VALUES (1,'X','x',10),(2,'Y','x',20),(3,'Z','y',5);`],
  ref:`WITH r AS (SELECT dept,salary,DENSE_RANK() OVER(PARTITION BY dept ORDER BY salary DESC) rk FROM (SELECT DISTINCT dept,salary FROM employees)) SELECT dept, salary AS second_salary FROM r WHERE rk=2`,
@@ -442,7 +442,7 @@ const EX=[
  task:'Asigna <code>session_id</code> incremental (1,2,3…) por usuario.',
  bullets:['Salida: <code>user_id</code>, <code>ts</code>, <code>session_id</code>.','Primer evento del usuario = sesión 1.','Patrón: flag de quiebre con <code>LAG</code> + <code>SUM() OVER</code> acumulado.'],
  sources:[S('hits',['user_id','ts'],[[1,1000],[1,1200],[1,5000],[1,5500],[2,2000],[2,9000]],'ts = epoch seconds')],
- expected:'1 1000 1 | 1 1200 1 | 1 5000 2 | 1 5500 2 | 2 2000 1 | 2 9000 2',
+ expected:'1 1000 1\n1 1200 1\n1 5000 2\n1 5500 2\n2 2000 1\n2 9000 2',
  datasets:[`CREATE TABLE hits(user_id INT,ts INT);INSERT INTO hits VALUES (1,1000),(1,1200),(1,5000),(1,5500),(2,2000),(2,9000);`],
  ref:`WITH f AS (SELECT user_id,ts,CASE WHEN ts - LAG(ts) OVER(PARTITION BY user_id ORDER BY ts) > 1800 OR LAG(ts) OVER(PARTITION BY user_id ORDER BY ts) IS NULL THEN 1 ELSE 0 END AS brk FROM hits) SELECT user_id,ts,SUM(brk) OVER(PARTITION BY user_id ORDER BY ts) AS session_id FROM f`,
  starter:`WITH flagged AS (\n  SELECT user_id, ts,\n    CASE WHEN /* gap>1800 or first */ THEN 1 ELSE 0 END AS brk\n  FROM hits\n)\nSELECT user_id, ts,\n  -- cumulative session_id\nFROM flagged;`
@@ -466,10 +466,10 @@ const EX=[
  task:'Devuelve por usuario la <b>longitud de su racha consecutiva más larga</b>.',
  bullets:['Salida: <code>user_id</code>, <code>longest_streak</code>.','Días duplicados cuentan una vez.','Truco islas: <code>julianday(d) - ROW_NUMBER()</code> es constante dentro de una racha.'],
  sources:[S('logins',['user_id','d'],[[1,'2024-01-01'],[1,'2024-01-02'],[1,'2024-01-03'],[1,'2024-01-05'],[2,'2024-01-01'],[2,'2024-01-03']])],
- expected:'1 → 3 | 2 → 1 | 3 → 2',
+ expected:'1 3\n2 1\n3 2',
  datasets:[`CREATE TABLE logins(user_id INT,d TEXT);INSERT INTO logins VALUES (1,'2024-01-01'),(1,'2024-01-02'),(1,'2024-01-03'),(1,'2024-01-05'),(2,'2024-01-01'),(2,'2024-01-03'),(3,'2024-01-10'),(3,'2024-01-11');`],
  ref:`WITH g AS (SELECT user_id,d, julianday(d)-ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY d) AS grp FROM (SELECT DISTINCT user_id,d FROM logins)) SELECT user_id, MAX(c) AS longest_streak FROM (SELECT user_id,grp,COUNT(*) c FROM g GROUP BY user_id,grp) GROUP BY user_id`,
- starter:`WITH g AS (\n  SELECT user_id, d,\n    julianday(d) - ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY d) AS grp\n  FROM (SELECT DISTINCT user_id, d FROM logins)\n)\n-- agrupa por (user_id, grp), cuenta, toma el MAX por usuario\n;`
+ starter:`-- racha más larga de días CONSECUTIVOS por usuario (patrón islands)\nWITH g AS (\n  -- ¿qué expresión es constante dentro de una racha de días consecutivos?\n)\nSELECT ...;`
 },
 {
  id:'sql_scd2',cat:'B · Modelado de Datos',kind:'sql',diff:'h',xp:35,
@@ -478,10 +478,10 @@ const EX=[
  task:'Colapsa snapshots en periodos: una fila por cambio de precio.',
  bullets:['Salida: <code>product_id</code>, <code>price</code>, <code>valid_from</code>, <code>valid_to</code>, <code>is_current</code>.','<code>valid_from/to</code> = primer/último día del periodo.','<code>is_current=1</code> si el periodo incluye el último snapshot del producto.','Detecta cambios con <code>LAG</code> + suma acumulada (islands).'],
  sources:[S('snaps',['product_id','price','snapshot_date'],[[1,100,'2024-01-01'],[1,100,'2024-01-02'],[1,120,'2024-01-03'],[1,90,'2024-01-05'],[2,50,'2024-01-01']])],
- expected:'1 100 01-01 01-02 0\n1 120 01-03 01-04 0\n1 90  01-05 01-05 1\n2 50  01-01 01-02 1',
+ expected:'1 100 2024-01-01 2024-01-02 0\n1 120 2024-01-03 2024-01-04 0\n1 90 2024-01-05 2024-01-05 1\n2 50 2024-01-01 2024-01-02 1',
  datasets:[`CREATE TABLE snaps(product_id INT,price INT,snapshot_date TEXT);INSERT INTO snaps VALUES (1,100,'2024-01-01'),(1,100,'2024-01-02'),(1,120,'2024-01-03'),(1,120,'2024-01-04'),(1,90,'2024-01-05'),(2,50,'2024-01-01'),(2,50,'2024-01-02');`],
  ref:`WITH chg AS (SELECT product_id,price,snapshot_date,CASE WHEN price=LAG(price) OVER(PARTITION BY product_id ORDER BY snapshot_date) THEN 0 ELSE 1 END AS isnew FROM snaps), grp AS (SELECT *,SUM(isnew) OVER(PARTITION BY product_id ORDER BY snapshot_date) AS g FROM chg) SELECT product_id,price,MIN(snapshot_date) AS valid_from,MAX(snapshot_date) AS valid_to, CASE WHEN MAX(snapshot_date)=(SELECT MAX(snapshot_date) FROM snaps s WHERE s.product_id=grp.product_id) THEN 1 ELSE 0 END AS is_current FROM grp GROUP BY product_id,g ORDER BY product_id,valid_from`,
- starter:`WITH chg AS (\n  SELECT product_id, price, snapshot_date,\n    CASE WHEN price = LAG(price) OVER (PARTITION BY product_id ORDER BY snapshot_date)\n         THEN 0 ELSE 1 END AS isnew\n  FROM snaps\n)\n-- suma acumulada de isnew = id de periodo; agrupa y arma valid_from/to + is_current\n;`
+ starter:`WITH chg AS (\n  -- product_id, price, snapshot_date, isnew (¿cambió el precio vs la fila anterior del producto?)\n)\n-- numera periodos y agrupa: valid_from/valid_to + is_current\nSELECT ...;`
 },
 {
  id:'sql_funnel',cat:'E · Arquitectura Moderna',kind:'sql',diff:'m',xp:20,
@@ -490,10 +490,10 @@ const EX=[
  task:'Cuenta usuarios distintos en cada paso, en una sola fila.',
  bullets:['Salida: <code>views</code>, <code>carts</code>, <code>purchases</code>.','Usa <code>COUNT(DISTINCT CASE WHEN …)</code>.'],
  sources:[S('ev',['user_id','step'],[[1,'view'],[1,'cart'],[1,'purchase'],[2,'view'],[2,'cart'],[3,'view'],[4,'view'],[4,'purchase']])],
- expected:'views=4  carts=2  purchases=2',
+ expected:'4 2 2',
  datasets:[`CREATE TABLE ev(user_id INT,step TEXT);INSERT INTO ev VALUES (1,'view'),(1,'cart'),(1,'purchase'),(2,'view'),(2,'cart'),(3,'view'),(4,'view'),(4,'purchase');`],
  ref:`SELECT COUNT(DISTINCT CASE WHEN step='view' THEN user_id END) AS views, COUNT(DISTINCT CASE WHEN step='cart' THEN user_id END) AS carts, COUNT(DISTINCT CASE WHEN step='purchase' THEN user_id END) AS purchases FROM ev`,
- starter:`SELECT\n  COUNT(DISTINCT CASE WHEN step='view' THEN user_id END) AS views,\n  -- carts, purchases ...\nFROM ev;`
+ starter:`SELECT\n  -- views, carts, purchases: usuarios ÚNICOS por paso, en una sola pasada\nFROM ev;`
 },
 {
  id:'sql_median',cat:'D · SQL avanzado',kind:'sql',diff:'h',xp:30,
@@ -502,10 +502,10 @@ const EX=[
  task:'Calcula la <b>mediana</b> de <code>val</code> por <code>grp</code>.',
  bullets:['Salida: <code>grp</code>, <code>median</code>.','Par → promedio de los dos centrales.','Truco: <code>ROW_NUMBER</code> + <code>COUNT() OVER</code>, toma filas <code>(c+1)/2</code> y <code>(c+2)/2</code>.'],
  sources:[S('m',['grp','val'],[['a',1],['a',2],['a',3],['a',4],['b',10],['b',20],['b',30]])],
- expected:'a → 2.5 | b → 20.0',
+ expected:'a 2.5\nb 20',
  datasets:[`CREATE TABLE m(grp TEXT,val INT);INSERT INTO m VALUES ('a',1),('a',2),('a',3),('a',4),('b',10),('b',20),('b',30);`],
  ref:`WITH r AS (SELECT grp,val,ROW_NUMBER() OVER(PARTITION BY grp ORDER BY val) rn, COUNT(*) OVER(PARTITION BY grp) c FROM m) SELECT grp, AVG(val) AS median FROM r WHERE rn IN ((c+1)/2,(c+2)/2) GROUP BY grp ORDER BY grp`,
- starter:`WITH r AS (\n  SELECT grp, val,\n    ROW_NUMBER() OVER (PARTITION BY grp ORDER BY val) rn,\n    COUNT(*)     OVER (PARTITION BY grp) c\n  FROM m\n)\nSELECT grp, AVG(val) AS median\nFROM r\nWHERE rn IN ( /* posiciones centrales */ )\nGROUP BY grp ORDER BY grp;`
+ starter:`-- mediana por grp (si el grupo es par → promedio de los 2 centrales)\nSELECT grp, ... AS median\nFROM m\nGROUP BY grp\nORDER BY grp;`
 },
 {
  id:'sql_pivot',cat:'D · SQL avanzado',kind:'sql',diff:'m',xp:20,
@@ -514,10 +514,10 @@ const EX=[
  task:'Pivotea: una fila por región con columnas <code>q1</code> y <code>q2</code>.',
  bullets:['Salida: <code>region</code>, <code>q1</code>, <code>q2</code>.','Usa <code>SUM(CASE WHEN q=… )</code>.'],
  sources:[S('s',['region','q','amt'],[['north','Q1',10],['north','Q2',20],['south','Q1',5],['south','Q2',7]])],
- expected:'north 10 20 | south 5 7',
+ expected:'north 10 20\nsouth 5 7',
  datasets:[`CREATE TABLE s(region TEXT,q TEXT,amt INT);INSERT INTO s VALUES ('north','Q1',10),('north','Q2',20),('south','Q1',5),('south','Q2',7);`],
  ref:`SELECT region, SUM(CASE WHEN q='Q1' THEN amt ELSE 0 END) AS q1, SUM(CASE WHEN q='Q2' THEN amt ELSE 0 END) AS q2 FROM s GROUP BY region ORDER BY region`,
- starter:`SELECT region,\n  SUM(CASE WHEN q='Q1' THEN amt ELSE 0 END) AS q1,\n  -- q2 ...\nFROM s GROUP BY region ORDER BY region;`
+ starter:`SELECT region,\n  -- q1, q2: total por trimestre como columnas\nFROM s\nGROUP BY region\nORDER BY region;`
 },
 
 /* ============================ PYTHON ============================ */
@@ -529,6 +529,17 @@ const EX=[
  bullets:['Firma: <code>def dedupe(records: list[dict]) -> list[dict]</code>.','Dos records son iguales si todos sus campos coinciden (orden de campos irrelevante).','Estable y sin mutar la entrada.'],
  sources:[S('records (entrada)',['ejemplo'],[['{"id":1,"v":"x"}'],['{"id":1,"v":"x"}  ← duplicado'],['{"id":2,"v":"y"}']],'lista de dicts')],
  expected:'[{"id":1,"v":"x"}, {"id":2,"v":"y"}]',
+ ref:`import json
+
+def dedupe(records):
+    seen = set()
+    out = []
+    for r in records:
+        key = json.dumps(r, sort_keys=True)
+        if key not in seen:
+            seen.add(key)
+            out.append(dict(r))
+    return out`,
  starter:`import json\n\ndef dedupe(records):\n    seen = set()\n    out = []\n    for r in records:\n        key = json.dumps(r, sort_keys=True)  # clave estable de contenido\n        # ...\n    return out\n`,
  pytests:`
 cases=[]
@@ -548,6 +559,13 @@ src=[{"id":1}]; dedupe(src); chk("no muta entrada", src, [{"id":1}])
  bullets:['Firma: <code>flag_anomalies(values: list[float], z: float=3.0) -> list[int]</code>.','Usa media μ y desviación estándar <b>poblacional</b> σ. z=(x−μ)/σ.','Si σ==0 → devuelve <code>[]</code>.'],
  sources:[S('entrada',['values','z'],[['[10,10,10,10,100]','1.9 → [4]'],['[5,5,5,6,4]','3.0 → []']])],
  expected:'índices de los outliers, p.ej. [4]',
+ ref:`def flag_anomalies(values, z=3.0):
+    mu = sum(values) / len(values)
+    var = sum((v - mu) ** 2 for v in values) / len(values)
+    sigma = var ** 0.5
+    if sigma == 0:
+        return []
+    return [i for i, v in enumerate(values) if abs((v - mu) / sigma) > z]`,
  starter:`def flag_anomalies(values, z=3.0):\n    mu = sum(values) / len(values)\n    # sigma poblacional, luego filtra por |zscore| > z\n    ...\n`,
  pytests:`
 cases=[]
@@ -566,6 +584,21 @@ chk("umbral configurable", flag_anomalies([1,2,3,4,50], 1.5), [4])
  bullets:['Falta campo requerido → <code>"missing:&lt;campo&gt;"</code>.','<code>None</code> y no nullable → <code>"null:&lt;campo&gt;"</code>.','Tipo incorrecto (no None) → <code>"type:&lt;campo&gt;"</code>.','Orden: por orden de campos del schema.'],
  sources:[S('schema',['field','rule'],[['id','{"type":"int","nullable":false}'],['name','{"type":"str","nullable":true}']]),S('record (ejemplos)',['valor','→'],[['{"id":1,"name":"a"}','[]'],['{"name":"a"}','["missing:id"]']])],
  expected:'lista de errores en orden de schema',
+ ref:`def validate(record, schema):
+    errors = []
+    type_map = {"int": int, "str": str, "float": float}
+    for field, rule in schema.items():
+        if field not in record:
+            errors.append(f"missing:{field}")
+            continue
+        v = record[field]
+        if v is None:
+            if not rule.get("nullable", False):
+                errors.append(f"null:{field}")
+            continue
+        if not isinstance(v, type_map[rule["type"]]):
+            errors.append(f"type:{field}")
+    return errors`,
  starter:`def validate(record, schema):\n    errors = []\n    type_map = {"int": int, "str": str, "float": float}\n    for field, rule in schema.items():\n        # missing -> null -> type\n        ...\n    return errors\n`,
  pytests:`
 cases=[]
@@ -586,6 +619,12 @@ chk("tipo malo", validate({"id":"x","name":"a"}, sch), ["type:id"])
  bullets:['Quita duplicados por <code>order_id</code>, conservando la <b>última</b> aparición.','<code>amount</code> nulo → 0, y castea a <code>int</code>.','Ordena por <code>order_id</code> ascendente, índice reseteado.'],
  sources:[S('df (entrada)',['order_id','amount'],[[1,100.0],[1,120.0],[2,'NaN'],[3,50.0]],'pandas.DataFrame')],
  expected:'order_id  amount\n1         120\n2         0\n3         50',
+ ref:`import pandas as pd
+
+def clean_orders(df):
+    df = df.drop_duplicates(subset="order_id", keep="last")
+    df["amount"] = df["amount"].fillna(0).astype(int)
+    return df.sort_values("order_id").reset_index(drop=True)`,
  starter:`import pandas as pd\n\ndef clean_orders(df):\n    # drop_duplicates(keep='last') por order_id, fillna(0).astype(int), sort + reset_index\n    ...\n    return df\n`,
  pytests:`
 import json, pandas as pd
@@ -604,6 +643,10 @@ chk("limpieza correcta", norm(clean_orders(raw.copy())), [{"order_id":1,"amount"
  bullets:['Salida: columnas <code>region</code>, <code>amount</code> (suma).','Ordena por <code>region</code> asc, índice reseteado.','Usa <code>groupby(..., as_index=False)</code>.'],
  sources:[S('df (entrada)',['region','amount'],[['north',10],['south',5],['north',20],['south',7]])],
  expected:'north 30 | south 12',
+ ref:`import pandas as pd
+
+def revenue_by_region(df):
+    return df.groupby("region", as_index=False)["amount"].sum().sort_values("region").reset_index(drop=True)`,
  starter:`import pandas as pd\n\ndef revenue_by_region(df):\n    ...\n`,
  pytests:`
 import json, pandas as pd
@@ -622,6 +665,12 @@ chk("suma por región", norm(revenue_by_region(sales.copy())), [{"region":"north
  bullets:['Discrepancia = id en un solo lado, o <code>amount</code> distinto.','Usa <code>merge(..., how="outer", indicator=True)</code>.','Devuelve <code>sorted(list_of_ids)</code>.'],
  sources:[S('src',['id','amount'],[[1,100],[2,50],[3,30]]),S('tgt',['id','amount'],[[1,100],[2,55],[4,10]])],
  expected:'[2, 3, 4]   (2=monto distinto, 3=falta en tgt, 4=falta en src)',
+ ref:`import pandas as pd
+
+def reconcile(src, tgt):
+    m = src.merge(tgt, on="id", how="outer", suffixes=("_src", "_tgt"), indicator=True)
+    bad = m[(m["_merge"] != "both") | (m["amount_src"] != m["amount_tgt"])]
+    return sorted(int(i) for i in bad["id"])`,
  starter:`import pandas as pd\n\ndef reconcile(src, tgt):\n    m = src.merge(tgt, on="id", how="outer", suffixes=("_src","_tgt"), indicator=True)\n    # filtra _merge != both  OR  amount_src != amount_tgt\n    ...\n`,
  pytests:`
 import pandas as pd
@@ -640,7 +689,13 @@ chk("discrepancias", reconcile(src.copy(),tgt.copy()), [2,3,4])
  bullets:['<code>batch</code> = lista de tuplas <code>(id, balance)</code>.','Inserta nuevos; actualiza balance si el id existe.','Reejecutar el mismo batch deja el mismo estado (idempotente).'],
  sources:[S('accounts (estado inicial)',['id','balance'],[[1,100],[2,200]],'PK = id'),S('batch',['id','balance'],[[2,250],[3,300]])],
  expected:'(1,100) (2,250) (3,300)  — sin duplicados tras reejecutar',
- starter:`def upsert(conn, batch):\n    conn.executemany(\n        "INSERT INTO accounts(id,balance) VALUES(?,?) "\n        "ON CONFLICT(id) DO UPDATE SET balance=excluded.balance",\n        batch)\n    conn.commit()\n`,
+ ref:`def upsert(conn, batch):
+    conn.executemany(
+        "INSERT INTO accounts(id,balance) VALUES(?,?) "
+        "ON CONFLICT(id) DO UPDATE SET balance=excluded.balance",
+        batch)
+    conn.commit()`,
+ starter:`def upsert(conn, batch):\n    # inserta cada (id, balance); si el id ya existe, ACTUALIZA su balance\n    # pista: executemany + ON CONFLICT(id) DO UPDATE, y confirma la transacción\n    ...`,
  pytests:`
 import sqlite3
 cases=[]
@@ -662,7 +717,10 @@ chk("upsert idempotente", got, [(1,100),(2,250),(3,300)])
  bullets:['Devuelve lista de <code>id</code> con ese <code>status</code>, ordenada asc.','Usa <code>?</code> y pasa <code>status</code> como parámetro.','Un input malicioso debe tratarse como literal (no inyectar).'],
  sources:[S('jobs',['id','status'],[[1,'ok'],[2,'fail'],[3,'ok']])],
  expected:"find_by_status(conn,'ok') → [1,3] ; input malicioso → []",
- starter:`def find_by_status(conn, status):\n    cur = conn.execute("SELECT id FROM jobs WHERE status = ? ORDER BY id", (status,))\n    return [r[0] for r in cur.fetchall()]\n`,
+ ref:`def find_by_status(conn, status):
+    cur = conn.execute("SELECT id FROM jobs WHERE status = ? ORDER BY id", (status,))
+    return [r[0] for r in cur.fetchall()]`,
+ starter:`def find_by_status(conn, status):\n    # SELECT id FROM jobs WHERE status = ?  (usa placeholder, NUNCA concatenes)\n    # devuelve la lista de ids, ordenada\n    ...`,
  pytests:`
 import sqlite3
 cases=[]
@@ -682,6 +740,15 @@ chk("seguro ante injection", find_by_status(conn,"ok' OR '1'='1"), [])
  bullets:['Entrada: lista de <code>(start, end)</code>.','Fusiona los que se tocan o solapan.','Salida ordenada por inicio, tuplas <code>(start, end)</code>.'],
  sources:[S('intervals',['(start, end)'],[['(1, 3)'],['(2, 5)'],['(7, 9)'],['(8, 10)']])],
  expected:'[(1, 5), (7, 10)]',
+ ref:`def merge_intervals(intervals):
+    intervals = sorted(intervals)
+    out = []
+    for s, e in intervals:
+        if out and s <= out[-1][1]:
+            out[-1] = (out[-1][0], max(out[-1][1], e))
+        else:
+            out.append((s, e))
+    return out`,
  starter:`def merge_intervals(intervals):\n    intervals = sorted(intervals)\n    out = []\n    for s, e in intervals:\n        # si solapa con el último en out, extiende; si no, agrega\n        ...\n    return out\n`,
  pytests:`
 cases=[]
@@ -699,6 +766,15 @@ chk("contiguos tocan", merge_intervals([(1,2),(2,3)]), [(1,3)])
  bullets:['Clave anidada → <code>"padre.hijo"</code>.','Solo dicts se aplanan (asume valores escalares en las hojas).','Recursivo.'],
  sources:[S('entrada',['ejemplo'],[['{"a":1, "b":{"c":2, "d":{"e":3}}}']])],
  expected:'{"a":1, "b.c":2, "b.d.e":3}',
+ ref:`def flatten(d, prefix=""):
+    out = {}
+    for k, v in d.items():
+        key = f"{prefix}.{k}" if prefix else k
+        if isinstance(v, dict):
+            out.update(flatten(v, key))
+        else:
+            out[key] = v
+    return out`,
  starter:`def flatten(d, prefix=""):\n    out = {}\n    for k, v in d.items():\n        key = f"{prefix}.{k}" if prefix else k\n        # si v es dict -> recursión; si no -> asigna\n        ...\n    return out\n`,
  pytests:`
 cases=[]
@@ -715,6 +791,10 @@ chk("plano", flatten({"x":1,"y":2}), {"x":1,"y":2})
  bullets:['Entrada: lista de valores + entero k.','Devuelve solo los valores (sin conteos), ordenados por frecuencia desc.','Pista: <code>collections.Counter.most_common</code>.'],
  sources:[S('entrada',['items','k'],[['["a","b","a","c","a","b"]','2 → ["a","b"]']])],
  expected:'["a", "b"]',
+ ref:`from collections import Counter
+
+def top_k(items, k):
+    return [x for x, _ in Counter(items).most_common(k)]`,
  starter:`from collections import Counter\n\ndef top_k(items, k):\n    ...\n`,
  pytests:`
 cases=[]
@@ -799,10 +879,10 @@ chk("k>distintos", top_k(["x","x","y"], 5), ["x","y"])
  task:{es:'Devuelve los <code>num</code> que se repiten en al menos 3 ids consecutivos.',en:'Return the <code>num</code> values that repeat in at least 3 consecutive ids.'},
  bullets:{es:['Salida: columna <code>num</code> (distinct).','Pista: self-join 3 veces sobre <code>id+1</code>, <code>id+2</code>.'],en:['Output: column <code>num</code> (distinct).','Hint: self-join 3× on <code>id+1</code>, <code>id+2</code>.']},
  sources:[S('logs',['id','num'],[[1,1],[2,1],[3,1],[4,2],[5,1],[6,2],[7,2]])],
- expected:'num → 1',
+ expected:'1',
  datasets:[`CREATE TABLE logs(id INT,num INT);INSERT INTO logs VALUES (1,1),(2,1),(3,1),(4,2),(5,1),(6,2),(7,2);`],
  ref:`SELECT DISTINCT l1.num AS num FROM logs l1 JOIN logs l2 ON l2.id=l1.id+1 AND l2.num=l1.num JOIN logs l3 ON l3.id=l1.id+2 AND l3.num=l1.num`,
- starter:`SELECT DISTINCT l1.num AS num\nFROM logs l1\n-- JOIN logs l2 ... id+1 ; JOIN logs l3 ... id+2\n;`
+ starter:`SELECT DISTINCT l1.num AS num\nFROM logs l1\n-- ¿cómo compruebas que num se repite en las filas id+1 e id+2?\n;`
 },
 {
  id:'sql_leaderboard',cat:'X · Competitive',kind:'sql',diff:'m',xp:25,
@@ -811,7 +891,7 @@ chk("k>distintos", top_k(["x","x","y"], 5), ["x","y"])
  task:{es:'Asigna el rank a cada jugador.',en:'Assign the rank to each player.'},
  bullets:{es:['Salida: <code>player</code>, <code>rnk</code>.','Orden: <code>score DESC, t ASC</code>; empates = mismo rank (DENSE_RANK).'],en:['Output: <code>player</code>, <code>rnk</code>.','Order: <code>score DESC, t ASC</code>; ties share a rank (DENSE_RANK).']},
  sources:[S('sub',['player','score','t'],[['a',100,50],['b',100,40],['c',90,30],['d',100,40]],'t = seconds')],
- expected:'b 1 · d 1 · a 2 · c 3',
+ expected:'b 1\nd 1\na 2\nc 3',
  datasets:[`CREATE TABLE sub(player TEXT,score INT,t INT);INSERT INTO sub VALUES ('a',100,50),('b',100,40),('c',90,30),('d',100,40);`],
  ref:`SELECT player, DENSE_RANK() OVER(ORDER BY score DESC, t ASC) AS rnk FROM sub ORDER BY rnk, player`,
  starter:`SELECT player,\n  DENSE_RANK() OVER (/* score DESC, t ASC */) AS rnk\nFROM sub\nORDER BY rnk, player;`
@@ -823,7 +903,7 @@ chk("k>distintos", top_k(["x","x","y"], 5), ["x","y"])
  task:{es:'Lista los <code>email</code> con más de una fila y su conteo.',en:'List the <code>email</code> values with more than one row and their count.'},
  bullets:{es:['Salida: <code>email</code>, <code>c</code> (conteo).','Solo duplicados; orden por email.'],en:['Output: <code>email</code>, <code>c</code> (count).','Duplicates only; order by email.']},
  sources:[S('u',['email','id'],[['a@x',1],['b@x',2],['a@x',3],['c@x',4],['b@x',5]])],
- expected:'a@x 2 · b@x 2',
+ expected:'a@x 2\nb@x 2',
  datasets:[`CREATE TABLE u(email TEXT,id INT);INSERT INTO u VALUES ('a@x',1),('b@x',2),('a@x',3),('c@x',4),('b@x',5);`],
  ref:`SELECT email, COUNT(*) c FROM u GROUP BY email HAVING COUNT(*)>1 ORDER BY email`,
  starter:`SELECT email, COUNT(*) AS c\nFROM u\nGROUP BY email\n-- HAVING ... ORDER BY email\n;`
@@ -836,6 +916,16 @@ chk("k>distintos", top_k(["x","x","y"], 5), ["x","y"])
  bullets:{es:['Cierre debe coincidir con la apertura más reciente.','Cadena vacía = válida.'],en:['A closer must match the most recent opener.','Empty string = valid.']},
  sources:[S('cases',['input','→'],[['"([]{})"','True'],['"(]"','False'],['"((("','False']])],
  expected:'True / False',
+ ref:`def valid_brackets(s):
+    pairs = {")": "(", "]": "[", "}": "{"}
+    stack = []
+    for ch in s:
+        if ch in "([{":
+            stack.append(ch)
+        elif ch in pairs:
+            if not stack or stack.pop() != pairs[ch]:
+                return False
+    return not stack`,
  starter:`def valid_brackets(s):\n    pairs = {")":"(", "]":"[", "}":"{"}\n    stack = []\n    for ch in s:\n        ...\n    return not stack\n`,
  pytests:`
 cases=[]
@@ -854,6 +944,13 @@ chk("vacío", valid_brackets(""), True)
  bullets:{es:['Devuelve el primer par válido <code>[i, j]</code> con <code>i&lt;j</code>.','Sin solución → <code>[]</code>.'],en:['Return the first valid pair <code>[i, j]</code> with <code>i&lt;j</code>.','No solution → <code>[]</code>.']},
  sources:[S('cases',['nums','target','→'],[['[2,7,11,15]','9','[0,1]'],['[3,2,4]','6','[1,2]']])],
  expected:'[i, j]',
+ ref:`def two_sum(nums, target):
+    seen = {}
+    for i, n in enumerate(nums):
+        if target - n in seen:
+            return [seen[target - n], i]
+        seen[n] = i
+    return []`,
  starter:`def two_sum(nums, target):\n    seen = {}\n    for i, n in enumerate(nums):\n        # if complement in seen -> return\n        ...\n    return []\n`,
  pytests:`
 cases=[]
@@ -871,6 +968,20 @@ chk("sin solución", two_sum([1,2],10), [])
  bullets:{es:['Salida con <code>len = len(nums) - k + 1</code>.','Mantén índices en un <code>deque</code>; descarta menores y fuera de ventana.'],en:['Output with <code>len = len(nums) - k + 1</code>.','Keep indices in a <code>deque</code>; drop smaller and out-of-window.']},
  sources:[S('cases',['nums','k','→'],[['[1,3,-1,-3,5,3,6,7]','3','[3,3,5,5,6,7]']])],
  expected:'[3, 3, 5, 5, 6, 7]',
+ ref:`from collections import deque
+
+def window_max(nums, k):
+    dq = deque()
+    out = []
+    for i, n in enumerate(nums):
+        while dq and nums[dq[-1]] <= n:
+            dq.pop()
+        dq.append(i)
+        if dq[0] <= i - k:
+            dq.popleft()
+        if i >= k - 1:
+            out.append(nums[dq[0]])
+    return out`,
  starter:`from collections import deque\n\ndef window_max(nums, k):\n    dq = deque()\n    out = []\n    for i, n in enumerate(nums):\n        # pop smaller from right; append i; drop left if out of window; emit when i>=k-1\n        ...\n    return out\n`,
  pytests:`
 from collections import deque
@@ -889,7 +1000,10 @@ chk("k=len", window_max([2,5,1],3), [5])
  bullets:{es:['<code>rows</code> = lista de <code>(id, payload)</code>.','Reejecutar no duplica (PK).','Una sola transacción (usa <code>with conn:</code>).'],en:['<code>rows</code> = list of <code>(id, payload)</code>.','Re-running does not duplicate (PK).','One transaction (use <code>with conn:</code>).']},
  sources:[S('events',['id','payload'],[['1','a'],['2','b'],['3','c']],'PK = id')],
  expected:'3 filas tras reejecutar el batch',
- starter:`def batch_load(conn, rows):\n    with conn:  # transaction\n        conn.executemany("INSERT OR IGNORE INTO events(id,payload) VALUES(?,?)", rows)\n`,
+ ref:`def batch_load(conn, rows):
+    with conn:
+        conn.executemany("INSERT OR IGNORE INTO events(id,payload) VALUES(?,?)", rows)`,
+ starter:`def batch_load(conn, rows):\n    # carga el lote en UNA transacción e ignora ids duplicados (idempotente)\n    ...`,
  pytests:`
 import sqlite3
 cases=[]
@@ -943,7 +1057,7 @@ chk("ids correctos", conn.execute("SELECT id FROM events ORDER BY id").fetchall(
  task:{es:'Une ambas tablas y suma el monto por cliente.',en:'Join both tables and sum the amount per customer.'},
  bullets:{es:['Salida: <code>name</code>, <code>total</code>.','Solo <code>region=\'LATAM\'</code>; orden <code>total DESC, name</code>.','Clientes sin orden no aparecen (INNER JOIN).'],en:['Output: <code>name</code>, <code>total</code>.','Only <code>region=\'LATAM\'</code>; order <code>total DESC, name</code>.','Customers without orders are excluded (INNER JOIN).']},
  sources:[S('customers',['id','name','region'],[[1,'Ana','LATAM'],[2,'Beto','LATAM'],[3,'Cara','EU'],[4,'Dan','LATAM']]),S('orders',['id','cust_id','amount'],[[10,1,100],[11,1,50],[12,2,200],[13,3,80]])],
- expected:'Beto 200 · Ana 150',
+ expected:'Beto 200\nAna 150',
  datasets:[`CREATE TABLE customers(id INT,name TEXT,region TEXT);INSERT INTO customers VALUES (1,'Ana','LATAM'),(2,'Beto','LATAM'),(3,'Cara','EU'),(4,'Dan','LATAM');CREATE TABLE orders(id INT,cust_id INT,amount INT);INSERT INTO orders VALUES (10,1,100),(11,1,50),(12,2,200),(13,3,80);`],
  ref:`SELECT c.name, SUM(o.amount) total FROM customers c JOIN orders o ON o.cust_id=c.id WHERE c.region='LATAM' GROUP BY c.name ORDER BY total DESC, c.name`,
  starter:`SELECT c.name, SUM(o.amount) AS total\nFROM customers c\n-- JOIN orders o ON ...\nWHERE c.region = 'LATAM'\nGROUP BY c.name\nORDER BY total DESC, c.name;`
@@ -958,7 +1072,7 @@ chk("ids correctos", conn.execute("SELECT id FROM events ORDER BY id").fetchall(
  expected:'Dan',
  datasets:[`CREATE TABLE customers(id INT,name TEXT,region TEXT);INSERT INTO customers VALUES (1,'Ana','LATAM'),(2,'Beto','LATAM'),(3,'Cara','EU'),(4,'Dan','LATAM');CREATE TABLE orders(id INT,cust_id INT,amount INT);INSERT INTO orders VALUES (10,1,100),(12,2,200),(13,3,80);`],
  ref:`SELECT c.name FROM customers c LEFT JOIN orders o ON o.cust_id=c.id WHERE o.id IS NULL ORDER BY c.name`,
- starter:`SELECT c.name\nFROM customers c\nLEFT JOIN orders o ON o.cust_id = c.id\n-- WHERE ...\nORDER BY c.name;`
+ starter:`-- clientes SIN pedidos (anti-join)\nSELECT c.name\nFROM customers c\n-- ...\nORDER BY c.name;`
 },
 {
  id:'sql_cte_multi',cat:'joins',kind:'sql',diff:'h',xp:30,
@@ -967,10 +1081,10 @@ chk("ids correctos", conn.execute("SELECT id FROM events ORDER BY id").fetchall(
  task:{es:'Con un CTE, calcula el revenue por cliente y devuélvelo con su nombre.',en:'Using a CTE, compute revenue per customer and return it with their name.'},
  bullets:{es:['Salida: <code>name</code>, <code>revenue</code>.','CTE de revenue por <code>cust_id</code>, luego join a <code>customers</code>.','Orden <code>revenue DESC, name</code>.'],en:['Output: <code>name</code>, <code>revenue</code>.','Revenue CTE per <code>cust_id</code>, then join to <code>customers</code>.','Order <code>revenue DESC, name</code>.']},
  sources:[S('customers',['id','name','region'],[[1,'Ana','LATAM'],[2,'Beto','LATAM']]),S('orders',['id','cust_id'],[[10,1],[11,1],[12,2]]),S('items',['order_id','qty','price'],[[10,2,10],[10,1,5],[11,3,4],[12,1,200]])],
- expected:'Beto 200 · Ana 37',
+ expected:'Beto 200\nAna 37',
  datasets:[`CREATE TABLE customers(id INT,name TEXT,region TEXT);INSERT INTO customers VALUES (1,'Ana','LATAM'),(2,'Beto','LATAM');CREATE TABLE orders(id INT,cust_id INT);INSERT INTO orders VALUES (10,1),(11,1),(12,2);CREATE TABLE items(order_id INT,qty INT,price INT);INSERT INTO items VALUES (10,2,10),(10,1,5),(11,3,4),(12,1,200);`],
  ref:`WITH rev AS (SELECT o.cust_id, SUM(i.qty*i.price) r FROM orders o JOIN items i ON i.order_id=o.id GROUP BY o.cust_id) SELECT c.name, rev.r AS revenue FROM rev JOIN customers c ON c.id=rev.cust_id ORDER BY revenue DESC, c.name`,
- starter:`WITH rev AS (\n  SELECT o.cust_id, SUM(i.qty * i.price) AS r\n  FROM orders o\n  JOIN items i ON i.order_id = o.id\n  GROUP BY o.cust_id\n)\nSELECT c.name, rev.r AS revenue\nFROM rev\nJOIN customers c ON c.id = rev.cust_id\nORDER BY revenue DESC, c.name;`
+ starter:`-- 1) CTE: revenue por cliente (orders × items)\n-- 2) enriquece con el nombre desde customers\nWITH rev AS (\n  ...\n)\nSELECT ...;`
 },
 {
  id:'sql_incremental',cat:'joins',kind:'sql',diff:'m',xp:25,
@@ -979,10 +1093,10 @@ chk("ids correctos", conn.execute("SELECT id FROM events ORDER BY id").fetchall(
  task:{es:'Extrae las filas de <code>source</code> con <code>updated_at</code> mayor al watermark de <code>control</code>.',en:'Extract rows from <code>source</code> with <code>updated_at</code> greater than the <code>control</code> watermark.'},
  bullets:{es:['Salida: <code>id</code>, <code>val</code>; orden por <code>id</code>.','Watermark = <code>control.last_loaded</code> donde <code>table_name=\'source\'</code>.'],en:['Output: <code>id</code>, <code>val</code>; order by <code>id</code>.','Watermark = <code>control.last_loaded</code> where <code>table_name=\'source\'</code>.']},
  sources:[S('source',['id','updated_at','val'],[[1,100,'a'],[2,200,'b'],[3,300,'c'],[4,400,'d']]),S('control',['table_name','last_loaded'],[['source',200]])],
- expected:'3 c · 4 d',
+ expected:'3 c\n4 d',
  datasets:[`CREATE TABLE source(id INT,updated_at INT,val TEXT);INSERT INTO source VALUES (1,100,'a'),(2,200,'b'),(3,300,'c'),(4,400,'d');CREATE TABLE control(table_name TEXT,last_loaded INT);INSERT INTO control VALUES ('source',200);`],
  ref:`SELECT s.id, s.val FROM source s JOIN control ctl ON ctl.table_name='source' WHERE s.updated_at > ctl.last_loaded ORDER BY s.id`,
- starter:`SELECT s.id, s.val\nFROM source s\nJOIN control ctl ON ctl.table_name = 'source'\nWHERE s.updated_at > ctl.last_loaded\nORDER BY s.id;`
+ starter:`-- carga incremental: solo filas de source POSTERIORES al watermark registrado en control\nSELECT ...\nFROM source s\n;`
 },
 /* ===== Math / Logic (hackathon) ===== */
 {
@@ -993,6 +1107,18 @@ chk("ids correctos", conn.execute("SELECT id FROM events ORDER BY id").fetchall(
  bullets:{es:['<code>n &lt; 2</code> → <code>[]</code>.','Marca múltiplos desde <code>i*i</code>.'],en:['<code>n &lt; 2</code> → <code>[]</code>.','Mark multiples starting at <code>i*i</code>.']},
  sources:[S('cases',['n','→'],[['20','[2,3,5,7,11,13,17,19]'],['1','[]']])],
  expected:'[2, 3, 5, 7, 11, 13, 17, 19]',
+ ref:`def sieve(n):
+    if n < 2:
+        return []
+    is_p = [True] * (n + 1)
+    is_p[0] = is_p[1] = False
+    i = 2
+    while i * i <= n:
+        if is_p[i]:
+            for j in range(i * i, n + 1, i):
+                is_p[j] = False
+        i += 1
+    return [i for i in range(2, n + 1) if is_p[i]]`,
  starter:`def sieve(n):\n    if n < 2:\n        return []\n    is_p = [True] * (n + 1)\n    is_p[0] = is_p[1] = False\n    # for i in 2..sqrt(n): if is_p[i]: mark i*i, i*i+i, ...\n    ...\n    return [i for i in range(2, n + 1) if is_p[i]]\n`,
  pytests:`
 cases=[]
@@ -1010,7 +1136,11 @@ chk("hasta 2", sieve(2), [2])
  bullets:{es:['<code>digital_root(9875)=2</code>.','<code>digital_root(0)=0</code>.'],en:['<code>digital_root(9875)=2</code>.','<code>digital_root(0)=0</code>.']},
  sources:[S('cases',['n','→'],[['9875','2'],['0','0'],['38','2']])],
  expected:'2',
- starter:`def digital_root(n):\n    while n >= 10:\n        n = sum(int(d) for d in str(n))\n    return n\n`,
+ ref:`def digital_root(n):
+    while n >= 10:
+        n = sum(int(d) for d in str(n))
+    return n`,
+ starter:`def digital_root(n):\n    # suma los dígitos repetidamente hasta que quede uno solo\n    ...`,
  pytests:`
 cases=[]
 def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
@@ -1027,7 +1157,12 @@ chk("38", digital_root(38), 2)
  bullets:{es:['<code>fib(10)=55</code>.','Sin recursión (evita stack overflow para n grande).'],en:['<code>fib(10)=55</code>.','No recursion (avoid stack overflow for large n).']},
  sources:[S('cases',['n','→'],[['0','0'],['1','1'],['10','55']])],
  expected:'55',
- starter:`def fib(n):\n    a, b = 0, 1\n    for _ in range(n):\n        a, b = b, a + b\n    return a\n`,
+ ref:`def fib(n):
+    a, b = 0, 1
+    for _ in range(n):
+        a, b = b, a + b
+    return a`,
+ starter:`def fib(n):\n    # iterativo O(n): fib(0)=0, fib(1)=1\n    ...`,
  pytests:`
 cases=[]
 def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
@@ -1045,6 +1180,10 @@ chk("fib(20)", fib(20), 6765)
  bullets:{es:['Es combinatoria: <code>C(m+n-2, m-1)</code>.','<code>count_paths(3,3)=6</code>.'],en:['It is combinatorics: <code>C(m+n-2, m-1)</code>.','<code>count_paths(3,3)=6</code>.']},
  sources:[S('cases',['m','n','→'],[['3','3','6'],['2','2','2'],['1','5','1']])],
  expected:'6',
+ ref:`from math import comb
+
+def count_paths(m, n):
+    return comb(m + n - 2, m - 1)`,
  starter:`from math import comb\n\ndef count_paths(m, n):\n    # right/down only -> choose which steps go down\n    ...\n`,
  pytests:`
 from math import comb
@@ -1152,7 +1291,7 @@ chk("3x7", count_paths(3,7), 28)
  task:{es:'Devuelve por día la <b>media móvil de los últimos 7 días</b> (incluido el día actual).',en:'Return per day the <b>rolling average over the last 7 days</b> (current day included).'},
  bullets:[{es:'Salida: <code>d</code>, <code>rolling_avg</code>.',en:'Output: <code>d</code>, <code>rolling_avg</code>.'},{es:'Usa un frame <code>ROWS BETWEEN 6 PRECEDING AND CURRENT ROW</code> ordenado por <code>d</code>.',en:'Use a <code>ROWS BETWEEN 6 PRECEDING AND CURRENT ROW</code> frame ordered by <code>d</code>.'},{es:'Los primeros días promedian solo los días disponibles.',en:'Early days average only the available days.'}],
  sources:[S('metrics',['d','val'],[['2024-01-01',10],['2024-01-02',20],['2024-01-03',30],['…','…']],'val = filas cargadas / rows loaded')],
- expected:'d            rolling_avg\n2024-01-01   10.0\n2024-01-02   15.0  …',
+ expected:'2024-01-01 10\n2024-01-02 15\n2024-01-03 20\n2024-01-04 25 …',
  datasets:[`CREATE TABLE metrics(d TEXT,val INT);INSERT INTO metrics VALUES ('2024-01-01',10),('2024-01-02',20),('2024-01-03',30),('2024-01-04',40),('2024-01-05',50),('2024-01-06',60),('2024-01-07',70),('2024-01-08',80);`,
            `CREATE TABLE metrics(d TEXT,val INT);INSERT INTO metrics VALUES ('2024-03-01',5),('2024-03-02',5),('2024-03-03',20);`],
  ref:`SELECT d, AVG(val) OVER(ORDER BY d ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS rolling_avg FROM metrics ORDER BY d`,
@@ -1165,10 +1304,10 @@ chk("3x7", count_paths(3,7), 28)
  task:{es:'Devuelve por mes el <b>delta absoluto contra el mes anterior</b> (<code>amount − mes previo</code>).',en:'Return per month the <b>absolute delta vs the previous month</b> (<code>amount − prior month</code>).'},
  bullets:[{es:'Salida: <code>month</code>, <code>mom_delta</code>.',en:'Output: <code>month</code>, <code>mom_delta</code>.'},{es:'El primer mes no tiene previo → <code>mom_delta</code> es <code>NULL</code>.',en:'The first month has no prior → <code>mom_delta</code> is <code>NULL</code>.'},{es:'Ordena por <code>month</code>.',en:'Order by <code>month</code>.'}],
  sources:[S('rev',['month','amount'],[['2024-01',100],['2024-02',150],['2024-03',120],['2024-04',240]])],
- expected:'2024-01  (null)\n2024-02  50\n2024-03  -30\n2024-04  120',
+ expected:'2024-01 (null)\n2024-02 50\n2024-03 -30\n2024-04 120',
  datasets:[`CREATE TABLE rev(month TEXT,amount INT);INSERT INTO rev VALUES ('2024-01',100),('2024-02',150),('2024-03',120),('2024-04',240);`],
  ref:`SELECT month, amount - LAG(amount) OVER(ORDER BY month) AS mom_delta FROM rev ORDER BY month`,
- starter:`SELECT\n  month,\n  -- amount - LAG(amount) OVER ( ORDER BY month ) AS mom_delta\nFROM rev\nORDER BY month;`
+ starter:`SELECT\n  month,\n  -- mom_delta: variación vs el mes anterior (NULL en el primero)\nFROM rev\nORDER BY month;`
 },
 {
  id:'py_batch',cat:'L · Lógica / Algoritmos DE',kind:'python',diff:'e',xp:15,
@@ -1178,6 +1317,8 @@ chk("3x7", count_paths(3,7), 28)
  bullets:[{es:'Firma: <code>def batch(items: list, n: int) -> list[list]</code>.',en:'Signature: <code>def batch(items: list, n: int) -> list[list]</code>.'},{es:'Lista vacía → <code>[]</code>. Si <code>n</code> ≥ longitud → un solo lote.',en:'Empty list → <code>[]</code>. If <code>n</code> ≥ length → a single batch.'},{es:'No mutes la entrada.',en:'Do not mutate the input.'}],
  sources:[S('entrada / input',['items','n'],[['[1,2,3,4,5]','2 → [[1,2],[3,4],[5]]'],['[]','3 → []']])],
  expected:'[[1,2],[3,4],[5]]',
+ ref:`def batch(items, n):
+    return [list(items[i:i + n]) for i in range(0, len(items), n)]`,
  starter:`def batch(items, n):\n    # devuelve sublistas de tamaño <= n, en orden\n    ...\n`,
  pytests:`
 cases=[]
@@ -1286,6 +1427,15 @@ src=[1,2,3]; batch(src,2); chk("no muta entrada", src, [1,2,3])
  bullets:[{es:'Coseno = producto punto / (norma(a)·norma(b)).',en:'Cosine = dot / (norm(a)·norm(b)).'},{es:'Si alguna norma es 0 → devuelve <code>0.0</code>.',en:'If either norm is 0 → return <code>0.0</code>.'},{es:'Rango: [-1, 1].',en:'Range: [-1, 1].'}],
  sources:[S('entrada / input',['a','b'],[['[1,2,3]','[1,2,3] → 1.0'],['[1,0]','[0,1] → 0.0']])],
  expected:'1.0 / 0.0 / -1.0',
+ ref:`import math
+
+def cosine(a, b):
+    dot = sum(x * y for x, y in zip(a, b))
+    na = math.sqrt(sum(x * x for x in a))
+    nb = math.sqrt(sum(y * y for y in b))
+    if na == 0 or nb == 0:
+        return 0.0
+    return dot / (na * nb)`,
  starter:`import math\n\ndef cosine(a, b):\n    # dot / (||a|| * ||b||); si una norma es 0 -> 0.0\n    ...\n`,
  pytests:`
 cases=[]
@@ -1307,6 +1457,16 @@ chk("norma 0 -> 0", cosine([0,0],[1,1]), 0.0)
  bullets:[{es:'El último chunk puede ser más corto.',en:'The last chunk may be shorter.'},{es:'<code>overlap</code> < <code>size</code>. Texto vacío → <code>[]</code>.',en:'<code>overlap</code> < <code>size</code>. Empty text → <code>[]</code>.'},{es:'Detén la generación cuando un chunk alcanza el final del texto (sin colas redundantes ya cubiertas por el solape).',en:'Stop once a chunk reaches the end of the text (no redundant tail already covered by the overlap).'}],
  sources:[S('entrada / input',['text','size','overlap'],[['"abcdefg"','4, 1 → ["abcd","defg"]'],['"abcde"','3, 1 → ["abc","cde"]']])],
  expected:'["abcd","defg"]',
+ ref:`def chunk_text(text, size, overlap):
+    step = size - overlap
+    out = []
+    i = 0
+    while i < len(text):
+        out.append(text[i:i + size])
+        if i + size >= len(text):
+            break
+        i += step
+    return out`,
  starter:`def chunk_text(text, size, overlap):\n    step = size - overlap\n    out = []\n    # recorre el texto en pasos de 'step'\n    ...\n    return out\n`,
  pytests:`
 cases=[]
@@ -1325,6 +1485,16 @@ chk("sin solape", chunk_text("abcd",2,0), ["ab","cd"])
  bullets:[{es:'PSI = Σ (a−e)·ln(a/e) por bin.',en:'PSI = Σ (a−e)·ln(a/e) per bin.'},{es:'Si un bin es 0, sustitúyelo por <code>1e-6</code> para evitar log(0)/división por 0.',en:'If a bin is 0, replace it with <code>1e-6</code> to avoid log(0)/division by 0.'},{es:'Regla: PSI &gt; 0.2 ⇒ cambio significativo.',en:'Rule: PSI &gt; 0.2 ⇒ significant change.'}],
  sources:[S('entrada / input',['expected','actual'],[['[0.5,0.5]','[0.5,0.5] → 0.0'],['[0.5,0.5]','[0.7,0.3] → >0']])],
  expected:'0.0 cuando las distribuciones son iguales',
+ ref:`import math
+
+def psi(expected, actual):
+    eps = 1e-6
+    total = 0.0
+    for e, a in zip(expected, actual):
+        e = max(e, eps)
+        a = max(a, eps)
+        total += (a - e) * math.log(a / e)
+    return total`,
  starter:`import math\n\ndef psi(expected, actual):\n    eps = 1e-6\n    total = 0.0\n    for e, a in zip(expected, actual):\n        # e = max(e, eps); a = max(a, eps); total += (a-e)*ln(a/e)\n        ...\n    return total\n`,
  pytests:`
 cases=[]
@@ -1362,19 +1532,19 @@ chk("drift > sin drift", psi([0.5,0.5],[0.9,0.1])>psi([0.5,0.5],[0.55,0.45]), Tr
  expected:'1 1\n2 1\n3 2\n4 2 …',
  datasets:[`CREATE TABLE spend(user_id INT,amount INT);INSERT INTO spend VALUES (1,10),(2,20),(3,30),(4,40),(5,50),(6,60),(7,70),(8,80);`],
  ref:`SELECT user_id, NTILE(4) OVER(ORDER BY amount) AS quartile FROM spend ORDER BY user_id`,
- starter:`SELECT\n  user_id,\n  -- NTILE(4) OVER ( ORDER BY amount ) AS quartile\nFROM spend\nORDER BY user_id;`
+ starter:`SELECT\n  user_id,\n  -- quartile: 1..4 según amount (menor → mayor)\nFROM spend\nORDER BY user_id;`
 },
 {
  id:'sql_pct_total',cat:'D · SQL avanzado',kind:'sql',diff:'e',xp:15,
  title:{es:'Porcentaje del total (window SUM)',en:'Percent of total (window SUM)'},tags:'window · ratio-to-report',
  context:{es:'Un reporte necesita qué porción del total representa cada venta, sin un segundo query para el total.',en:'A report needs what share of the total each sale represents, without a second query for the total.'},
  task:{es:'Calcula <code>pct_of_total</code> = porcentaje del gran total, redondeado a 1 decimal.',en:'Compute <code>pct_of_total</code> = percent of the grand total, rounded to 1 decimal.'},
- bullets:[{es:'Salida: <code>cat</code>, <code>amount</code>, <code>pct_of_total</code>.',en:'Output: <code>cat</code>, <code>amount</code>, <code>pct_of_total</code>.'},{es:'Total con <code>SUM(amount) OVER ()</code> (sin <code>GROUP BY</code>).',en:'Total via <code>SUM(amount) OVER ()</code> (no <code>GROUP BY</code>).'},{es:'<code>ROUND(100.0*amount/total, 1)</code>. Orden: <code>cat, amount</code>.',en:'<code>ROUND(100.0*amount/total, 1)</code>. Order: <code>cat, amount</code>.'}],
+ bullets:[{es:'Salida: <code>cat</code>, <code>amount</code>, <code>pct_of_total</code>.',en:'Output: <code>cat</code>, <code>amount</code>, <code>pct_of_total</code>.'},{es:'Total con <code>SUM(amount) OVER ()</code> (sin <code>GROUP BY</code>).',en:'Total via <code>SUM(amount) OVER ()</code> (no <code>GROUP BY</code>).'},{es:'Redondea a 1 decimal. Orden: <code>cat, amount</code>.',en:'Round to 1 decimal. Order: <code>cat, amount</code>.'}],
  sources:[S('sales',['cat','amount'],[['a',10],['a',30],['b',60]])],
- expected:'a 10 10.0\na 30 30.0\nb 60 60.0',
+ expected:'a 10 10\na 30 30\nb 60 60',
  datasets:[`CREATE TABLE sales(cat TEXT,amount INT);INSERT INTO sales VALUES ('a',10),('a',30),('b',60);`],
  ref:`SELECT cat, amount, ROUND(100.0*amount/SUM(amount) OVER(),1) AS pct_of_total FROM sales ORDER BY cat, amount`,
- starter:`SELECT\n  cat,\n  amount,\n  -- ROUND(100.0 * amount / SUM(amount) OVER (), 1) AS pct_of_total\nFROM sales\nORDER BY cat, amount;`
+ starter:`SELECT\n  cat,\n  amount,\n  -- pct_of_total: % del gran total, 1 decimal\nFROM sales\nORDER BY cat, amount;`
 },
 {
  id:'sql_lead_gap',cat:'D · SQL avanzado',kind:'sql',diff:'m',xp:20,
@@ -1386,7 +1556,7 @@ chk("drift > sin drift", psi([0.5,0.5],[0.9,0.1])>psi([0.5,0.5],[0.55,0.45]), Tr
  expected:'1 1 4\n1 5 15\n1 20 (null)\n2 3 1\n2 4 (null)',
  datasets:[`CREATE TABLE purchases(cust INT,d INT);INSERT INTO purchases VALUES (1,1),(1,5),(1,20),(2,3),(2,4);`],
  ref:`SELECT cust, d, LEAD(d) OVER(PARTITION BY cust ORDER BY d) - d AS gap_to_next FROM purchases ORDER BY cust, d`,
- starter:`SELECT\n  cust,\n  d,\n  -- LEAD(d) OVER ( PARTITION BY cust ORDER BY d ) - d AS gap_to_next\nFROM purchases\nORDER BY cust, d;`
+ starter:`SELECT\n  cust,\n  d,\n  -- gap_to_next: días hasta la SIGUIENTE compra del cliente (NULL en la última)\nFROM purchases\nORDER BY cust, d;`
 },
 /* ===================== AVANZADO: PYTHON ===================== */
 {
@@ -1397,6 +1567,24 @@ chk("drift > sin drift", psi([0.5,0.5],[0.9,0.1])>psi([0.5,0.5],[0.55,0.45]), Tr
  bullets:[{es:'Cada nodo aparece DESPUÉS de todos sus prerequisitos.',en:'Each node appears AFTER all its prerequisites.'},{es:'Usa el algoritmo de Kahn (in-degree + cola).',en:'Use Kahn\'s algorithm (in-degree + queue).'},{es:'Ciclo detectado (no se ordenan todos) → <code>[]</code>.',en:'Cycle detected (not all ordered) → <code>[]</code>.'}],
  sources:[S('graph (dict)',['nodo','prerequisitos'],[['b','["a"]'],['d','["b","c"]']],'nodo -> lista de deps')],
  expected:'un orden válido, p.ej. [a, b, c, d]',
+ ref:`from collections import deque
+
+def toposort(graph):
+    indeg = {n: len(deps) for n, deps in graph.items()}
+    dependents = {n: [] for n in graph}
+    for n, deps in graph.items():
+        for d in deps:
+            dependents[d].append(n)
+    q = deque(sorted(n for n, c in indeg.items() if c == 0))
+    out = []
+    while q:
+        n = q.popleft()
+        out.append(n)
+        for m in dependents[n]:
+            indeg[m] -= 1
+            if indeg[m] == 0:
+                q.append(m)
+    return out if len(out) == len(graph) else []`,
  starter:`from collections import deque\n\ndef toposort(graph):\n    # in-degree por nodo; cola con los de in-degree 0; algoritmo de Kahn\n    ...\n`,
  pytests:`
 cases=[]
@@ -1416,6 +1604,18 @@ chk("ciclo -> []", toposort({"x":["y"],"y":["x"]}), [])
  bullets:[{es:'Impar → elemento central; par → promedio de los dos centrales.',en:'Odd → middle element; even → average of the two middle ones.'},{es:'La salida tiene la misma longitud que la entrada.',en:'The output has the same length as the input.'},{es:'Puedes ordenar en cada paso (o usar dos heaps para O(log n)).',en:'You may sort at each step (or use two heaps for O(log n)).'}],
  sources:[S('entrada / input',['stream'],[['[2,1,5,3]','→ [2, 1.5, 2, 2.5]']])],
  expected:'[2, 1.5, 2, 2.5]',
+ ref:`def running_median(stream):
+    out = []
+    seen = []
+    for x in stream:
+        seen.append(x)
+        s = sorted(seen)
+        n = len(s)
+        if n % 2:
+            out.append(s[n // 2])
+        else:
+            out.append((s[n // 2 - 1] + s[n // 2]) / 2)
+    return out`,
  starter:`def running_median(stream):\n    out = []\n    seen = []\n    for x in stream:\n        seen.append(x)\n        # mediana de 'seen' tras cada elemento\n        ...\n    return out\n`,
  pytests:`
 cases=[]
@@ -1436,6 +1636,16 @@ chk("longitud", len(running_median([4,2,6])), 3)
  bullets:[{es:'Cada elemento es un <code>dict</code> con clave <code>id</code>.',en:'Each item is a <code>dict</code> with an <code>id</code> key.'},{es:'Conserva el orden: existentes primero (actualizados), luego los nuevos.',en:'Preserve order: existing first (updated), then the new ones.'},{es:'Reejecutar con el mismo lote deja el mismo resultado (idempotente).',en:'Rerunning with the same batch yields the same result (idempotent).'}],
  sources:[S('entrada / input',['target','batch'],[['[{id:1,v:"a"}]','[{id:1,v:"b"}] → v actualizado'],['[{id:1}]','[{id:2}] → insertado']])],
  expected:'[{"id":1,"v":"b"}]',
+ ref:`def upsert(target, batch):
+    out = [dict(r) for r in target]
+    idx = {r["id"]: i for i, r in enumerate(out)}
+    for r in batch:
+        if r["id"] in idx:
+            out[idx[r["id"]]] = dict(r)
+        else:
+            idx[r["id"]] = len(out)
+            out.append(dict(r))
+    return out`,
  starter:`def upsert(target, batch):\n    out = [dict(r) for r in target]\n    idx = {r["id"]: i for i, r in enumerate(out)}\n    for r in batch:\n        # si r["id"] está en idx -> reemplaza; si no -> append\n        ...\n    return out\n`,
  pytests:`
 cases=[]
@@ -1904,7 +2114,7 @@ src=[{"id":1,"v":"a"}]; upsert(src,[{"id":1,"v":"z"}]); chk("no muta entrada", s
  expected:'1 Ana Widget 15\n2 Bob Gadget 16\n3 Ana Gadget 8',
  datasets:[`CREATE TABLE customers(id INT,name TEXT);INSERT INTO customers VALUES(1,'Ana'),(2,'Bob');CREATE TABLE products(id INT,name TEXT,price INT);INSERT INTO products VALUES(10,'Widget',5),(11,'Gadget',8);CREATE TABLE orders(id INT,cust_id INT,prod_id INT,qty INT);INSERT INTO orders VALUES(1,1,10,3),(2,2,11,2),(3,1,11,1);`],
  ref:`SELECT o.id, c.name cust, p.name prod, o.qty*p.price total FROM orders o JOIN customers c ON c.id=o.cust_id JOIN products p ON p.id=o.prod_id ORDER BY o.id`,
- starter:`SELECT o.id, /* c.name, p.name, total */\nFROM orders o\n  JOIN customers c ON c.id = o.cust_id\n  JOIN products  p ON p.id = o.prod_id\nORDER BY o.id;`
+ starter:`-- enriquece cada pedido: cliente, producto y total (qty × price)\nSELECT o.id, ...\nFROM orders o\n-- JOIN ...\nORDER BY o.id;`
 },
 {
  id:'sql_join_left_agg',cat:'joins',kind:'sql',diff:'m',xp:20,
@@ -1916,7 +2126,7 @@ src=[{"id":1,"v":"a"}]; upsert(src,[{"id":1,"v":"z"}]); chk("no muta entrada", s
  expected:'Ana 150\nBob 30\nCy 0',
  datasets:[`CREATE TABLE customers(id INT,name TEXT);INSERT INTO customers VALUES(1,'Ana'),(2,'Bob'),(3,'Cy');CREATE TABLE orders(id INT,cust_id INT,amount INT);INSERT INTO orders VALUES(1,1,100),(2,1,50),(3,2,30);`],
  ref:`SELECT c.name, COALESCE(SUM(o.amount),0) spend FROM customers c LEFT JOIN orders o ON o.cust_id=c.id GROUP BY c.id,c.name ORDER BY c.name`,
- starter:`SELECT c.name, COALESCE(SUM(o.amount), 0) AS spend\nFROM customers c\n  LEFT JOIN orders o ON o.cust_id = c.id\nGROUP BY c.id, c.name\nORDER BY c.name;`
+ starter:`-- gasto por cliente, INCLUYENDO clientes sin pedidos (spend 0)\nSELECT ...\nFROM customers c\n-- ...\nORDER BY c.name;`
 },
 {
  id:'sql_join_notexists',cat:'joins',kind:'sql',diff:'m',xp:20,
@@ -1928,7 +2138,7 @@ src=[{"id":1,"v":"a"}]; upsert(src,[{"id":1,"v":"z"}]); chk("no muta entrada", s
  expected:'B',
  datasets:[`CREATE TABLE products(id INT,name TEXT);INSERT INTO products VALUES(1,'A'),(2,'B'),(3,'C');CREATE TABLE orders(id INT,prod_id INT);INSERT INTO orders VALUES(1,1),(2,1),(3,3);`],
  ref:`SELECT p.name FROM products p WHERE NOT EXISTS(SELECT 1 FROM orders o WHERE o.prod_id=p.id) ORDER BY p.name`,
- starter:`SELECT p.name\nFROM products p\nWHERE NOT EXISTS (\n  SELECT 1 FROM orders o WHERE o.prod_id = p.id\n)\nORDER BY p.name;`
+ starter:`-- productos que NUNCA se han vendido\nSELECT p.name\nFROM products p\n-- ...\nORDER BY p.name;`
 },
 {
  id:'sql_join_self',cat:'joins',kind:'sql',diff:'m',xp:20,
@@ -1940,7 +2150,7 @@ src=[{"id":1,"v":"a"}]; upsert(src,[{"id":1,"v":"z"}]); chk("no muta entrada", s
  expected:'Ana CEO\nBob Ana\nCEO (null)',
  datasets:[`CREATE TABLE emp(id INT,name TEXT,mgr_id INT);INSERT INTO emp VALUES(1,'CEO',NULL),(2,'Ana',1),(3,'Bob',2);`],
  ref:`SELECT e.name emp, m.name mgr FROM emp e LEFT JOIN emp m ON m.id=e.mgr_id ORDER BY e.name`,
- starter:`SELECT e.name AS emp, m.name AS mgr\nFROM emp e\n  LEFT JOIN emp m ON m.id = e.mgr_id\nORDER BY e.name;`
+ starter:`-- cada empleado con el nombre de su manager (NULL si no tiene)\nSELECT ...\nFROM emp e\n-- self-join: la misma tabla con otro alias\nORDER BY e.name;`
 },
 {
  id:'sql_join_bridge',cat:'joins',kind:'sql',diff:'h',xp:30,
@@ -1952,7 +2162,7 @@ src=[{"id":1,"v":"a"}]; upsert(src,[{"id":1,"v":"z"}]); chk("no muta entrada", s
  expected:'Ana 2\nBob 1',
  datasets:[`CREATE TABLE students(id INT,name TEXT);INSERT INTO students VALUES(1,'Ana'),(2,'Bob');CREATE TABLE courses(id INT,title TEXT);INSERT INTO courses VALUES(10,'SQL'),(11,'PY');CREATE TABLE enroll(student_id INT,course_id INT);INSERT INTO enroll VALUES(1,10),(1,11),(2,10);`],
  ref:`SELECT s.name, COUNT(e.course_id) courses FROM students s LEFT JOIN enroll e ON e.student_id=s.id GROUP BY s.id,s.name ORDER BY s.name`,
- starter:`SELECT s.name, COUNT(e.course_id) AS courses\nFROM students s\n  LEFT JOIN enroll e ON e.student_id = s.id\nGROUP BY s.id, s.name\nORDER BY s.name;`
+ starter:`-- cursos por estudiante vía la tabla puente, INCLUYENDO estudiantes sin cursos\nSELECT ...\nFROM students s\n-- ...\nORDER BY s.name;`
 },
 {
  id:'sql_join_5tables',cat:'joins',kind:'sql',diff:'h',xp:35,
@@ -1965,7 +2175,7 @@ src=[{"id":1,"v":"a"}]; upsert(src,[{"id":1,"v":"z"}]); chk("no muta entrada", s
  viz:'bar',
  datasets:[`CREATE TABLE regions(id INT,name TEXT);INSERT INTO regions VALUES(1,'North'),(2,'South');CREATE TABLE customers(id INT,name TEXT,region_id INT);INSERT INTO customers VALUES(1,'Ana',1),(2,'Bob',2),(3,'Cy',1);CREATE TABLE orders(id INT,cust_id INT);INSERT INTO orders VALUES(1,1),(2,2),(3,3);CREATE TABLE products(id INT,price INT);INSERT INTO products VALUES(10,5),(11,8);CREATE TABLE order_items(order_id INT,prod_id INT,qty INT);INSERT INTO order_items VALUES(1,10,2),(1,11,1),(2,10,5),(3,11,2);`],
  ref:`SELECT r.name region, SUM(oi.qty*p.price) revenue FROM regions r JOIN customers c ON c.region_id=r.id JOIN orders o ON o.cust_id=c.id JOIN order_items oi ON oi.order_id=o.id JOIN products p ON p.id=oi.prod_id GROUP BY r.id,r.name ORDER BY r.name`,
- starter:`SELECT r.name AS region, SUM(oi.qty * p.price) AS revenue\nFROM regions r\n  JOIN customers   c  ON c.region_id = r.id\n  JOIN orders      o  ON o.cust_id   = c.id\n  JOIN order_items oi ON oi.order_id = o.id\n  JOIN products    p  ON p.id        = oi.prod_id\nGROUP BY r.id, r.name\nORDER BY r.name;`
+ starter:`-- revenue por región atravesando las 5 tablas:\n-- regions → customers → orders → order_items → products\nSELECT ...\nFROM regions r\n-- ...\nGROUP BY r.id, r.name\nORDER BY r.name;`
 },
 /* ===================== SQL · DML / DDL / TCL / DCL (DBA) ===================== */
 {
@@ -1975,7 +2185,7 @@ src=[{"id":1,"v":"a"}]; upsert(src,[{"id":1,"v":"z"}]); chk("no muta entrada", s
  task:{es:'Escribe un <code>UPDATE</code> que sume <b>10</b> al <code>price</code> de los productos con <code>cat=\'A\'</code>.',en:'Write an <code>UPDATE</code> that adds <b>10</b> to <code>price</code> for products where <code>cat=\'A\'</code>.'},
  bullets:[{es:'Se verifica el estado final de la tabla (no devuelvas un SELECT).',en:'The final table state is checked (don\'t return a SELECT).'},{es:'Solo cambia la categoría A.',en:'Change only category A.'}],
  sources:[S('products',['id','cat','price'],[[1,'A',100],[2,'B',50],[3,'A',80]])],
- expected:'tras el UPDATE: 1→110, 2→50, 3→90',
+ expected:'1 110\n2 50\n3 90',
  datasets:[`CREATE TABLE products(id INT,cat TEXT,price INT);INSERT INTO products VALUES(1,'A',100),(2,'B',50),(3,'A',80);`],
  ref:`UPDATE products SET price=price+10 WHERE cat='A'`,
  verify:`SELECT id,price FROM products ORDER BY id`,
@@ -1988,11 +2198,11 @@ src=[{"id":1,"v":"a"}]; upsert(src,[{"id":1,"v":"z"}]); chk("no muta entrada", s
  task:{es:'Aplica el lote <code>(\'a\',5),(\'c\',3)</code> con <code>INSERT … ON CONFLICT(sku) DO UPDATE</code> sumando <code>qty</code>.',en:'Apply the batch <code>(\'a\',5),(\'c\',3)</code> with <code>INSERT … ON CONFLICT(sku) DO UPDATE</code> adding <code>qty</code>.'},
  bullets:[{es:'Idempotente por clave: <code>a</code> suma; <code>c</code> se inserta. Se verifica el estado final.',en:'Idempotent by key: <code>a</code> adds; <code>c</code> is inserted. Final state is checked.'},{es:'Usa <code>excluded.qty</code> para el valor entrante.',en:'Use <code>excluded.qty</code> for the incoming value.'}],
  sources:[S('inv',['sku (PK)','qty'],[['a',10],['b',4]],'restock entrante: a+5, c+3')],
- expected:'a→15, b→4, c→3',
+ expected:'a 15\nb 4\nc 3',
  datasets:[`CREATE TABLE inv(sku TEXT PRIMARY KEY,qty INT);INSERT INTO inv VALUES('a',10),('b',4);`],
  ref:`INSERT INTO inv(sku,qty) VALUES('a',5),('c',3) ON CONFLICT(sku) DO UPDATE SET qty=qty+excluded.qty`,
  verify:`SELECT sku,qty FROM inv ORDER BY sku`,
- starter:`INSERT INTO inv (sku, qty)\nVALUES ('a', 5), ('c', 3)\nON CONFLICT(sku) DO UPDATE\n  SET qty = qty + excluded.qty;`
+ starter:`-- UPSERT: inserta ('a',5) y ('c',3); si el sku ya existe, SUMA la cantidad\nINSERT INTO inv (sku, qty)\nVALUES ...\n;`
 },
 {
  id:'sql_ddl_alter',cat:'Y · DBA / Administración',kind:'sql',diff:'m',xp:20,
@@ -2001,11 +2211,11 @@ src=[{"id":1,"v":"a"}]; upsert(src,[{"id":1,"v":"z"}]); chk("no muta entrada", s
  task:{es:'<code>ALTER TABLE</code> añade <code>status TEXT DEFAULT \'active\'</code> y luego haz backfill de los <code>id≤2</code> a <code>\'legacy\'</code>.',en:'<code>ALTER TABLE</code> add <code>status TEXT DEFAULT \'active\'</code> then backfill <code>id≤2</code> to <code>\'legacy\'</code>.'},
  bullets:[{es:'Dos sentencias: ALTER y UPDATE. Se verifica el estado final.',en:'Two statements: ALTER and UPDATE. Final state is checked.'}],
  sources:[S('users',['id','email'],[[1,'a@x'],[2,'b@x'],[3,'c@x']])],
- expected:'1→legacy, 2→legacy, 3→active',
+ expected:'1 legacy\n2 legacy\n3 active',
  datasets:[`CREATE TABLE users(id INT,email TEXT);INSERT INTO users VALUES(1,'a@x'),(2,'b@x'),(3,'c@x');`],
  ref:`ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active';UPDATE users SET status='legacy' WHERE id<=2`,
  verify:`SELECT id,status FROM users ORDER BY id`,
- starter:`ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active';\nUPDATE users SET status = 'legacy' WHERE id <= 2;`
+ starter:`-- 1) agrega a users la columna status (TEXT, default 'active')\n-- 2) marca 'legacy' a los usuarios con id <= 2\n`
 },
 {
  id:'sql_tcl_savepoint',cat:'Y · DBA / Administración',kind:'sql',diff:'h',xp:30,
@@ -2014,11 +2224,11 @@ src=[{"id":1,"v":"a"}]; upsert(src,[{"id":1,"v":"z"}]); chk("no muta entrada", s
  task:{es:'En una transacción: resta 30 a <code>id=1</code>; crea un <code>SAVEPOINT</code>; suma 30 a <code>id=2</code>; haz <code>ROLLBACK TO</code> el savepoint; <code>COMMIT</code>.',en:'In one transaction: subtract 30 from <code>id=1</code>; create a <code>SAVEPOINT</code>; add 30 to <code>id=2</code>; <code>ROLLBACK TO</code> the savepoint; <code>COMMIT</code>.'},
  bullets:[{es:'Resultado esperado: <code>id1=70</code> (debitado), <code>id2=50</code> (el crédito se revierte).',en:'Expected: <code>id1=70</code> (debited), <code>id2=50</code> (the credit is reverted).'}],
  sources:[S('acct',['id','bal'],[[1,100],[2,50]])],
- expected:'1→70, 2→50',
+ expected:'1 70\n2 50',
  datasets:[`CREATE TABLE acct(id INT,bal INT);INSERT INTO acct VALUES(1,100),(2,50);`],
  ref:`BEGIN;UPDATE acct SET bal=bal-30 WHERE id=1;SAVEPOINT s;UPDATE acct SET bal=bal+30 WHERE id=2;ROLLBACK TO s;COMMIT`,
  verify:`SELECT id,bal FROM acct ORDER BY id`,
- starter:`BEGIN;\n  UPDATE acct SET bal = bal - 30 WHERE id = 1;\n  SAVEPOINT s;\n  UPDATE acct SET bal = bal + 30 WHERE id = 2;\n  ROLLBACK TO s;\nCOMMIT;`
+ starter:`-- transferencia con vuelta atrás parcial:\n-- 1) inicia transacción y resta 30 a la cuenta 1\n-- 2) marca un punto de guardado y suma 30 a la cuenta 2\n-- 3) revierte SOLO el paso 2 y confirma el resto\n`
 },
 {
  id:'q_dcl_grant',cat:'Y · DBA / Administración',kind:'quiz',diff:'m',xp:15,timer:120,
@@ -2065,6 +2275,10 @@ src=[{"id":1,"v":"a"}]; upsert(src,[{"id":1,"v":"z"}]); chk("no muta entrada", s
  sources:[S('df','df = pd.DataFrame({a:[1,NaN,3], b:[x,NaN,NaN]})'.split('=').slice(0,1).concat(['ejemplo']),[['a','1 null'],['b','2 nulls']])],
  expected:'{"a": 1, "b": 2}',
  pyPackages:['pandas'],
+ ref:`import pandas as pd
+
+def null_report(df):
+    return {c: int(df[c].isna().sum()) for c in df.columns}`,
  starter:`import pandas as pd\n\ndef null_report(df):\n    # {columna: nº de NaN} como int\n    ...\n`,
  pytests:`
 import pandas as pd, numpy as np
@@ -2083,6 +2297,16 @@ chk("sin nulos", null_report(pd.DataFrame({"x":[1,2]})), {"x":0})
  bullets:[{es:'Reglas en orden: <code>"id null"</code>, <code>"age range"</code>, <code>"bad email"</code>.',en:'Rules in order: <code>"id null"</code>, <code>"age range"</code>, <code>"bad email"</code>.'},{es:'Un registro válido no aporta nada a la lista.',en:'A valid record adds nothing to the list.'}],
  sources:[S('records',['ejemplo'],[['{id:2, age:200, email:"b@x"} → (2,"age range")'],['{id:3, age:40, email:"bad"} → (3,"bad email")']])],
  expected:'[(2, "age range"), (3, "bad email")]',
+ ref:`def validate(records):
+    out = []
+    for r in records:
+        if r.get("id") is None:
+            out.append((None, "null id"))
+        elif not (0 <= r["age"] <= 120):
+            out.append((r["id"], "age range"))
+        elif "@" not in r["email"]:
+            out.append((r["id"], "bad email"))
+    return out`,
  starter:`def validate(records):\n    out = []\n    for r in records:\n        # id null -> age range -> bad email (primera que falle)\n        ...\n    return out\n`,
  pytests:`
 cases=[]
@@ -2100,7 +2324,7 @@ chk("todo válido -> []", validate([{"id":1,"age":20,"email":"z@y"}]), [])
  task:{es:'Agrupa por mes (<code>YYYY-MM</code>) y suma <code>amount</code>; ordena por mes. La consola dibujará las barras.',en:'Group by month (<code>YYYY-MM</code>) and sum <code>amount</code>; order by month. The console will draw the bars.'},
  bullets:[{es:'Salida: <code>month</code>, <code>revenue</code>. Usa <code>strftime(\'%Y-%m\', d)</code>.',en:'Output: <code>month</code>, <code>revenue</code>. Use <code>strftime(\'%Y-%m\', d)</code>.'}],
  sources:[S('sales',['d','amount'],[['2024-01-05',100],['2024-01-20',50],['2024-02-03',80],['2024-03-01',60]])],
- expected:'2024-01 150 | 2024-02 80 | 2024-03 60',
+ expected:'2024-01 150\n2024-02 80\n2024-03 60',
  datasets:[`CREATE TABLE sales(d TEXT,amount INT);INSERT INTO sales VALUES('2024-01-05',100),('2024-01-20',50),('2024-02-03',80),('2024-03-01',60);`],
  ref:`SELECT strftime('%Y-%m', d) month, SUM(amount) revenue FROM sales GROUP BY 1 ORDER BY 1`,
  starter:`SELECT\n  strftime('%Y-%m', d) AS month,\n  SUM(amount) AS revenue\nFROM sales\nGROUP BY 1\nORDER BY 1;`
@@ -2112,10 +2336,10 @@ chk("todo válido -> []", validate([{"id":1,"age":20,"email":"z@y"}]), [])
  task:{es:'Suma por categoría y devuelve el <b>top 3</b> descendente.',en:'Sum per category and return the <b>top 3</b> descending.'},
  bullets:[{es:'Salida: <code>cat</code>, <code>total</code>. <code>ORDER BY total DESC LIMIT 3</code>.',en:'Output: <code>cat</code>, <code>total</code>. <code>ORDER BY total DESC LIMIT 3</code>.'}],
  sources:[S('sales',['cat','amount'],[['A',100],['B',60],['C',200],['A',50],['B',40]])],
- expected:'C 200 | A 150 | B 100',
+ expected:'C 200\nA 150\nB 100',
  datasets:[`CREATE TABLE sales(cat TEXT,amount INT);INSERT INTO sales VALUES('A',100),('B',60),('C',200),('A',50),('B',40);`],
  ref:`SELECT cat, SUM(amount) total FROM sales GROUP BY cat ORDER BY total DESC LIMIT 3`,
- starter:`SELECT cat, SUM(amount) AS total\nFROM sales\nGROUP BY cat\nORDER BY total DESC\nLIMIT 3;`
+ starter:`-- top 3 categorías por venta total (alimenta el gráfico de barras)\nSELECT ...\nFROM sales\n;`
 },
 {
  id:'sql_histogram',cat:'J · Estadística para DE',kind:'sql',diff:'m',xp:20,viz:'bar',
@@ -2124,10 +2348,10 @@ chk("todo válido -> []", validate([{"id":1,"age":20,"email":"z@y"}]), [])
  task:{es:'Cuenta cuántas notas caen en <code>0-59</code>, <code>60-79</code>, <code>80-100</code> con <code>CASE</code>.',en:'Count how many grades fall in <code>0-59</code>, <code>60-79</code>, <code>80-100</code> using <code>CASE</code>.'},
  bullets:[{es:'Salida: <code>bucket</code>, <code>n</code>. Orden por <code>bucket</code>.',en:'Output: <code>bucket</code>, <code>n</code>. Order by <code>bucket</code>.'}],
  sources:[S('scores',['v'],[[45],[55],[72],[88],['…']])],
- expected:'0-59 3 | 60-79 2 | 80-100 3',
+ expected:'0-59 3\n60-79 2\n80-100 3',
  datasets:[`CREATE TABLE scores(v INT);INSERT INTO scores VALUES(45),(55),(72),(88),(90),(99),(61),(30);`],
  ref:`SELECT CASE WHEN v<60 THEN '0-59' WHEN v<80 THEN '60-79' ELSE '80-100' END bucket, COUNT(*) n FROM scores GROUP BY bucket ORDER BY bucket`,
- starter:`SELECT\n  CASE WHEN v < 60 THEN '0-59'\n       WHEN v < 80 THEN '60-79'\n       ELSE '80-100' END AS bucket,\n  COUNT(*) AS n\nFROM scores\nGROUP BY bucket\nORDER BY bucket;`
+ starter:`-- histograma: cuenta scores por bucket 0-59 / 60-79 / 80-100\nSELECT\n  ...\nFROM scores\nGROUP BY bucket\nORDER BY bucket;`
 },
 {
  id:'py_ascii_bar',cat:'J · Estadística para DE',kind:'python',diff:'m',xp:20,
@@ -2137,6 +2361,8 @@ chk("todo válido -> []", validate([{"id":1,"age":20,"email":"z@y"}]), [])
  bullets:[{es:'Cada línea: <code>f"{label} | {\'#\'*value}"</code>. Filas unidas por <code>\\n</code>.',en:'Each line: <code>f"{label} | {\'#\'*value}"</code>. Rows joined by <code>\\n</code>.'}],
  sources:[S('entrada / input',['data'],[['[("a",3),("b",1)]','→ "a | ###\\nb | #"']])],
  expected:'a | ###\\nb | #',
+ ref:`def bar_chart(data):
+    return "\\n".join(f"{label} | {'#' * value}" for label, value in data)`,
  starter:`def bar_chart(data):\n    # una línea por (label, value): f"{label} | {'#'*value}"\n    ...\n`,
  pytests:`
 cases=[]
@@ -2155,6 +2381,13 @@ chk("tres filas", bar_chart([("a",1),("b",2),("c",3)]), "a | #\\nb | ##\\nc | ##
  bullets:[{es:'Usa <code>executemany</code> y <code>fetchall()</code>; salida lista de <code>(cat, total)</code>.',en:'Use <code>executemany</code> and <code>fetchall()</code>; output a list of <code>(cat, total)</code>.'}],
  sources:[S('rows',['cat','amt'],[['a',1],['a',2],['b',3]])],
  expected:'[("a", 3), ("b", 3)]',
+ ref:`import sqlite3
+
+def sqlite_agg(rows):
+    con = sqlite3.connect(":memory:")
+    con.execute("CREATE TABLE s(cat TEXT, amt INT)")
+    con.executemany("INSERT INTO s VALUES(?,?)", rows)
+    return con.execute("SELECT cat, SUM(amt) FROM s GROUP BY cat ORDER BY cat").fetchall()`,
  starter:`import sqlite3\n\ndef sqlite_agg(rows):\n    con = sqlite3.connect(":memory:")\n    con.execute("CREATE TABLE s(cat TEXT, amt INT)")\n    # executemany INSERT ... ; luego SELECT cat,SUM(amt) GROUP BY cat ORDER BY cat\n    ...\n`,
  pytests:`
 import sqlite3
@@ -2172,6 +2405,13 @@ chk("una categoria", sqlite_agg([("x",5)]), [("x",5)])
  bullets:[{es:'Usa <code>execute("... WHERE name=?", (name,))</code>. Nunca f-strings con el input.',en:'Use <code>execute("... WHERE name=?", (name,))</code>. Never f-strings with the input.'}],
  sources:[S('rows',['name','age'],[['ana',30],['bob',25]])],
  expected:'param_query(rows, "ana") → [30]',
+ ref:`import sqlite3
+
+def param_query(rows, name):
+    con = sqlite3.connect(":memory:")
+    con.execute("CREATE TABLE u(name TEXT, age INT)")
+    con.executemany("INSERT INTO u VALUES(?,?)", rows)
+    return [r[0] for r in con.execute("SELECT age FROM u WHERE name = ?", (name,)).fetchall()]`,
  starter:`import sqlite3\n\ndef param_query(rows, name):\n    con = sqlite3.connect(":memory:")\n    con.execute("CREATE TABLE u(name TEXT, age INT)")\n    con.executemany("INSERT INTO u VALUES(?,?)", rows)\n    # SELECT age FROM u WHERE name = ?  (placeholder!)\n    ...\n`,
  pytests:`
 cases=[]
@@ -2189,6 +2429,13 @@ chk("injection-safe", param_query([("ana",30)],"ana' OR '1'='1"), [])
  bullets:[{es:'Recuerda: <code>executemany</code> espera una secuencia de tuplas <code>[(v,), ...]</code>.',en:'Remember: <code>executemany</code> expects a sequence of tuples <code>[(v,), ...]</code>.'}],
  sources:[S('entrada / input',['values'],[['[1,2,3,4]','→ 4']])],
  expected:'4',
+ ref:`import sqlite3
+
+def bulk_insert(values):
+    con = sqlite3.connect(":memory:")
+    con.execute("CREATE TABLE t(x INT)")
+    con.executemany("INSERT INTO t VALUES(?)", [(v,) for v in values])
+    return con.execute("SELECT COUNT(*) FROM t").fetchone()[0]`,
  starter:`import sqlite3\n\ndef bulk_insert(values):\n    con = sqlite3.connect(":memory:")\n    con.execute("CREATE TABLE t(x INT)")\n    # executemany con [(v,) for v in values]; devuelve COUNT(*)\n    ...\n`,
  pytests:`
 cases=[]
@@ -2205,6 +2452,17 @@ chk("vacio", bulk_insert([]), 0)
  bullets:[{es:'Salida: estado final <code>(sku, qty)</code> ordenado. Usa <code>excluded.qty</code>.',en:'Output: final state <code>(sku, qty)</code> ordered. Use <code>excluded.qty</code>.'}],
  sources:[S('inv (inicial)',['sku (PK)','qty'],[['a',10]],'lote: a+5, b+3')],
  expected:'[("a", 15), ("b", 3)]',
+ ref:`import sqlite3
+
+def upsert(rows):
+    con = sqlite3.connect(":memory:")
+    con.execute("CREATE TABLE inv(sku TEXT PRIMARY KEY, qty INT)")
+    con.execute("INSERT INTO inv VALUES('a',10)")
+    for sku, q in rows:
+        con.execute(
+            "INSERT INTO inv VALUES(?,?) ON CONFLICT(sku) DO UPDATE SET qty=qty+excluded.qty",
+            (sku, q))
+    return con.execute("SELECT sku,qty FROM inv ORDER BY sku").fetchall()`,
  starter:`import sqlite3\n\ndef upsert(rows):\n    con = sqlite3.connect(":memory:")\n    con.execute("CREATE TABLE inv(sku TEXT PRIMARY KEY, qty INT)")\n    con.execute("INSERT INTO inv VALUES('a',10)")\n    for sku, q in rows:\n        # INSERT ... ON CONFLICT(sku) DO UPDATE SET qty=qty+excluded.qty\n        ...\n    return con.execute("SELECT sku,qty FROM inv ORDER BY sku").fetchall()\n`,
  pytests:`
 cases=[]
@@ -2221,6 +2479,20 @@ chk("idempotente-ish", upsert([("a",0)]), [("a",10)])
  bullets:[{es:'Usa <code>con.isolation_level=None</code> + <code>BEGIN</code>/<code>ROLLBACK</code> explícitos en <code>try/except</code>.',en:'Use <code>con.isolation_level=None</code> + explicit <code>BEGIN</code>/<code>ROLLBACK</code> in <code>try/except</code>.'},{es:'Resultado esperado: 100 (el débito se revierte).',en:'Expected: 100 (the debit reverts).'}],
  sources:[S('acct (inicial)',['id','bal'],[[1,100]])],
  expected:'100',
+ ref:`import sqlite3
+
+def txn_rollback():
+    con = sqlite3.connect(":memory:")
+    con.isolation_level = None
+    con.execute("CREATE TABLE acct(id INT, bal INT)")
+    con.execute("INSERT INTO acct VALUES(1,100)")
+    try:
+        con.execute("BEGIN")
+        con.execute("UPDATE acct SET bal=bal-50 WHERE id=1")
+        raise ValueError("boom")
+    except ValueError:
+        con.execute("ROLLBACK")
+    return con.execute("SELECT bal FROM acct WHERE id=1").fetchone()[0]`,
  starter:`import sqlite3\n\ndef txn_rollback():\n    con = sqlite3.connect(":memory:")\n    con.isolation_level = None\n    con.execute("CREATE TABLE acct(id INT, bal INT)")\n    con.execute("INSERT INTO acct VALUES(1,100)")\n    try:\n        con.execute("BEGIN")\n        con.execute("UPDATE acct SET bal=bal-50 WHERE id=1")\n        raise ValueError("boom")\n    except ValueError:\n        # ROLLBACK\n        ...\n    return con.execute("SELECT bal FROM acct WHERE id=1").fetchone()[0]\n`,
  pytests:`
 cases=[]
@@ -2236,6 +2508,15 @@ chk("revierte el debito", txn_rollback(), 100)
  bullets:[{es:'Salida: lista <code>(id, v)</code> ordenada por <code>id</code>.',en:'Output: list of <code>(id, v)</code> ordered by <code>id</code>.'}],
  sources:[S('rows',['id','v'],[[1,5],[2,'∅']])],
  expected:'[(1, 5), (2, 0)]',
+ ref:`import sqlite3
+
+def etl_clean(rows):
+    con = sqlite3.connect(":memory:")
+    con.execute("CREATE TABLE src(id INT, v INT)")
+    con.executemany("INSERT INTO src VALUES(?,?)", rows)
+    con.execute("CREATE TABLE tgt(id INT, v INT)")
+    con.execute("INSERT INTO tgt SELECT id, COALESCE(v,0) FROM src")
+    return con.execute("SELECT id,v FROM tgt ORDER BY id").fetchall()`,
  starter:`import sqlite3\n\ndef etl_clean(rows):\n    con = sqlite3.connect(":memory:")\n    con.execute("CREATE TABLE src(id INT, v INT)")\n    con.executemany("INSERT INTO src VALUES(?,?)", rows)\n    con.execute("CREATE TABLE tgt(id INT, v INT)")\n    # INSERT INTO tgt SELECT id, COALESCE(v,0) FROM src\n    ...\n    return con.execute("SELECT id,v FROM tgt ORDER BY id").fetchall()\n`,
  pytests:`
 cases=[]
@@ -2251,6 +2532,14 @@ chk("rellena nulos", etl_clean([(1,5),(2,None)]), [(1,5),(2,0)])
  bullets:[{es:'Resultado esperado: 1 (el segundo insert se ignora).',en:'Expected: 1 (the second insert is ignored).'}],
  sources:[S('entrada / input',['sku'],[['"x"','→ 1 fila']])],
  expected:'1',
+ ref:`import sqlite3
+
+def idempotent_load(sku):
+    con = sqlite3.connect(":memory:")
+    con.execute("CREATE TABLE IF NOT EXISTS p(sku TEXT PRIMARY KEY)")
+    con.execute("INSERT OR IGNORE INTO p VALUES(?)", (sku,))
+    con.execute("INSERT OR IGNORE INTO p VALUES(?)", (sku,))
+    return con.execute("SELECT COUNT(*) FROM p").fetchone()[0]`,
  starter:`import sqlite3\n\ndef idempotent_load(sku):\n    con = sqlite3.connect(":memory:")\n    con.execute("CREATE TABLE IF NOT EXISTS p(sku TEXT PRIMARY KEY)")\n    # INSERT OR IGNORE el mismo sku dos veces\n    ...\n    return con.execute("SELECT COUNT(*) FROM p").fetchone()[0]\n`,
  pytests:`
 cases=[]
@@ -2268,6 +2557,10 @@ chk("no duplica", idempotent_load("x"), 1)
  sources:[S('df',['id','v'],[[1,'a'],[1,'b'],[2,'c']])],
  expected:'quedan v = ["b", "c"]',
  pyPackages:['pandas'],
+ ref:`import pandas as pd
+
+def pd_dedup(df):
+    return df.drop_duplicates(subset="id", keep="last").reset_index(drop=True)`,
  starter:`import pandas as pd\n\ndef pd_dedup(df):\n    # última fila por id, índice reseteado\n    ...\n`,
  pytests:`
 import pandas as pd
@@ -2287,6 +2580,14 @@ chk("longitud", len(pd_dedup(df)), 2)
  sources:[S('df',['x'],[[1.0],['∅'],[3.0]],'media = 2.0')],
  expected:'x = [1.0, 2.0, 3.0]',
  pyPackages:['pandas'],
+ ref:`import pandas as pd
+
+def pd_fillna(df):
+    d = df.copy()
+    for c in d.columns:
+        if pd.api.types.is_numeric_dtype(d[c]):
+            d[c] = d[c].fillna(d[c].mean())
+    return d`,
  starter:`import pandas as pd\n\ndef pd_fillna(df):\n    d = df.copy()\n    for c in d.columns:\n        if pd.api.types.is_numeric_dtype(d[c]):\n            # d[c] = d[c].fillna(media)\n            ...\n    return d\n`,
  pytests:`
 import pandas as pd
@@ -2304,6 +2605,10 @@ chk("imputa media", list(pd_fillna(pd.DataFrame({"x":[1.0,None,3.0]}))["x"]), [1
  sources:[S('df',['cat','amt'],[['a',1],['a',2],['b',3]])],
  expected:'{"a": 3, "b": 3}',
  pyPackages:['pandas'],
+ ref:`import pandas as pd
+
+def pd_groupby(df):
+    return {k: int(v) for k, v in df.groupby("cat")["amt"].sum().items()}`,
  starter:`import pandas as pd\n\ndef pd_groupby(df):\n    # {cat: suma de amt}\n    ...\n`,
  pytests:`
 import pandas as pd
@@ -2321,6 +2626,10 @@ chk("suma por cat", pd_groupby(pd.DataFrame({"cat":["a","a","b"],"amt":[1,2,3]})
  sources:[S('a',['id','x'],[[1,10],[2,20]]),S('b',['id','y'],[[1,99]])],
  expected:'1 fila: id=1, x=10, y=99',
  pyPackages:['pandas'],
+ ref:`import pandas as pd
+
+def pd_merge(a, b):
+    return a.merge(b, on="id", how="inner")`,
  starter:`import pandas as pd\n\ndef pd_merge(a, b):\n    # inner join por id\n    ...\n`,
  pytests:`
 import pandas as pd
@@ -2340,6 +2649,10 @@ chk("valor y", int(m.iloc[0]["y"]), 99)
  sources:[S('df',['r','c','v'],[['x','a',1],['x','b',2],['y','a',3]])],
  expected:'x,a=1 · x,b=2 · y,a=3 · y,b=0',
  pyPackages:['pandas'],
+ ref:`import pandas as pd
+
+def pd_pivot(df):
+    return pd.pivot_table(df, index="r", columns="c", values="v", aggfunc="sum", fill_value=0)`,
  starter:`import pandas as pd\n\ndef pd_pivot(df):\n    # pivot_table sum, fill_value=0\n    ...\n`,
  pytests:`
 import pandas as pd
@@ -2359,6 +2672,13 @@ chk("y,b rellenado", int(pv.loc["y","b"]), 0)
  sources:[S('df',['n','dt'],[['1','2020-01-01'],['2','2021-06-15']])],
  expected:'n entero; dt.year[1] = 2021',
  pyPackages:['pandas'],
+ ref:`import pandas as pd
+
+def pd_dtypes(df):
+    d = df.copy()
+    d["n"] = d["n"].astype(int)
+    d["dt"] = pd.to_datetime(d["dt"])
+    return d`,
  starter:`import pandas as pd\n\ndef pd_dtypes(df):\n    d = df.copy()\n    # d["n"] = ... astype int ; d["dt"] = pd.to_datetime(...)\n    ...\n    return d\n`,
  pytests:`
 import pandas as pd
@@ -2378,6 +2698,17 @@ chk("año parseado", int(d["dt"].dt.year.iloc[1]), 2021)
  sources:[S('src',['id','amt'],[[1,10],[2,20]]),S('tgt',['id','amt'],[[1,10],[2,15]])],
  expected:'{2: 5}',
  pyPackages:['pandas'],
+ ref:`import pandas as pd
+
+def pd_reconcile(src, tgt):
+    s = src.set_index("id")["amt"]
+    t = tgt.set_index("id")["amt"]
+    out = {}
+    for i in s.index.union(t.index):
+        sv, tv = s.get(i, 0), t.get(i, 0)
+        if sv != tv:
+            out[int(i)] = int(sv - tv)
+    return out`,
  starter:`import pandas as pd\n\ndef pd_reconcile(src, tgt):\n    s = src.set_index("id")["amt"]\n    t = tgt.set_index("id")["amt"]\n    # union de ids; {id: s-t} donde difieren\n    ...\n`,
  pytests:`
 import pandas as pd
@@ -2396,6 +2727,16 @@ chk("sin diff -> {}", pd_reconcile(pd.DataFrame({"id":[1],"amt":[5]}), pd.DataFr
  bullets:[{es:'<code>"aaabbc"</code> → <code>[("a",3),("b",2),("c",1)]</code>. Vacío → <code>[]</code>.',en:'<code>"aaabbc"</code> → <code>[("a",3),("b",2),("c",1)]</code>. Empty → <code>[]</code>.'}],
  sources:[S('entrada / input',['s'],[['"aaabbc"','→ [(a,3),(b,2),(c,1)]']])],
  expected:'[("a", 3), ("b", 2), ("c", 1)]',
+ ref:`def rle(s):
+    out = []
+    i = 0
+    while i < len(s):
+        j = i
+        while j < len(s) and s[j] == s[i]:
+            j += 1
+        out.append((s[i], j - i))
+        i = j
+    return out`,
  starter:`def rle(s):\n    out = []\n    i = 0\n    while i < len(s):\n        # cuenta el run que empieza en i\n        ...\n    return out\n`,
  pytests:`
 cases=[]
@@ -2413,6 +2754,20 @@ chk("uno", rle("x"), [("x",1)])
  bullets:[{es:'Eficiente con un <code>deque</code> de índices (O(n)).',en:'Efficient with a <code>deque</code> of indices (O(n)).'},{es:'<code>[1,3,2,5,4], k=2</code> → <code>[3,3,5,5]</code>.',en:'<code>[1,3,2,5,4], k=2</code> → <code>[3,3,5,5]</code>.'}],
  sources:[S('entrada / input',['a','k'],[['[1,3,2,5,4]','2 → [3,3,5,5]']])],
  expected:'[3, 3, 5, 5]',
+ ref:`from collections import deque
+
+def sliding_max(a, k):
+    dq = deque()
+    out = []
+    for i, x in enumerate(a):
+        while dq and a[dq[-1]] <= x:
+            dq.pop()
+        dq.append(i)
+        if dq[0] <= i - k:
+            dq.popleft()
+        if i >= k - 1:
+            out.append(a[dq[0]])
+    return out`,
  starter:`from collections import deque\n\ndef sliding_max(a, k):\n    dq = deque()  # índices, valores decrecientes\n    out = []\n    for i, x in enumerate(a):\n        ...\n    return out\n`,
  pytests:`
 cases=[]
@@ -2431,6 +2786,18 @@ chk("k=1", sliding_max([4,2,6],1), [4,2,6])
  bullets:[{es:'Q1/Q3 = percentiles 25/75 (interpolación lineal). IQR = Q3−Q1.',en:'Q1/Q3 = 25th/75th percentiles (linear interpolation). IQR = Q3−Q1.'}],
  sources:[S('entrada / input',['vals'],[['[10,12,11,13,100]','→ [4]']])],
  expected:'[4]',
+ ref:`def iqr_outliers(vals):
+    s = sorted(vals)
+    n = len(s)
+    def pct(p):
+        idx = p * (n - 1)
+        lo = int(idx)
+        frac = idx - lo
+        return s[lo] if lo + 1 >= n else s[lo] * (1 - frac) + s[lo + 1] * frac
+    q1, q3 = pct(.25), pct(.75)
+    iqr = q3 - q1
+    lo, hi = q1 - 1.5 * iqr, q3 + 1.5 * iqr
+    return [i for i, v in enumerate(vals) if v < lo or v > hi]`,
  starter:`def iqr_outliers(vals):\n    s = sorted(vals); n = len(s)\n    def pct(p):\n        idx = p*(n-1); lo = int(idx); frac = idx-lo\n        return s[lo] if lo+1>=n else s[lo]*(1-frac)+s[lo+1]*frac\n    q1, q3 = pct(.25), pct(.75); iqr = q3-q1\n    # índices fuera de [q1-1.5*iqr, q3+1.5*iqr]\n    ...\n`,
  pytests:`
 cases=[]
@@ -2447,6 +2814,17 @@ chk("sin outliers", iqr_outliers([5,6,5,6,5]), [])
  bullets:[{es:'r = Σ(xi−x̄)(yi−ȳ) / √(Σ(xi−x̄)²·Σ(yi−ȳ)²).',en:'r = Σ(xi−x̄)(yi−ȳ) / √(Σ(xi−x̄)²·Σ(yi−ȳ)²).'}],
  sources:[S('entrada / input',['x','y'],[['[1,2,3]','[2,4,6] → 1.0'],['[1,2,3]','[3,2,1] → -1.0']])],
  expected:'1.0 / -1.0',
+ ref:`import math
+
+def pearson(x, y):
+    n = len(x)
+    mx = sum(x) / n
+    my = sum(y) / n
+    num = sum((a - mx) * (b - my) for a, b in zip(x, y))
+    den = math.sqrt(sum((a - mx) ** 2 for a in x)) * math.sqrt(sum((b - my) ** 2 for b in y))
+    if den == 0:
+        return 0.0
+    return num / den`,
  starter:`import math\n\ndef pearson(x, y):\n    n = len(x)\n    mx = sum(x)/n; my = sum(y)/n\n    # num / den ; den==0 -> 0.0\n    ...\n`,
  pytests:`
 cases=[]
@@ -4437,7 +4815,7 @@ function renderProblem(){
   const e=cur;let h=`<h1>${fld(e,'title')}</h1><div class="ptag">${catLabel(catKey(e))} · ${e.kind.toUpperCase()} · ${dl(e.diff)} · ${e.xp} XP</div>`;
   if(e.context)h+=`<h3>${t('p_context')}</h3><p>${fld(e,'context')}</p>`;
   if(e.task)h+=`<h3>${t('p_task')}</h3><p>${fld(e,'task')}</p>`;
-  const bl=fld(e,'bullets');if(bl)h+=`<h3>${t('p_req')}</h3><ul>${bl.map(b=>`<li>${b}</li>`).join('')}</ul>`;
+  const bl=fld(e,'bullets');if(bl)h+=`<h3>${t('p_req')}</h3><ul>${bl.map(b=>`<li>${L(b)}</li>`).join('')}</ul>`;
   if(e.sources)h+=`<h3>${t('p_sources')}</h3>${e.sources.map(srcTable).join('')}`;
   if(e.expected)h+=`<h3>${t('p_expected')}</h3><div class="exp">${fld(e,'expected')}</div>`;
   if(e.kind==='quiz'){const ord=(e._order&&e._order.length===e.options.length)?e._order:e.options.map((_,i)=>i);h+=`<h3>${t('p_select')}</h3><div id="opts">`+ord.map((oi,pos)=>`<label class="opt" data-i="${oi}"><span class="mk">${String.fromCharCode(65+pos)}</span>${optText(e,oi)}</label>`).join('')+`</div>`;}
@@ -4452,7 +4830,7 @@ function renderWork(){
   if(e.kind==='quiz'){host.innerHTML=`<div style="padding:18px;color:var(--muted);font-family:var(--mono);font-size:12.5px;line-height:1.6">${t('exam_quiz_note')}</div>`;editor=null;act.innerHTML=`<button class="primary" id="run">${t('w_check')}</button><button id="hint">${t('w_hint')}</button>`;}
   else{host.innerHTML='';editor=CodeMirror(host,{value:e.starter,mode:e.kind==='sql'?'text/x-sql':'python',theme:'material-darker',lineNumbers:true,lineWrapping:true,indentUnit:e.kind==='python'?4:2});setTimeout(()=>editor.refresh(),40);
     act.innerHTML=`<button class="primary" id="run">${t('w_runtests')}</button><button id="hint">${t('w_hint')}</button><button id="review">${t('w_review')}</button><button class="ghost" id="reveal">${t('w_reveal')}</button>`;
-    $('#reveal').onclick=()=>{if(confirm(t('w_reveal_c')))editor.setValue(e.ref?('-- ref:\n'+e.ref+';'):t('w_noref'));};$('#review').onclick=()=>ai('review');}
+    $('#reveal').onclick=()=>{if(confirm(t('w_reveal_c'))){const c=e.kind==='python'?'#':'--';editor.setValue(e.ref?(`${c} ref:\n`+e.ref+(e.kind==='sql'?';':'')):t('w_noref'));}};$('#review').onclick=()=>ai('review');}
   $('#run').onclick=runTests;$('#hint').onclick=()=>ai('hint');paintClock();
 }
 function showCases(list){const pass=list.filter(c=>c.ok).length,all=pass===list.length&&list.length>0;$('#verdict').textContent=`${pass}/${list.length}`;$('#verdict').className='verdict '+(all?'pass':'fail');$('#cases').innerHTML=list.map(c=>`<div class="case ${c.ok?'pass':'fail'}"><span class="s">${c.ok?'✓':'✗'}</span><span class="d">${c.name}${c.detail?`<br><small>${c.detail}</small>`:''}</span></div>`).join('');return all;}
@@ -4502,8 +4880,11 @@ function loadScript(src){return new Promise((res,rej)=>{const s=document.createE
 async function ensurePy(){if(pyodide)return pyodide;if(pyLoading)return pyLoading;showConsole(t('loading_py')+' <span class="pulse">●</span>');pyLoading=(async()=>{await loadScript('https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js');pyodide=await loadPyodide({indexURL:'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/'});return pyodide;})();return pyLoading;}
 async function runPy(){
   const e=cur;let py;try{py=await ensurePy();}catch(err){showConsole(t('py_blocked')+'<br><small>'+escv(String(err.message||err))+'</small>');return false;}
-  if(e.pyPackages){try{showConsole(t('loading_pkg')+': '+e.pyPackages.join(', ')+'… <span class="pulse">●</span>');await py.loadPackage(e.pyPackages);}catch(err){showConsole('pkg error: '+escv(String(err)));return false;}}
   const code=editor.getValue()+'\n'+e.pytests+'\nimport json\nprint("__RESULTS__"+json.dumps(cases))';
+  // Pyodide un-vendors some stdlib modules (sqlite3, ssl, …) into loadable packages
+  const pkgs=[...(e.pyPackages||[])];
+  if(/\bimport\s+sqlite3\b|\bfrom\s+sqlite3\b/.test(code)&&!pkgs.includes('sqlite3'))pkgs.push('sqlite3');
+  if(pkgs.length){try{showConsole(t('loading_pkg')+': '+pkgs.join(', ')+'… <span class="pulse">●</span>');await py.loadPackage(pkgs);}catch(err){showConsole('pkg error: '+escv(String(err)));return false;}}
   let out='';py.setStdout({batched:s=>out+=s+'\n'});
   try{await py.runPythonAsync(code);}catch(err){showConsole('Error:\n'+escv(String(err.message||err)));return false;}
   const m=out.indexOf('__RESULTS__');if(m<0){showConsole(t('no_res')+'\n'+escv(out));return false;}
