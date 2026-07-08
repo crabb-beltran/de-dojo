@@ -268,6 +268,27 @@
   .syncst{font-family:var(--mono);font-size:11px;margin-top:8px;min-height:14px}
   .syncst.ok{color:var(--mint)}.syncst.err{color:var(--bad)}
   details.mcfg{margin-top:10px}details.mcfg summary{cursor:pointer;font-family:var(--mono);font-size:11px;color:var(--muted)}
+  /* access lock (registered + approved users only) */
+  .lock{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;overflow:auto;padding:20px;
+    background:
+      radial-gradient(1100px 560px at 82% -12%,var(--glow) 0%,transparent 58%),
+      radial-gradient(900px 600px at -10% 110%,color-mix(in srgb,var(--coral) 14%,transparent) 0%,transparent 55%),
+      var(--ink)}
+  .lock.show{display:flex}
+  .lockbox{width:min(430px,100%);background:var(--panel);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:30px 28px 20px;text-align:center}
+  .lockbrand{font-family:var(--display);font-weight:900;font-size:26px;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px}
+  .lockbrand img{width:38px;height:38px;border-radius:9px}
+  .lockbrand em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .locksub{font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:.4px;margin-bottom:20px}
+  .lockbox .minput{text-align:left;margin:5px 0}
+  .lockbox .mrow{justify-content:center}
+  .lockbox .mnote{text-align:left}
+  .lockpend{font-size:38px;margin:8px 0 2px}
+  .lockh{font-family:var(--display);font-weight:700;font-size:19px;margin:4px 0 8px}
+  .locklang{margin-top:16px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .locklang button{border:0;background:transparent;color:var(--muted);cursor:pointer;font-family:var(--mono);font-size:11px;padding:2px 6px}
+  .locklang button.on{color:var(--coral);font-weight:700}
+  body.locked .top,body.locked .view,body.locked .gridview{filter:blur(6px);pointer-events:none;user-select:none}
   /* overlays */
   .overlay{position:absolute;left:0;right:0;top:0;bottom:0;background:var(--ink);overflow:auto;display:none;z-index:30;padding:28px 30px}
   .overlay.show{display:block}
@@ -348,6 +369,16 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ACCESS LOCK: only registered + approved users get in -->
+<div class="lock" id="lockView">
+  <div class="lockbox">
+    <div class="lockbrand"><img src="assets/de-dojo-icon.png" alt="DE Dojo">DE<em>Dojo</em></div>
+    <div class="locksub" id="lockSub"></div>
+    <div id="lockBody"></div>
+    <div class="locklang"><button id="lkEs" onclick="setLang('es')">ES</button>·<button id="lkEn" onclick="setLang('en')">EN</button></div>
+  </div>
+</div>
 
 <!-- ACCOUNT / PROFILES -->
 <div class="modal" id="ovUser" onclick="if(event.target===this)closeAccount()">
@@ -2597,8 +2628,12 @@ const T={
   expected:'esperado',got:'tu salida',rows:'fila(s)',output:'salida',
   toast_xp:'XP',toast_timeup:'⏱ Tiempo agotado — puedes seguir, pero rinde ½ XP',toast_examtime:'⏱ Tiempo del examen agotado',
   acct_title:'Tu cuenta',acct_sub:'Cada usuario guarda su propio XP, ejercicios resueltos e historial.',
-  acct_guest:'Invitado',
-  acct_guest_note:'Estás practicando como <b>invitado</b>: tu progreso se guarda solo en este navegador. Crea una cuenta o inicia sesión para guardarlo en la nube, sincronizarlo entre dispositivos y no perderlo. El progreso de invitado y el de tu cuenta no se mezclan.',
+  lock_sub:'Plataforma de entrenamiento · Data Engineering — acceso solo para usuarios registrados',
+  lock_login_note:'Inicia sesión con tu cuenta. ¿No tienes una? Créala y espera la aprobación del administrador.',
+  lock_pending_t:'Cuenta pendiente de aprobación',
+  lock_pending:'Tu cuenta fue creada correctamente pero el acceso aún no está habilitado. Un administrador debe aprobarla.',
+  lock_pay:'Completar pago →',lock_recheck:'Revisar de nuevo',
+  lock_still:'Aún pendiente de aprobación.',lock_offline:'No se pudo verificar tu acceso (sin conexión con el servidor).',
   acct_email:'email',acct_pass:'contraseña (mín. 6)',acct_signin:'Entrar',acct_signup:'Crear cuenta',acct_signout:'Cerrar sesión',
   acct_last:'última sync',acct_never:'nunca',acct_sync_now:'Sincronizar ahora',
   acct_synced:'Progreso sincronizado ✓',acct_sync_err:'Error de sincronización — el progreso sigue guardado en este dispositivo.',
@@ -2634,8 +2669,12 @@ const T={
   expected:'expected',got:'your output',rows:'row(s)',output:'output',
   toast_xp:'XP',toast_timeup:'⏱ Time up — you can continue, but it yields ½ XP',toast_examtime:'⏱ Exam time is up',
   acct_title:'Your account',acct_sub:'Each user keeps their own XP, solved exercises and history.',
-  acct_guest:'Guest',
-  acct_guest_note:'You are practicing as a <b>guest</b>: progress is saved only in this browser. Create an account or sign in to store it in the cloud, sync it across devices and never lose it. Guest and account progress never mix.',
+  lock_sub:'Training platform · Data Engineering — registered users only',
+  lock_login_note:'Sign in with your account. No account yet? Create one and wait for admin approval.',
+  lock_pending_t:'Account pending approval',
+  lock_pending:'Your account was created but access is not enabled yet. An administrator must approve it.',
+  lock_pay:'Complete payment →',lock_recheck:'Check again',
+  lock_still:'Still pending approval.',lock_offline:'Could not verify your access (server unreachable).',
   acct_email:'email',acct_pass:'password (min. 6)',acct_signin:'Sign in',acct_signup:'Sign up',acct_signout:'Sign out',
   acct_last:'last sync',acct_never:'never',acct_sync_now:'Sync now',
   acct_synced:'Progress synced ✓',acct_sync_err:'Sync error — progress is still saved on this device.',
@@ -2699,6 +2738,7 @@ function setLang(l){lang=l;$('#langEs').classList.toggle('on',l==='es');$('#lang
   else if(mode==='stats')renderStats();
   applyGuideLang();userChip();
   if($('#ovUser')&&$('#ovUser').classList.contains('show'))renderAccount();
+  if($('#lockView')&&$('#lockView').classList.contains('show'))renderLock(getSession()?'pending':'login');
   saveLang();
 }
 function applyNav(){document.querySelectorAll('#nav .navbtn').forEach(b=>{b.textContent=t('nav_'+b.dataset.m);});
@@ -4634,8 +4674,69 @@ async function initUser(){
   userChip();
 }
 function userChip(){const b=$('#userBtn');if(!b)return;const s=getSession();
-  b.textContent='👤 '+(s?s.email.split('@')[0]:t('acct_guest'));b.title=s?s.email:t('acct_guest');}
+  b.textContent='👤 '+(s?s.email.split('@')[0]:'—');b.title=s?s.email:'';}
 function abortSessionUI(){cur=null;quizSel=null;answered=false;stopTimer();if(exam&&!exam.finished){exam=null;stopExamTimer();}}
+
+/* ---------- access gate: registered + APPROVED users only ----------
+   Approval lives server-side (profiles.approved, admin-controlled) and is
+   also enforced by RLS on the progress table, so an unapproved account
+   cannot sync even if it bypasses the UI. The UI lock keeps the app
+   unusable until the session is approved. */
+const PAY_LINK='';   // optional hosted checkout / payment link shown to pending accounts
+function lockShow(on,mode){const lv=$('#lockView');if(!lv)return;
+  lv.classList.toggle('show',on);document.body.classList.toggle('locked',on);
+  if(on)renderLock(mode||'login');}
+function renderLock(mode,msg){
+  const box=$('#lockBody');if(!box)return;
+  $('#lockSub').textContent=t('lock_sub');
+  $('#lkEs')&&$('#lkEs').classList.toggle('on',lang==='es');$('#lkEn')&&$('#lkEn').classList.toggle('on',lang==='en');
+  if(mode==='pending'){
+    const s=getSession();
+    box.innerHTML=`<div class="lockpend">⏳</div><div class="lockh">${t('lock_pending_t')}</div>
+      <div class="mnote" style="text-align:center">${t('lock_pending')}${s?`<br><b>${escv(s.email)}</b>`:''}</div>
+      ${PAY_LINK?`<div class="mrow"><a href="${PAY_LINK}" target="_blank" rel="noopener"><button class="primary">${t('lock_pay')}</button></a></div>`:''}
+      <div class="mrow"><button class="primary" onclick="recheckApproval()">${t('lock_recheck')}</button>
+      <button class="ghost" onclick="cloudLogout()">${t('acct_signout')}</button></div>
+      <div class="syncst" id="cStatus"></div>`;
+  }else{
+    box.innerHTML=`<div class="mnote" style="text-align:center">${t('lock_login_note')}</div>
+      <input class="minput" id="cEmail" type="email" autocomplete="username" placeholder="${t('acct_email')}">
+      <input class="minput" id="cPass" type="password" autocomplete="current-password" placeholder="${t('acct_pass')}"
+        onkeydown="if(event.key==='Enter')cloudLogin('signin')">
+      <div class="mrow" style="margin-top:10px"><button class="primary" onclick="cloudLogin('signin')">${t('acct_signin')}</button>
+      <button onclick="cloudLogin('signup')">${t('acct_signup')}</button></div>
+      <div class="syncst" id="cStatus">${msg?escv(msg):''}</div>`;
+  }
+}
+async function refreshApproval(){ /* true | false | null (unreachable) */
+  const s=await liveToken();if(!s)return false;
+  try{
+    const r=await sbFetch(`/rest/v1/profiles?user_id=eq.${encodeURIComponent(s.user_id)}&select=approved`,{},s.access_token);
+    if(r.ok&&Array.isArray(r.data))return !!(r.data[0]&&r.data[0].approved);
+    return null;
+  }catch(e){return null;}
+}
+async function recheckApproval(){
+  cloudStatus('','…');
+  const a=await refreshApproval();
+  if(a===true){await store.set(ukey('approved'),'1');lockShow(false);userChip();cloudAutoSync();toast(t('acct_welcome').replace('{n}',(getSession()||{email:''}).email.split('@')[0]));}
+  else if(a===false)cloudStatus('err',t('lock_still'));
+  else cloudStatus('err',t('lock_offline'));
+}
+async function gate(){
+  if(!getSession()){lockShow(true);return;}
+  const cached=await store.get(ukey('approved'));
+  if(cached==='1'){
+    lockShow(false);cloudAutoSync();
+    // re-validate in the background; server verdict wins
+    refreshApproval().then(a=>{if(a===false){store.set(ukey('approved'),'0');lockShow(true,'pending');}});
+    return;
+  }
+  const a=await refreshApproval();
+  if(a===true){await store.set(ukey('approved'),'1');lockShow(false);cloudAutoSync();}
+  else if(a===false)lockShow(true,'pending');
+  else lockShow(true,'login');   // unreachable server + no verified approval → stay locked
+}
 async function switchBucket(nid){
   await save();await saveStats();          // persist the outgoing bucket
   uid=nid;await store.set('delab:uid',uid);
@@ -4644,7 +4745,7 @@ async function switchBucket(nid){
 }
 
 /* ---------- account modal ---------- */
-function openAccount(){$('#ovUser').classList.add('show');renderAccount();}
+function openAccount(){if(!getSession()){lockShow(true,'login');return;}$('#ovUser').classList.add('show');renderAccount();}
 function closeAccount(){$('#ovUser').classList.remove('show');}
 function fmtAgo(ts){if(!ts)return t('acct_never');const m=Math.round((Date.now()-ts)/60000);return m<1?'<1 min':m<60?m+' min':Math.round(m/60)+' h';}
 function renderAccount(){
@@ -4666,18 +4767,7 @@ function renderAccount(){
       <button class="ghost" onclick="cloudLogout()">${t('acct_signout')}</button></div>
       <div class="syncst" id="cStatus"></div>`;
   }else{
-    box.innerHTML=`<div class="mnote">${t('acct_guest_note')}</div>
-      <div class="mrow"><input class="minput" id="cEmail" type="email" autocomplete="username" placeholder="${t('acct_email')}">
-      <input class="minput" id="cPass" type="password" autocomplete="current-password" placeholder="${t('acct_pass')}"
-        onkeydown="if(event.key==='Enter')cloudLogin('signin')"></div>
-      <div class="mrow"><button class="primary" onclick="cloudLogin('signin')">${t('acct_signin')}</button>
-      <button onclick="cloudLogin('signup')">${t('acct_signup')}</button></div>
-      <div class="syncst" id="cStatus"></div>
-      <details class="mcfg"><summary>${t('acct_cfg')}</summary>
-        <div class="mrow"><input class="minput" id="sbUrl" placeholder="${t('acct_cfg_url')}"></div>
-        <div class="mrow"><input class="minput" id="sbKey" placeholder="${t('acct_cfg_key')}"></div>
-        <button class="primary" onclick="saveSbCfg()">${t('acct_cfg_save')}</button>
-      </details>`;
+    closeAccount();lockShow(true,'login'); // no session → the access lock handles sign-in
   }
 }
 
@@ -4769,19 +4859,23 @@ async function cloudLogin(kind){
     cloudStatus('err',msg||t('acct_badcred'));return;
   }
   const sess=packSession(r.data);
-  // each account has its OWN progress bucket — never mixes with guest progress
+  // each account has its OWN progress bucket
   await switchBucket('c_'+sess.user_id);
   setSession(sess);
+  // access is granted only to admin-approved accounts
+  const a=await refreshApproval();
+  if(a!==true){await store.set(ukey('approved'),'0');lockShow(true,a===false?'pending':'login');if(a===null)cloudStatus('err',t('lock_offline'));return;}
+  await store.set(ukey('approved'),'1');
   try{const remote=await cloudPull();const m=mergeProgress({state,stats},remote);state=m.state;stats=m.stats;await save();await saveStats();await cloudPushNow();}catch(e){}
-  renderXP();userChip();renderAccount();
+  lockShow(false);renderXP();userChip();closeAccount();
   toast(t('acct_welcome').replace('{n}',sess.email.split('@')[0]));
 }
 async function cloudLogout(){
   clearTimeout(pushT);
   try{await cloudPushNow();}catch(e){}     // last backup before signing out
   setSession(null);lastSync=0;
-  await switchBucket('guest');
-  renderAccount();
+  await switchBucket('guest');             // empty placeholder bucket; app stays locked
+  closeAccount();lockShow(true,'login');
 }
 
 /* ---------- per-profile persistence ---------- */
@@ -4803,7 +4897,7 @@ window.addEventListener('load',async()=>{
   await load();await loadStats();
   try{const th=await store.get('delab:theme');if(th==='light'){document.documentElement.setAttribute('data-theme','light');$('#themeBtn').textContent='☀️';}}catch(e){}
   setLang(lang);renderXP();renderRail();switchMode('home');
-  cloudAutoSync();                          // pull+merge if this profile has a live session
+  await gate();                             // access lock: registered + approved users only
 });
 
 </script>

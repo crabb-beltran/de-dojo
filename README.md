@@ -13,7 +13,7 @@ A browser-based training platform to **practice and self-assess Data Engineering
 - **Visible sources** — every exercise shows the table schemas and sample rows so you reason from the actual data.
 - **AI tutor** — optional hint / senior-level code review. Ships with a free serverless proxy (Cloudflare Worker, see `workers/ai-tutor/`) so the key stays server-side; falls back gracefully when no endpoint is configured.
 - **Gamification** — XP, levels (with a "XP to next level" progress bar), streaks; progress persisted locally.
-- **User accounts (sign-up / sign-in)** — email + password accounts (Supabase free tier) with per-user progress buckets, backed up to the cloud and synced across devices with a grow-only merge (two devices can never erase each other). Visitors without an account practice in an isolated local guest mode. Offline-first: the cloud is a backup, not a dependency. See `docs/ACCOUNTS.md`.
+- **Restricted access with user accounts** — the app is locked behind email + password sign-in (Supabase free tier) **plus an admin-controlled approval flag** (server-enforced via RLS), the foundation for selling access: sign-up is open, access is granted per account (e.g. after payment, with an optional hosted-checkout link on the pending screen). Per-user progress buckets sync across devices with a grow-only merge. See `docs/ACCOUNTS.md`.
 - **Progressive unlock** — within each category, medium exercises stay locked until all easy ones are solved, and hard until all medium are. Keeps the difficulty curve honest.
 - **Shuffled quiz options** — the correct answer is randomized per attempt (no "always A"), with ✓/✗ marks on each option after grading.
 
