@@ -17,9 +17,16 @@ A browser-based training platform to **practice and self-assess Data Engineering
 - **Progressive unlock** — within each category, medium exercises stay locked until all easy ones are solved, and hard until all medium are. Keeps the difficulty curve honest.
 - **Shuffled quiz options** — the correct answer is randomized per attempt (no "always A"), with ✓/✗ marks on each option after grading.
 
-> **114 exercises across 14 categories** (and growing), bilingual ES/EN, with the
-> category order prioritizing the highest-signal job-market tracks: Advanced SQL,
-> Snowflake, dbt and Python.
+> **151 exercises across 20 categories** (38 SQL · 47 Python · 66 quiz),
+> bilingual ES/EN, with the category order prioritizing the highest-signal
+> job-market tracks: Advanced SQL, Snowflake, dbt and Python.
+
+## Documentation
+
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — full technical reference: tech stack & languages, repo structure, and **8 Mermaid diagrams** (execution model, exercise-grading flow, persistence & sync, auth/approval state machine, i18n remap, CI/CD). Start here to understand how it works.
+- **[docs/ACCOUNTS.md](docs/ACCOUNTS.md)** — user accounts, the admin approval gate and billing (Supabase setup + SQL).
+- **[docs/AUTHORING.md](docs/AUTHORING.md)** — how to add exercises to the `EX` array (no build step).
+- **[workers/ai-tutor/README.md](workers/ai-tutor/README.md)** — the optional serverless AI-tutor proxy.
 
 ### Training modes
 - **Practice** — guided navigation with progressive unlock, per-exercise countdown, instant grading and XP.
