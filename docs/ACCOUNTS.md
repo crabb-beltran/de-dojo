@@ -134,3 +134,46 @@ Grow-only merge (solved = union, XP = max, history deduped), ~4s debounced
 push after each save, final backup on sign-out, automatic token refresh,
 offline-first local cache. Passwords are never stored by the app; the anon
 key is public by design — RLS is the protection.
+
+## Security hardening checklist
+
+Client-side hardening already shipped in `index.html`:
+
+- **Content Security Policy** (`<meta>`): `connect-src` restricts where the app
+  can talk (Supabase, the Worker, the CDNs) so an injected script can't exfiltrate
+  tokens to an arbitrary host; `object-src 'none'`, `base-uri 'self'`, `form-action
+  'self'`. `script-src` keeps `'unsafe-inline'/'unsafe-eval'/'wasm-unsafe-eval'`
+  because the inline handlers and the WASM runtimes (Pyodide, sql.js) require them.
+- **AI tutor is proxy-only** — no direct browser→Anthropic fallback (a client-side
+  key would leak).
+- **Minimum password length: 8** (enforced before hitting Supabase).
+
+Do these once in the **Supabase dashboard** (free, ~5 min) to complete the setup:
+
+- **Authentication → Providers → Email**: keep **Confirm email = ON** (blocks
+  unverified sign-ups from getting a session).
+- **Authentication → Attack Protection**:
+  - Enable **Leaked password protection** (rejects passwords found in the
+    HaveIBeenPwned breach corpus).
+  - Enable a **CAPTCHA** (hCaptcha or Cloudflare Turnstile) on sign-up/sign-in to
+    stop automated account/row spam.
+- **Authentication → URL Configuration**: set **Site URL** to your Pages origin
+  (`https://<user>.github.io/de-dojo/`) and restrict **Redirect URLs** to it.
+- **Rotate any credential that was shared in plaintext** (e.g. a GitHub PAT used
+  for pushes). The Supabase **anon key** does NOT need rotating — it is public by
+  design; the `service_role` key must NEVER leave the server (only ever a
+  Cloudflare Worker secret, e.g. for a future Stripe approval webhook).
+
+Follow-up (not blocking): add **Subresource Integrity** (`integrity="sha384-…"`)
+to the CDN `<script>`/`<link>` tags (CodeMirror, sql.js, Pyodide). cdnjs and
+jsDelivr publish the exact SRI hashes on each file's page — paste them in.
+
+## Important limitation — content is public
+
+DE Dojo is a **static site**: the guide and all 151 exercises live in
+`index.html`, which anyone can view. The access gate protects the **experience
+and the cloud sync**, not the raw content. If you monetize, the real protection
+is to move premium content into Supabase tables behind the same `approved` RLS
+(fetched only after login) and/or ship the full build from a **private repo**
+(GitHub Pages needs a paid plan for private repos; **Cloudflare Pages** is free
+for private repos).
