@@ -48,9 +48,16 @@ export default {
     if (request.method !== 'POST') return new Response('POST only', { status: 405, headers });
 
     const ip = request.headers.get('CF-Connecting-IP') || 'anon';
+    // NOTE: this in-memory limiter is per-isolate and best-effort (it resets when
+    // the isolate recycles). For a hard limit across the edge, add a Cloudflare
+    // Rate Limiting Rule or a Durable Object / KV counter — see README.
     if (rateLimited(ip)) return new Response(JSON.stringify({ error: 'rate_limited' }), { status: 429, headers: { ...headers, 'Content-Type': 'application/json' } });
 
     if (!env.ANTHROPIC_API_KEY) return new Response(JSON.stringify({ error: 'server_not_configured' }), { status: 503, headers: { ...headers, 'Content-Type': 'application/json' } });
+
+    // Reject oversized bodies before buffering (defense against abuse).
+    const clen = Number(request.headers.get('Content-Length') || 0);
+    if (clen > 32_000) return new Response(JSON.stringify({ error: 'payload_too_large' }), { status: 413, headers: { ...headers, 'Content-Type': 'application/json' } });
 
     let body;
     try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'bad_json' }), { status: 400, headers: { ...headers, 'Content-Type': 'application/json' } }); }

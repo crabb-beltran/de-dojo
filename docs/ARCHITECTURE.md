@@ -314,7 +314,7 @@ flowchart LR
 | i18n | `t()`, `fld()`, `applyGuideLang()`, `GUIDE_EN` | Diccionario UI + overlay ejercicios + overlay guía |
 | Cuentas / gate | `gate()`, `cloudLogin()`, `refreshApproval()` | Login, aprobación, sync, buckets por usuario |
 | Persistencia | `save()`, `load()`, `store`, `mergeProgress()` | localStorage + sync Supabase con merge grow-only |
-| Tutor IA | `ai()` | Llama al Worker (o directo); respuesta con `textContent` (seguro) |
+| Tutor IA | `ai()` | Llama **solo** al Worker (sin fallback directo); respuesta con `textContent` (seguro) |
 
 ---
 
@@ -322,11 +322,13 @@ flowchart LR
 
 | Área | Medida |
 |---|---|
+| **CSP** | `<meta>` Content-Security-Policy: `connect-src` limita a Supabase + Worker + CDNs (un script inyectado no exfiltra a un host arbitrario), `object-src 'none'`, `base-uri 'self'`. `script-src` mantiene `'unsafe-inline'/'unsafe-eval'/'wasm-unsafe-eval'` porque los handlers inline y los runtimes WASM lo exigen |
 | XSS | Todo resultado de SQL/Python y nombres de usuario pasan por `escv()` (escapa `& < >`); la respuesta del tutor usa `textContent`, nunca `innerHTML` |
-| Secretos | La app nunca contiene la API key de IA (vive en el Worker); la anon key de Supabase es pública por diseño — la protección real es RLS |
-| Acceso | Login obligatorio + flag `approved` verificado en servidor vía RLS |
+| Secretos | La app nunca contiene la API key de IA (vive en el Worker); **el tutor solo va vía Worker, sin fallback directo a Anthropic**; la anon key de Supabase es pública por diseño — la protección real es RLS |
+| Acceso | Login obligatorio + flag `approved` verificado en servidor vía RLS; contraseña mínima de 8 |
 | Aislamiento | Buckets de progreso por usuario; invitado y cuenta nunca se mezclan |
 | Ejecución de código | El código del usuario corre en el sandbox WASM de su propio navegador (sql.js/Pyodide), no en un servidor |
+| **Pendiente** | El contenido es público (sitio estático); SRI en scripts de CDN; CAPTCHA + leaked-password en Supabase — ver [`ACCOUNTS.md`](./ACCOUNTS.md#security-hardening-checklist) |
 
 ---
 
