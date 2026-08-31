@@ -8,5 +8,8 @@ compatibility_date = "2024-11-01"
 ALLOW_ORIGIN = "https://crabb-beltran.github.io"
 # MODEL = "claude-sonnet-4-6"
 
-# Set the API key as a secret (never commit it):
-#   wrangler secret put ANTHROPIC_API_KEY
+# Set the API keys as secrets (never commit them):
+#   wrangler secret put ANTHROPIC_API_KEY   # powers action:'tutor' (hint/review)
+#   wrangler secret put GROQ_API_KEY        # powers action:'grade' and 'recommend'
+# MODEL      = "claude-sonnet-4-6"   # Anthropic model for the tutor
+# GROQ_MODEL = "llama-3.3-70b-versatile"   # Groq open-source model for grading

@@ -73,6 +73,9 @@ for (const e of EX) {
       if (ok !== 1) fail(id, `quiz must have exactly one correct option, has ${ok}`);
     }
     if (!e.explain) warn(id, 'quiz has no explain text');
+  } else if (e.kind === 'open') {
+    if (!e.task) fail(id, 'open exercise missing task (the question)');
+    if (!e.rubric) fail(id, 'open exercise missing rubric (key points for AI grading + self-assessment fallback)');
   } else {
     fail(id, `unknown kind "${e.kind}"`);
   }

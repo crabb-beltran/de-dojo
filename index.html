@@ -165,7 +165,7 @@
   .ex{padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;gap:10px;align-items:flex-start;transition:.12s}
   .ex:hover{background:var(--panel)} .ex.active{background:var(--panel);box-shadow:inset 3px 0 0 var(--coral)}
   .ex .ico{font-family:var(--mono);font-size:9.5px;font-weight:600;padding:2px 5px;border-radius:5px;border:1px solid var(--border);color:var(--muted);flex:none;margin-top:1px}
-  .ex .ico.sql{color:var(--mint);border-color:#2a4642}.ex .ico.python{color:var(--gold);border-color:#4a4326}.ex .ico.quiz{color:var(--violet);border-color:#3f3556}
+  .ex .ico.sql{color:var(--mint);border-color:#2a4642}.ex .ico.python{color:var(--gold);border-color:#4a4326}.ex .ico.quiz{color:var(--violet);border-color:#3f3556}.ex .ico.open{color:var(--coral);border-color:#5a3540}
   .ex{padding:11px 16px}
   .ex .tt{font-size:13px;font-weight:600;line-height:1.3}
   .ex .mt{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px}
@@ -208,6 +208,7 @@
   .timer button,.exam-bar button{padding:3px 8px;font-size:11px}
   .edhost{flex:1;min-height:120px;position:relative}
   .CodeMirror{height:100%!important;font-family:var(--mono)!important;font-size:13px;background:var(--editorbg)!important}
+  .openans{width:100%;height:100%;min-height:180px;resize:vertical;box-sizing:border-box;padding:14px 16px;font-family:var(--ui);font-size:14px;line-height:1.55;background:var(--editorbg);color:var(--text);border:0;outline:none}
   .actions{display:flex;gap:8px;padding:9px 12px;background:var(--surface);border-top:1px solid var(--border);flex-wrap:wrap}
   button{font-family:var(--ui);font-weight:600;font-size:13px;border-radius:9px;cursor:pointer;border:1px solid var(--border);background:var(--panel);color:var(--text);padding:8px 13px;transition:.12s}
   button:hover{border-color:var(--coral);color:var(--coral);box-shadow:0 0 0 1px color-mix(in srgb,var(--coral) 30%,transparent)}
@@ -319,6 +320,11 @@
   .row .lab{width:210px;color:var(--text2);font-size:12.5px}.row .track{flex:1;height:9px;background:var(--panel);border-radius:99px;overflow:hidden;border:1px solid var(--border)}
   .row .fill{display:block;height:100%;background:linear-gradient(90deg,var(--coral),var(--gold))}.row .pct{width:58px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--muted)}
   .weak{border:1px solid var(--bad);background:rgba(255,92,119,.07);border-radius:10px;padding:12px 14px;margin-top:16px;font-size:13.5px;line-height:1.5}
+  .repai{font-size:13.5px;line-height:1.6;color:var(--text);white-space:pre-line}
+  .feature-banner{border:2px solid var(--mint);border-radius:16px;padding:22px 24px 6px;margin:40px 0 24px;background:linear-gradient(160deg,color-mix(in srgb,var(--mint) 10%,transparent),transparent)}
+  .feature-banner h2{margin-top:2px}
+  .feature-badge{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:4px 11px;border-radius:999px;background:var(--mint);color:#052e2b}
+  .guide-embed nav .grp.featured{color:var(--mint);font-weight:800}
   .hist .h{display:flex;gap:14px;padding:8px 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:12px;color:var(--text2)}
   .menub{display:none}
   @media(max-width:1080px){.grid{grid-template-columns:1fr 1fr}.rail{position:fixed;z-index:50;width:288px;height:100%;transform:translateX(-100%);transition:.25s}.rail.open{transform:translateX(0)}.menub{display:grid;place-items:center;width:36px;height:36px;border-radius:9px;background:var(--coral);color:var(--onprimary);border:none;cursor:pointer;font-size:17px}.rail.hide{display:none}.grid.examrun{grid-template-columns:1fr 1fr}}
@@ -405,6 +411,73 @@ const DT={e:480,m:900,h:1500}; // default timer seconds by difficulty
 function S(name,cols,rows,note){return {name,cols,rows,note};}
 
 const EX=[
+/* ============ PREGUNTAS DE ENTREVISTA (respuesta libre, calificada por IA) ============ */
+{
+ id:'q_int_pipeline_design',cat:'interview',kind:'open',diff:'m',xp:25,timer:300,
+ title:{es:'Diseña un pipeline de ingesta diario',en:'Design a daily ingestion pipeline'},tags:'diseño · pipeline · end-to-end',
+ context:{es:'Un stakeholder pide un dashboard diario de ventas a partir de un CRM que expone una API REST paginada.',en:'A stakeholder wants a daily sales dashboard sourced from a CRM behind a paginated REST API.'},
+ task:{es:'Explica cómo diseñarías el pipeline end-to-end: extracción, dónde aterrizan los datos, transformación por capas, orquestación y cómo garantizas que sea re-ejecutable sin duplicar.',en:'Explain how you would design the pipeline end-to-end: extraction, where data lands, layered transformation, orchestration, and how you guarantee it is re-runnable without duplicating.'},
+ rubric:{es:'Extracción incremental (no full-load) usando un cursor/updated_at o paginación con checkpoint · aterriza en una capa raw/bronze inmutable antes de transformar · capas claras (bronze→silver→gold / Medallion) · orquestador con reintentos y alertas (no un cron ciego) · idempotencia explícita: MERGE por clave o delete+insert por partición, nunca INSERT ciego · manejo de fallos parciales (paginación cortada a mitad) sin perder ni duplicar páginas.',en:'Incremental extraction (not full-load) via a cursor/updated_at or checkpointed pagination · lands in an immutable raw/bronze layer before transforming · clear layers (bronze→silver→gold / Medallion) · an orchestrator with retries and alerts (not a blind cron) · explicit idempotency: MERGE by key or delete+insert by partition, never a blind INSERT · handling partial failures (pagination cut mid-way) without losing or duplicating pages.'}
+},
+{
+ id:'q_int_idempotency',cat:'interview',kind:'open',diff:'e',xp:20,timer:240,
+ title:{es:'¿Por qué la idempotencia es obligatoria?',en:'Why is idempotency mandatory?'},tags:'idempotencia · reprocesamiento',
+ context:{es:'Un compañero propone un job que hace `INSERT INTO ventas SELECT * FROM staging` cada noche.',en:'A colleague proposes a nightly job that runs `INSERT INTO sales SELECT * FROM staging` every night.'},
+ task:{es:'¿Qué falla con ese diseño si el job se re-ejecuta (por un reintento automático o porque alguien lo corre a mano)? ¿Cómo lo arreglarías?',en:'What breaks with that design if the job re-runs (an automatic retry, or someone running it by hand)? How would you fix it?'},
+ rubric:{es:'Un INSERT ciego duplica todas las filas en cada re-ejecución (no hay protección contra reprocesamiento) · un pipeline DEBE ser re-ejecutable sin cambiar el resultado (esa es la definición de idempotencia) · arreglo: MERGE/upsert por clave de negocio, o DELETE del rango/partición seguido de INSERT (atómico), o una tabla de control que registre qué ya se procesó · mencionar que los reintentos automáticos de un orquestador son justamente el escenario que rompe un job no idempotente.',en:'A blind INSERT duplicates every row on each re-run (no protection against reprocessing) · a pipeline MUST be re-runnable without changing the result (that is the definition of idempotency) · fix: MERGE/upsert by business key, or DELETE the range/partition followed by INSERT (atomic), or a control table tracking what was already processed · note that an orchestrator automatic retry is exactly the scenario that breaks a non-idempotent job.'}
+},
+{
+ id:'q_int_star_vault',cat:'interview',kind:'open',diff:'m',xp:25,timer:300,
+ title:{es:'Star Schema vs Data Vault: ¿cuándo cuál?',en:'Star Schema vs Data Vault: when which?'},tags:'modelado · star · data vault',
+ task:{es:'Un banco necesita un modelo de datos que soporte auditoría regulatoria estricta Y dashboards rápidos para ejecutivos. ¿Recomendarías Star Schema, Data Vault, o algo más? Justifica.',en:'A bank needs a data model that supports strict regulatory audit AND fast executive dashboards. Would you recommend Star Schema, Data Vault, or something else? Justify it.'},
+ rubric:{es:'Star Schema es óptimo para consumo BI (simple, rápido, pocas joins) pero no captura bien historia/auditoría de cambios de esquema y fuentes · Data Vault (Hubs/Links/Satellites) está diseñado justo para auditoría, trazabilidad y fuentes cambiantes, pero es más complejo de consultar directamente · respuesta senior: NO es una decisión excluyente — Data Vault en la capa de integración auditable (Silver) y Star Schema en la capa de consumo (Gold) generada a partir del Vault · mencionar que "algo más" sin explicar el porqué no es suficiente.',en:'Star Schema is optimal for BI consumption (simple, fast, few joins) but does not capture schema/source change history/audit well · Data Vault (Hubs/Links/Satellites) is designed exactly for audit, traceability and changing sources, but is more complex to query directly · senior answer: this is NOT an either/or — Data Vault in the auditable integration layer (Silver) and a Star Schema in the consumption layer (Gold) generated from the Vault · naming "something else" without explaining why is not enough.'}
+},
+{
+ id:'q_int_incident',cat:'interview',kind:'open',diff:'m',xp:25,timer:300,
+ title:{es:'Cuéntame de un pipeline que falló en producción',en:'Tell me about a pipeline that failed in production'},tags:'comportamental · STAR · incidente',
+ task:{es:'Describe una vez (real o plausible) en que un pipeline tuyo falló o produjo datos incorrectos en producción. ¿Qué pasó, cómo lo detectaste, cómo lo arreglaste y qué cambiaste para que no vuelva a pasar?',en:'Describe a time (real or plausible) when a pipeline of yours failed or produced incorrect data in production. What happened, how did you detect it, how did you fix it, and what did you change so it would not happen again?'},
+ rubric:{es:'Sigue una estructura STAR clara: Situación, Tarea, Acción, Resultado · explica CÓMO lo detectó (alerta automática es mejor que "un usuario se quejó") · la causa raíz es específica y técnica, no vaga · la corrección incluye tanto el fix inmediato como el cambio estructural (test, alerta, contrato de datos) que previene la recurrencia · demuestra ownership: no le echa la culpa a la fuente/otro equipo sin asumir su parte.',en:'Follows a clear STAR structure: Situation, Task, Action, Result · explains HOW it was detected (an automated alert beats "a user complained") · the root cause is specific and technical, not vague · the fix includes both the immediate patch and the structural change (test, alert, data contract) that prevents recurrence · demonstrates ownership: does not just blame the source/another team without owning their part.'}
+},
+{
+ id:'q_int_snowflake_cost',cat:'interview',kind:'open',diff:'h',xp:30,timer:360,
+ title:{es:'La factura de Snowflake se disparó — investiga',en:'The Snowflake bill spiked — investigate'},tags:'snowflake · costos · finops',
+ context:{es:'Finanzas reporta que el gasto en Snowflake subió 3x este mes sin que el volumen de datos haya crecido tanto.',en:'Finance reports Snowflake spend tripled this month without data volume growing nearly as much.'},
+ task:{es:'¿Cómo investigarías la causa y qué palancas tienes para bajar el costo sin degradar el servicio?',en:'How would you investigate the cause, and what levers do you have to cut cost without degrading service?'},
+ rubric:{es:'Investigación: revisar account_usage.query_history / warehouse_metering_history para encontrar el top de queries/warehouses por créditos · sospechar de un warehouse mal dimensionado, AUTO_SUSPEND desactivado o muy laxo, o una query nueva con un JOIN mal escrito escaneando de más · palancas: right-sizing del warehouse, AUTO_SUSPEND agresivo, separar cargas en warehouses distintos (evita "un XL para todo"), resource monitors con alertas de presupuesto, revisar si faltan clustering keys o si se abusa de SELECT * · NO proponer solo "subir de plan" o ideas vagas sin diagnóstico primero.',en:'Investigation: check account_usage.query_history / warehouse_metering_history to find the top queries/warehouses by credits · suspect an oversized warehouse, AUTO_SUSPEND disabled or too lax, or a new query with a bad JOIN over-scanning · levers: right-sizing the warehouse, aggressive AUTO_SUSPEND, splitting workloads into separate warehouses (avoid "one XL for everything"), resource monitors with budget alerts, checking for missing clustering keys or SELECT * abuse · do NOT propose just "upgrade the plan" or vague ideas without diagnosing first.'}
+},
+{
+ id:'q_int_exactly_once',cat:'interview',kind:'open',diff:'h',xp:30,timer:360,
+ title:{es:'¿Cómo lograrías "exactly-once" en streaming?',en:'How would you achieve "exactly-once" in streaming?'},tags:'streaming · exactly-once · kafka',
+ task:{es:'Un consumidor de Kafka escribe a una base de datos. Explica cómo diseñarías el sistema para lograr semántica exactly-once (o el equivalente práctico) de punta a punta.',en:'A Kafka consumer writes to a database. Explain how you would design the system to achieve exactly-once semantics (or the practical equivalent) end to end.'},
+ rubric:{es:'Reconoce que "exactly-once" verdadero de punta a punta es difícil; lo práctico es at-least-once + idempotencia en el sink · usar una clave de idempotencia (offset+partition, o un ID de negocio) y un UPSERT/MERGE en el destino en vez de INSERT · checkpoints/commits de offset DESPUÉS de escribir con éxito (no antes) para no perder mensajes en un crash · manejar reordenamiento y reintentos sin duplicar · mencionar una DLQ (dead-letter queue) para mensajes envenenados que no se pueden procesar.',en:'Recognizes true end-to-end "exactly-once" is hard; the practical answer is at-least-once + idempotency at the sink · use an idempotency key (offset+partition, or a business ID) and an UPSERT/MERGE at the destination instead of INSERT · commit/checkpoint offsets AFTER a successful write (not before) so a crash does not lose messages · handle reordering and retries without duplicating · mention a DLQ (dead-letter queue) for poison messages that cannot be processed.'}
+},
+{
+ id:'q_int_dq_strategy',cat:'interview',kind:'open',diff:'m',xp:25,timer:300,
+ title:{es:'Diseña una estrategia de calidad de datos',en:'Design a data quality strategy'},tags:'data quality · governance · contratos',
+ context:{es:'Vas a integrar una fuente externa (un proveedor) que no controlas y que ya ha enviado datos mal formateados antes.',en:'You are integrating an external source (a vendor) you do not control, which has sent malformed data before.'},
+ task:{es:'¿Cómo diseñarías la validación de calidad de datos para esta fuente, desde que llega hasta que se usa en un dashboard?',en:'How would you design data quality validation for this source, from arrival to dashboard use?'},
+ rubric:{es:'Define un "data contract" explícito (schema + reglas de negocio) que la fuente debe cumplir · valida en la frontera de entrada (staging/bronze), no después de que ya contaminó capas downstream · separa filas inválidas a una tabla de rechazos/log en vez de abortar todo el batch · corre tests automatizados (unique, not_null, relationships, rangos de negocio) como gate en el pipeline, no como algo manual · alerta y visibilidad: frescura, volumen y % de rechazo monitoreados por corrida, con alerta si hay drift.',en:'Defines an explicit "data contract" (schema + business rules) the source must satisfy · validates at the entry boundary (staging/bronze), not after it has already contaminated downstream layers · routes invalid rows to a rejects table/log instead of aborting the whole batch · runs automated tests (unique, not_null, relationships, business ranges) as a pipeline gate, not a manual step · alerting and visibility: freshness, volume and rejection % monitored per run, with an alert on drift.'}
+},
+{
+ id:'q_int_skew',cat:'interview',kind:'open',diff:'h',xp:30,timer:360,
+ title:{es:'Data skew severo en una tabla masiva',en:'Severe data skew on a massive table'},tags:'skew · performance · spark',
+ context:{es:'Un job de Spark que agrupa por customer_id tarda 10x más de lo esperado; un puñado de tareas nunca terminan.',en:'A Spark job grouping by customer_id takes 10x longer than expected; a handful of tasks never finish.'},
+ task:{es:'¿Cómo confirmarías que el problema es data skew y qué opciones tienes para resolverlo?',en:'How would you confirm the problem is data skew, and what options do you have to fix it?'},
+ rubric:{es:'Diagnóstico: revisar la Spark UI — pocas tareas tardando mucho más que el resto (cola larga) es la firma clásica de skew, no de falta de recursos genéricos · confirmar contando filas por clave: unos pocos customer_id concentran la mayoría de los datos · opciones: salting (agregar un sufijo aleatorio a la clave caliente y agregar en dos fases), broadcast join si un lado es pequeño, AQE (Adaptive Query Execution) con skew join optimization, o repartition explícito · no proponer solo "agregar más nodos" — eso no resuelve un skew real.',en:'Diagnosis: check the Spark UI — a few tasks taking far longer than the rest (a long tail) is the classic skew signature, not generic resource shortage · confirm by counting rows per key: a handful of customer_ids hold most of the data · options: salting (append a random suffix to the hot key and aggregate in two phases), a broadcast join if one side is small, AQE (Adaptive Query Execution) with skew join optimization, or an explicit repartition · do not propose just "add more nodes" — that does not fix real skew.'}
+},
+{
+ id:'q_int_platform_choice',cat:'interview',kind:'open',diff:'m',xp:25,timer:300,
+ title:{es:'Un equipo pide adoptar Databricks junto a Snowflake',en:'A team asks to adopt Databricks alongside Snowflake'},tags:'snowflake · databricks · decisión',
+ context:{es:'La empresa ya opera todo su BI en Snowflake. El equipo de ML pide adoptar Databricks para sus pipelines de features.',en:'The company already runs all its BI on Snowflake. The ML team asks to adopt Databricks for their feature pipelines.'},
+ task:{es:'¿Cómo evalúas esta petición? ¿Qué preguntas harías y qué recomendarías al liderazgo?',en:'How do you evaluate this request? What questions would you ask, and what would you recommend to leadership?'},
+ rubric:{es:'No es una decisión religiosa: identifica que el mix de cargas importa (SQL/BI de alta concurrencia vs ML/streaming con código) · pregunta por el costo de mantener dos plataformas (governance, skills del equipo, duplicación de datos) vs el beneficio real para ML (MLflow, notebooks, Spark nativo) · propone un puente con formatos abiertos (Iceberg/Delta) para no duplicar el dato dos veces · recomendación concreta y condicionada, no un "sí" o "no" ciego — p.ej. "sí, pero con un catálogo compartido y una sola fuente de verdad para el dato crudo".',en:'Not a religious decision: identifies that the workload mix matters (high-concurrency SQL/BI vs ML/streaming with code) · asks about the cost of maintaining two platforms (governance, team skills, data duplication) vs the real benefit for ML (MLflow, notebooks, native Spark) · proposes a bridge via open formats (Iceberg/Delta) to avoid duplicating the data twice · a concrete, conditioned recommendation, not a blind yes/no — e.g. "yes, but with a shared catalog and one source of truth for the raw data".'}
+},
+{
+ id:'q_int_conflict',cat:'interview',kind:'open',diff:'e',xp:20,timer:240,
+ title:{es:'Un desacuerdo técnico con un colega',en:'A technical disagreement with a colleague'},tags:'comportamental · colaboración',
+ task:{es:'Cuéntame de una vez que no estuviste de acuerdo con la decisión técnica de un colega o líder. ¿Cómo lo manejaste y cómo terminó?',en:'Tell me about a time you disagreed with a colleague or lead\'s technical decision. How did you handle it, and how did it end?'},
+ rubric:{es:'Estructura STAR clara y un ejemplo específico (no genérico) · explica el desacuerdo técnico concretamente (no solo "no estábamos de acuerdo") · muestra cómo defendió su posición con datos/argumentos técnicos, no con autoridad o terquedad · muestra disposición genuina a ceder si el otro tenía razón, o a escalar de forma profesional si no se resolvía · el resultado es honesto (no todo desacuerdo termina "y todos felices") y hay una lección aprendida real.',en:'Clear STAR structure and a specific (not generic) example · explains the technical disagreement concretely (not just "we disagreed") · shows how they backed their position with data/technical arguments, not authority or stubbornness · shows genuine willingness to yield if the other person was right, or to escalate professionally if unresolved · the outcome is honest (not every disagreement ends "and everyone was happy") and there is a real lesson learned.'}
+},
 /* ============================ SQL ============================ */
 {
  id:'sql_topn',cat:'D · SQL avanzado',kind:'sql',diff:'m',xp:20,
@@ -2264,7 +2337,7 @@ src=[{"id":1,"v":"a"}]; upsert(src,[{"id":1,"v":"z"}]); chk("no muta entrada", s
  datasets:[`CREATE TABLE products(id INT,cat TEXT,price INT);INSERT INTO products VALUES(1,'A',100),(2,'B',50),(3,'A',80);`],
  ref:`UPDATE products SET price=price+10 WHERE cat='A'`,
  verify:`SELECT id,price FROM products ORDER BY id`,
- starter:`UPDATE products\nSET price = price + 10\nWHERE cat = 'A';`
+ starter:`UPDATE products\nSET price = ...   -- suma 10 al precio actual\nWHERE ...;         -- solo categoría A`
 },
 {
  id:'sql_dml_upsert',cat:'Y · DBA / Administración',kind:'sql',diff:'m',xp:20,
@@ -2327,7 +2400,7 @@ src=[{"id":1,"v":"a"}]; upsert(src,[{"id":1,"v":"z"}]); chk("no muta entrada", s
  expected:'1 a@x N/A 1\n2 unknown 555 1\n3 unknown N/A 0',
  datasets:[`CREATE TABLE leads(id INT,email TEXT,phone TEXT);INSERT INTO leads VALUES(1,'a@x',NULL),(2,NULL,'555'),(3,NULL,NULL);`],
  ref:`SELECT id, COALESCE(email,'unknown') email, COALESCE(phone,'N/A') phone, CASE WHEN email IS NOT NULL OR phone IS NOT NULL THEN 1 ELSE 0 END has_contact FROM leads ORDER BY id`,
- starter:`SELECT\n  id,\n  COALESCE(email, 'unknown') AS email,\n  COALESCE(phone, 'N/A')     AS phone,\n  CASE WHEN email IS NOT NULL OR phone IS NOT NULL THEN 1 ELSE 0 END AS has_contact\nFROM leads\nORDER BY id;`
+ starter:`SELECT\n  id,\n  ... AS email,   -- default 'unknown' si es NULL\n  ... AS phone,   -- default 'N/A' si es NULL\n  ... AS has_contact   -- 1 si hay email O teléfono, si no 0\nFROM leads\nORDER BY id;`
 },
 {
  id:'sql_format_names',cat:'C · Transformación y DQ',kind:'sql',diff:'m',xp:20,
@@ -2339,7 +2412,7 @@ src=[{"id":1,"v":"a"}]; upsert(src,[{"id":1,"v":"z"}]); chk("no muta entrada", s
  expected:'Ana 2020\nBob 2019',
  datasets:[`CREATE TABLE raw(name TEXT,created TEXT);INSERT INTO raw VALUES('  ANA ','2020-03-09'),('bob','2019-12-25');`],
  ref:`SELECT upper(substr(trim(name),1,1))||lower(substr(trim(name),2)) nm, strftime('%Y',created) yr FROM raw ORDER BY nm`,
- starter:`SELECT\n  upper(substr(trim(name),1,1)) || lower(substr(trim(name),2)) AS nm,\n  strftime('%Y', created) AS yr\nFROM raw\nORDER BY nm;`
+ starter:`SELECT\n  ... AS nm,   -- trim + primera letra mayúscula, resto minúsculas\n  ... AS yr    -- año de created\nFROM raw\nORDER BY nm;`
 },
 {
  id:'py_dq_nulls',cat:'C · Transformación y DQ',kind:'python',diff:'m',xp:20,
@@ -2402,7 +2475,7 @@ chk("todo válido -> []", validate([{"id":1,"age":20,"email":"z@y"}]), [])
  expected:'2024-01 150\n2024-02 80\n2024-03 60',
  datasets:[`CREATE TABLE sales(d TEXT,amount INT);INSERT INTO sales VALUES('2024-01-05',100),('2024-01-20',50),('2024-02-03',80),('2024-03-01',60);`],
  ref:`SELECT strftime('%Y-%m', d) month, SUM(amount) revenue FROM sales GROUP BY 1 ORDER BY 1`,
- starter:`SELECT\n  strftime('%Y-%m', d) AS month,\n  SUM(amount) AS revenue\nFROM sales\nGROUP BY 1\nORDER BY 1;`
+ starter:`SELECT\n  ... AS month,    -- d truncado a YYYY-MM\n  ... AS revenue   -- amount agregado\nFROM sales\nGROUP BY 1\nORDER BY 1;`
 },
 {
  id:'sql_chart_topn',cat:'J · Estadística para DE',kind:'sql',diff:'m',xp:20,viz:'bar',
@@ -2651,7 +2724,7 @@ chk("longitud", len(pd_dedup(df)), 2)
  title:{es:'pandas: imputar NaN con la media',en:'pandas: impute NaN with the mean'},tags:'pandas · fillna',
  context:{es:'Faltan valores numéricos; los imputas con la media de la columna.',en:'Numeric values are missing; you impute them with the column mean.'},
  task:{es:'Implementa <code>pd_fillna(df)</code> que rellene los <code>NaN</code> de columnas numéricas con su media (no muta la entrada).',en:'Implement <code>pd_fillna(df)</code> filling <code>NaN</code> in numeric columns with their mean (without mutating the input).'},
- bullets:[{es:'Pista: <code>df[c].fillna(df[c].mean())</code> sobre una copia.',en:'Hint: <code>df[c].fillna(df[c].mean())</code> on a copy.'}],
+ bullets:[{es:'Pista: trabaja sobre una copia; hay un método de pandas que rellena nulos con un valor, y otro que calcula el promedio de una columna — combínalos por columna.',en:'Hint: work on a copy; pandas has one method to fill nulls with a value and another to compute a column\'s mean — combine them per column.'}],
  sources:[S('df',['x'],[[1.0],['∅'],[3.0]],'media = 2.0')],
  expected:'x = [1.0, 2.0, 3.0]',
  pyPackages:['pandas'],
@@ -2676,7 +2749,7 @@ chk("imputa media", list(pd_fillna(pd.DataFrame({"x":[1.0,None,3.0]}))["x"]), [1
  title:{es:'pandas: groupby + suma',en:'pandas: groupby + sum'},tags:'pandas · groupby',
  context:{es:'Agrega el monto por categoría para un reporte.',en:'Aggregate the amount per category for a report.'},
  task:{es:'Implementa <code>pd_groupby(df)</code> → <code>dict</code> <code>{cat: suma de amt}</code>.',en:'Implement <code>pd_groupby(df)</code> → <code>dict</code> <code>{cat: sum of amt}</code>.'},
- bullets:[{es:'Pista: <code>df.groupby("cat")["amt"].sum().to_dict()</code>.',en:'Hint: <code>df.groupby("cat")["amt"].sum().to_dict()</code>.'}],
+ bullets:[{es:'Pista: agrupa por la columna categórica, selecciona la columna numérica, agrega con la suma, y convierte el resultado a un dict de Python.',en:'Hint: group by the categorical column, select the numeric column, aggregate with sum, and convert the result to a Python dict.'}],
  sources:[S('df',['cat','amt'],[['a',1],['a',2],['b',3]])],
  expected:'{"a": 3, "b": 3}',
  pyPackages:['pandas'],
@@ -2697,7 +2770,7 @@ chk("suma por cat", pd_groupby(pd.DataFrame({"cat":["a","a","b"],"amt":[1,2,3]})
  title:{es:'pandas: merge (join) de DataFrames',en:'pandas: merge (join) DataFrames'},tags:'pandas · merge',
  context:{es:'Unes dos DataFrames por <code>id</code> (inner join), como un JOIN de SQL.',en:'You merge two DataFrames on <code>id</code> (inner join), like a SQL JOIN.'},
  task:{es:'Implementa <code>pd_merge(a, b)</code> = inner merge por <code>id</code>.',en:'Implement <code>pd_merge(a, b)</code> = inner merge on <code>id</code>.'},
- bullets:[{es:'Pista: <code>pd.merge(a, b, on="id", how="inner")</code>.',en:'Hint: <code>pd.merge(a, b, on="id", how="inner")</code>.'}],
+ bullets:[{es:'Pista: pandas tiene un método de DataFrame para unir con otro DataFrame; especifica la columna clave y el tipo de join (equivalente a un INNER JOIN de SQL).',en:'Hint: pandas has a DataFrame method to join with another DataFrame; specify the key column and the join type (equivalent to a SQL INNER JOIN).'}],
  sources:[S('a',['id','x'],[[1,10],[2,20]]),S('b',['id','y'],[[1,99]])],
  expected:'1 fila: id=1, x=10, y=99',
  pyPackages:['pandas'],
@@ -2720,7 +2793,7 @@ chk("valor y", int(m.iloc[0]["y"]), 99)
  title:{es:'pandas: pivot_table',en:'pandas: pivot_table'},tags:'pandas · pivot',
  context:{es:'Pivotas filas largas a una matriz <code>r × c</code> con suma de <code>v</code>.',en:'You pivot long rows into an <code>r × c</code> matrix with sum of <code>v</code>.'},
  task:{es:'Implementa <code>pd_pivot(df)</code> = <code>pivot_table</code> index=<code>r</code>, columns=<code>c</code>, values=<code>v</code>, sum, rellenando 0.',en:'Implement <code>pd_pivot(df)</code> = <code>pivot_table</code> index=<code>r</code>, columns=<code>c</code>, values=<code>v</code>, sum, fill 0.'},
- bullets:[{es:'Pista: <code>pivot_table(index="r",columns="c",values="v",aggfunc="sum",fill_value=0)</code>.',en:'Hint: <code>pivot_table(index="r",columns="c",values="v",aggfunc="sum",fill_value=0)</code>.'}],
+ bullets:[{es:'Pista: pandas tiene una función que pivota filas largas a una tabla ancha; necesitas fijar qué columna va a filas, cuál a columnas, cuál se agrega (y cómo), y qué valor rellena las combinaciones sin datos.',en:'Hint: pandas has a function that pivots long rows into a wide table; you need to set which column becomes rows, which becomes columns, which is aggregated (and how), and what value fills combinations with no data.'}],
  sources:[S('df',['r','c','v'],[['x','a',1],['x','b',2],['y','a',3]])],
  expected:'x,a=1 · x,b=2 · y,a=3 · y,b=0',
  pyPackages:['pandas'],
@@ -3078,6 +3151,8 @@ const T={
   reset_c:'¿Borrar el progreso de ESTE perfil (XP, resueltos, streak, historial)?',
   loading_py:'Cargando runtime de Python (Pyodide, ~una vez)…',loading_pkg:'Cargando paquetes',py_blocked:'No se pudo cargar Python aquí (el sandbox bloqueó el runtime). Usa <b>Ver solución</b> o <b>Review IA</b>.',
   sql_fail:'No se pudo cargar sql.js',write_q:'Escribe una query.',no_res:'Sin resultados.',tutor_off:'Tutor IA no disponible aquí',hint_sys:'Da UNA pista breve (máx 3 líneas) que oriente sin resolver.',rev_sys:'Eres un Senior Data Engineer revisando código de un colega senior. Feedback directo, máx 8 líneas: correctitud, edge cases, idempotencia/coste/rendimiento, estilo de producción. Señala líneas concretas. No reescribas todo.',
+  w_open_ph:'Escribe tu respuesta como se la darías a un entrevistador (varias frases, con ejemplos concretos si aplica)…',w_grade:'Calificar con IA',w_grading:'Calificando…',w_grade_off:'Calificación IA no disponible aquí — autoevalúate contra los puntos clave.',w_selfgrade:'¿Cubriste los puntos clave?',w_selfyes:'Sí, los cubrí',w_selfno:'No / a medias',w_keypoints:'Puntos clave esperados',w_covered:'Cubriste',w_missed:'Te faltó',w_write_first:'Escribe tu respuesta antes de calificar.',
+  rep_ai_t:'Recomendación IA',rep_ai_loading:'Generando recomendación personalizada…',rep_ai_off:'Recomendación IA no disponible aquí — usa el resumen por categoría de arriba.',
   expected:'esperado',got:'tu salida',rows:'fila(s)',output:'salida',
   toast_xp:'XP',toast_timeup:'⏱ Tiempo agotado — puedes seguir, pero rinde ½ XP',toast_examtime:'⏱ Tiempo del examen agotado',
   acct_title:'Tu cuenta',acct_sub:'Cada usuario guarda su propio XP, ejercicios resueltos e historial.',
@@ -3119,6 +3194,8 @@ const T={
   reset_c:'Clear THIS profile\'s progress (XP, solved, streak, history)?',
   loading_py:'Loading Python runtime (Pyodide, ~once)…',loading_pkg:'Loading packages',py_blocked:'Could not load Python here (sandbox blocked the runtime). Use <b>Reveal solution</b> or <b>AI review</b>.',
   sql_fail:'Could not load sql.js',write_q:'Write a query.',no_res:'No results.',tutor_off:'AI tutor unavailable here',hint_sys:'Give ONE short hint (max 3 lines) that guides without solving.',rev_sys:'You are a Senior Data Engineer reviewing code from a senior peer. Direct feedback, max 8 lines: correctness, edge cases, idempotency/cost/performance, production style. Point to concrete lines. Do not rewrite everything.',
+  w_open_ph:'Write your answer as you would give it to an interviewer (a few sentences, with concrete examples if relevant)…',w_grade:'Grade with AI',w_grading:'Grading…',w_grade_off:'AI grading unavailable here — self-assess against the key points.',w_selfgrade:'Did you cover the key points?',w_selfyes:'Yes, I covered them',w_selfno:'No / partially',w_keypoints:'Expected key points',w_covered:'You covered',w_missed:'You missed',w_write_first:'Write your answer before grading.',
+  rep_ai_t:'AI recommendation',rep_ai_loading:'Generating a personalized recommendation…',rep_ai_off:'AI recommendation unavailable here — use the per-category summary above.',
   expected:'expected',got:'your output',rows:'row(s)',output:'output',
   toast_xp:'XP',toast_timeup:'⏱ Time up — you can continue, but it yields ½ XP',toast_examtime:'⏱ Exam time is up',
   acct_title:'Your account',acct_sub:'Each user keeps their own XP, solved exercises and history.',
@@ -3144,7 +3221,7 @@ const DIFFL={es:{e:'easy',m:'medium',h:'hard'},en:{e:'easy',m:'medium',h:'hard'}
 function dl(d){return DIFFL[lang][d];}
 /* clean category taxonomy (data keeps legacy cat strings; map at runtime) */
 const CATMAP={'D · SQL avanzado':'sql','C · Transformación y DQ':'dq','E · Arquitectura Moderna':'arch','F · Governance / DQ':'dq','B · Modelado de Datos':'model','J · Estadística para DE':'stats','P · pandas / DataFrames':'pandas','Q · Python + Bases de Datos':'pydb','L · Lógica / Algoritmos DE':'logic','A · Infraestructura Cloud':'arch','K · NoSQL':'nosql','X · Competitive':'comp','Y · DBA / Administración':'dba','S · Snowflake Avanzado':'snowflake','R · dbt Avanzado':'dbt'};
-const CAT=[{k:'sql',es:'SQL Avanzado',en:'Advanced SQL'},{k:'joins',es:'SQL · Joins y CTEs',en:'SQL · Joins & CTEs'},{k:'snowflake',es:'Snowflake Avanzado',en:'Advanced Snowflake'},{k:'databricks',es:'Databricks / Spark',en:'Databricks / Spark'},{k:'dbt',es:'dbt Avanzado',en:'Advanced dbt'},{k:'pydb',es:'Python + Bases de Datos',en:'Python + Databases'},{k:'pandas',es:'pandas',en:'pandas'},{k:'logic',es:'Lógica y Algoritmos',en:'Logic & Algorithms'},{k:'stats',es:'Estadística',en:'Statistics'},{k:'dq',es:'Calidad de Datos',en:'Data Quality'},{k:'model',es:'Modelado',en:'Data Modeling'},{k:'arch',es:'Arquitectura y Cloud',en:'Architecture & Cloud'},{k:'comp',es:'Competitivo (Hackathon)',en:'Competitive (Hackathon)'},{k:'nosql',es:'NoSQL',en:'NoSQL'},{k:'dba',es:'DBA / Administración',en:'DBA / Administration'}];
+const CAT=[{k:'interview',es:'Preguntas de Entrevista (IA)',en:'Interview Questions (AI-graded)'},{k:'sql',es:'SQL Avanzado',en:'Advanced SQL'},{k:'joins',es:'SQL · Joins y CTEs',en:'SQL · Joins & CTEs'},{k:'snowflake',es:'Snowflake Avanzado',en:'Advanced Snowflake'},{k:'databricks',es:'Databricks / Spark',en:'Databricks / Spark'},{k:'dbt',es:'dbt Avanzado',en:'Advanced dbt'},{k:'pydb',es:'Python + Bases de Datos',en:'Python + Databases'},{k:'pandas',es:'pandas',en:'pandas'},{k:'logic',es:'Lógica y Algoritmos',en:'Logic & Algorithms'},{k:'stats',es:'Estadística',en:'Statistics'},{k:'dq',es:'Calidad de Datos',en:'Data Quality'},{k:'model',es:'Modelado',en:'Data Modeling'},{k:'arch',es:'Arquitectura y Cloud',en:'Architecture & Cloud'},{k:'comp',es:'Competitivo (Hackathon)',en:'Competitive (Hackathon)'},{k:'nosql',es:'NoSQL',en:'NoSQL'},{k:'dba',es:'DBA / Administración',en:'DBA / Administration'}];
 function catKey(e){return CATMAP[e.cat]||e.cat;}
 function catLabel(k){const c=CAT.find(x=>x.k===k);return c?c[lang]:k;}
 function orderedCats(){const present=[...new Set(EX.map(catKey))];const ord=CAT.map(c=>c.k).filter(k=>present.includes(k));present.forEach(k=>{if(!ord.includes(k))ord.push(k);});return ord;}
@@ -4928,10 +5005,13 @@ function renderProblem(){
 }
 function renderWork(){
   const e=cur,tabs=$('#wtabs'),host=$('#edhost'),act=$('#actions');
-  const tlabel=e.kind==='quiz'?t('w_answer'):(e.kind==='sql'?'query.sql':'solution.py');
+  const tlabel=(e.kind==='quiz'||e.kind==='open')?t('w_answer'):(e.kind==='sql'?'query.sql':'solution.py');
   tabs.innerHTML=`<div class="wtab active">${tlabel}</div><div class="timer"><span class="clock" id="clock">--:--</span><button id="tpause">⏸</button><button id="treset">⟳</button></div>`;
   $('#tpause').onclick=toggleTimer;$('#treset').onclick=resetTimer;
   if(e.kind==='quiz'){host.innerHTML=`<div style="padding:18px;color:var(--muted);font-family:var(--mono);font-size:12.5px;line-height:1.6">${t('exam_quiz_note')}</div>`;editor=null;act.innerHTML=`<button class="primary" id="run">${t('w_check')}</button><button id="hint">${t('w_hint')}</button>`;}
+  else if(e.kind==='open'){host.innerHTML=`<textarea id="openAns" class="openans" placeholder="${t('w_open_ph')}"></textarea>`;editor=null;
+    act.innerHTML=`<button class="primary" id="run">${t('w_grade')}</button><button id="hint">${t('w_hint')}</button><button class="ghost" id="reveal">${t('w_reveal')}</button>`;
+    $('#reveal').onclick=()=>{if(confirm(t('w_reveal_c'))){showConsole(`<b>${t('w_keypoints')}:</b><br>${fld(e,'rubric')||''}`);}};}
   else{host.innerHTML='';editor=CodeMirror(host,{value:e.starter,mode:e.kind==='sql'?'text/x-sql':'python',theme:'material-darker',lineNumbers:true,lineWrapping:true,indentUnit:e.kind==='python'?4:2});setTimeout(()=>editor.refresh(),40);
     act.innerHTML=`<button class="primary" id="run">${t('w_runtests')}</button><button id="hint">${t('w_hint')}</button><button id="review">${t('w_review')}</button><button class="ghost" id="reveal">${t('w_reveal')}</button>`;
     $('#reveal').onclick=()=>{if(confirm(t('w_reveal_c'))){const c=e.kind==='python'?'#':'--';editor.setValue(e.ref?(`${c} ref:\n`+e.ref+(e.kind==='sql'?';':'')):t('w_noref'));}};$('#review').onclick=()=>ai('review');}
@@ -5005,7 +5085,36 @@ async function runPy(){
   if(all)await award(e);return all;
 }
 function runQuiz(){const e=cur;if(quizSel==null){showConsole(t('choose'));return;}answered=true;document.querySelectorAll('.opt').forEach(o=>{const oi=+o.dataset.i;o.classList.remove('sel');if(e.options[oi].ok)o.classList.add('correct');if(oi===quizSel&&!e.options[oi].ok)o.classList.add('wrong');});const ok=e.options[quizSel].ok;showCases([{name:ok?t('correct'):t('incorrect'),ok,detail:explainText(e)}]);if(ok)award(e);}
-function runTests(){if(!cur)return;if(cur.kind==='sql')return runSQL();if(cur.kind==='python')return runPy();if(cur.kind==='quiz')return runQuiz();}
+function runTests(){if(!cur)return;if(cur.kind==='sql')return runSQL();if(cur.kind==='python')return runPy();if(cur.kind==='quiz')return runQuiz();if(cur.kind==='open')return runOpen();}
+async function runOpen(){
+  const e=cur,ta=$('#openAns'),answer=(ta?ta.value:'').trim();
+  if(!answer){showConsole(t('w_write_first'));return false;}
+  const endpoint=(()=>{try{return localStorage.getItem('ai_endpoint');}catch{return null;}})();
+  if(endpoint){
+    showConsole(`<div class="console">${t('w_grading')}</div>`);
+    try{
+      const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'grade',question:fld(e,'task')||fld(e,'context')||'',rubric:fld(e,'rubric')||'',answer,lang})});
+      const d=await r.json();
+      if(r.ok&&!d.error){
+        const ok=!!d.pass;
+        const covered=(d.covered||[]).map(x=>`✓ ${escv(x)}`).join('<br>');
+        const missed=(d.missed||[]).map(x=>`− ${escv(x)}`).join('<br>');
+        $('#verdict').textContent=`${d.score}%`;$('#verdict').className='verdict '+(ok?'pass':'fail');
+        $('#cases').innerHTML=`<div class="case ${ok?'pass':'fail'}"><span class="s">${ok?'✓':'✗'}</span><span class="d">${escv(d.feedback||'')}${covered?`<br><small><b>${t('w_covered')}:</b><br>${covered}</small>`:''}${missed?`<br><small><b>${t('w_missed')}:</b><br>${missed}</small>`:''}</span></div>`;
+        if(ok)await award(e);
+        return ok;
+      }
+      if(d.error!=='server_not_configured')throw new Error(d.error||('HTTP '+r.status));
+    }catch(err){/* fall through to self-assessment below */}
+  }
+  return openSelfAssess(e);
+}
+function openSelfAssess(e){
+  showConsole(`<div class="console">${t('w_grade_off')}<br><br><b>${t('w_keypoints')}:</b><br>${fld(e,'rubric')||''}<br><br><b>${t('w_selfgrade')}</b><br>
+    <button class="primary" id="selfYes" style="margin-top:8px">${t('w_selfyes')}</button> <button id="selfNo">${t('w_selfno')}</button></div>`);
+  $('#selfYes').onclick=()=>{$('#verdict').textContent='✓';$('#verdict').className='verdict pass';award(e);};
+  $('#selfNo').onclick=()=>{$('#verdict').textContent='✗';$('#verdict').className='verdict fail';};
+}
 
 async function ai(modeAi){const e=cur,panel=$('#tutor');panel.classList.add('show','pulse');panel.textContent='…';
   const code=e.kind==='quiz'?'(conceptual)':(editor?editor.getValue():'');
@@ -5064,14 +5173,34 @@ function loadExamQuestion(i){
   tabs.innerHTML=`<div class="exam-bar"><b>${t('exam_q')} ${i+1}/${exam.items.length}</b><span class="dots">${examDots()}</span><span style="margin-left:auto" class="gclock" id="examClock">--:--</span><button id="examFinish">${t('exam_finish')}</button></div>`;
   $('#examFinish').onclick=()=>{if(confirm(t('exam_finish_c')))finishExam();};
   if(e.kind==='quiz'){host.innerHTML=`<div style="padding:18px;color:var(--muted);font-family:var(--mono);font-size:12.5px">${t('exam_quiz_note')}</div>`;editor=null;}
+  else if(e.kind==='open'){host.innerHTML=`<textarea id="openAns" class="openans" placeholder="${t('w_open_ph')}"></textarea>`;editor=null;}
   else{host.innerHTML='';editor=CodeMirror(host,{value:e.starter,mode:e.kind==='sql'?'text/x-sql':'python',theme:'material-darker',lineNumbers:true,lineWrapping:true,indentUnit:e.kind==='python'?4:2});setTimeout(()=>editor.refresh(),40);}
-  const runBtn=e.kind!=='quiz'?`<button id="examRun">${t('exam_run')}</button>`:'';
-  act.innerHTML=`<button class="primary" id="examNext">${t('exam_next')}</button>${runBtn}<button class="ghost" id="examSkip">${t('exam_skip')}</button>`;
+  const runBtn=(e.kind!=='quiz'&&e.kind!=='open')?`<button id="examRun">${t('exam_run')}</button>`:'';
+  const nextLabel=e.kind==='open'?t('w_grade'):t('exam_next');
+  act.innerHTML=`<button class="primary" id="examNext">${nextLabel}</button>${runBtn}<button class="ghost" id="examSkip">${t('exam_skip')}</button>`;
   $('#examNext').onclick=examSubmit;$('#examSkip').onclick=examSkip;
-  if(e.kind!=='quiz'){const er=$('#examRun');if(er)er.onclick=()=>{e.kind==='sql'?runSQL():runPy();};}
+  if(e.kind!=='quiz'&&e.kind!=='open'){const er=$('#examRun');if(er)er.onclick=()=>{e.kind==='sql'?runSQL():runPy();};}
   $('#cases').innerHTML=`<div class="console">${t('exam_prompt')}</div>`;$('#verdict').textContent='';$('#tutor').classList.remove('show');paintExamClock();
 }
-async function examSubmit(){const e=cur;let ok=false;if(e.kind==='quiz'){if(quizSel==null){toast(t('exam_choose'));return;}ok=!!e.options[quizSel].ok;showConsole((ok?'✓ ':'✗ ')+t('registered'));}else{ok=await(e.kind==='sql'?runSQL():runPy());}exam.results[e.id]={ok,cat:e.cat,diff:e.diff,kind:e.kind};exam.times[e.id]=Math.round((Date.now()-exam.qStart)/1000);advanceExam();}
+async function examSubmit(){const e=cur;if(e.kind==='open')return examSubmitOpen();let ok=false;if(e.kind==='quiz'){if(quizSel==null){toast(t('exam_choose'));return;}ok=!!e.options[quizSel].ok;showConsole((ok?'✓ ':'✗ ')+t('registered'));}else{ok=await(e.kind==='sql'?runSQL():runPy());}exam.results[e.id]={ok,cat:e.cat,diff:e.diff,kind:e.kind};exam.times[e.id]=Math.round((Date.now()-exam.qStart)/1000);advanceExam();}
+async function examSubmitOpen(){
+  const e=cur,ta=$('#openAns'),answer=(ta?ta.value:'').trim();
+  if(!answer){toast(t('w_write_first'));return;}
+  const finish=ok=>{exam.results[e.id]={ok,cat:e.cat,diff:e.diff,kind:e.kind};exam.times[e.id]=Math.round((Date.now()-exam.qStart)/1000);advanceExam();};
+  const endpoint=(()=>{try{return localStorage.getItem('ai_endpoint');}catch{return null;}})();
+  if(endpoint){
+    showConsole(`<div class="console">${t('w_grading')}</div>`);
+    try{
+      const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'grade',question:fld(e,'task')||fld(e,'context')||'',rubric:fld(e,'rubric')||'',answer,lang})});
+      const d=await r.json();
+      if(r.ok&&!d.error){finish(!!d.pass);return;}
+      if(d.error!=='server_not_configured')throw new Error(d.error||('HTTP '+r.status));
+    }catch(err){/* fall through to self-assessment below */}
+  }
+  showConsole(`<div class="console">${t('w_grade_off')}<br><br><b>${t('w_keypoints')}:</b><br>${fld(e,'rubric')||''}<br><br><b>${t('w_selfgrade')}</b><br>
+    <button class="primary" id="selfYes" style="margin-top:8px">${t('w_selfyes')}</button> <button id="selfNo">${t('w_selfno')}</button></div>`);
+  $('#selfYes').onclick=()=>finish(true);$('#selfNo').onclick=()=>finish(false);
+}
 function examSkip(){const e=cur;exam.results[e.id]={ok:false,skipped:true,cat:e.cat,diff:e.diff,kind:e.kind};exam.times[e.id]=Math.round((Date.now()-exam.qStart)/1000);advanceExam();}
 function advanceExam(){if(exam.idx<exam.items.length-1)loadExamQuestion(exam.idx+1);else finishExam();}
 function finishExam(){
@@ -5095,10 +5224,24 @@ function renderReport(a){
       <div class="card" style="min-width:190px;text-align:center"><div class="score" style="color:${col}">${a.pct}%</div><div class="scoresub">${a.score} / ${a.total} ${t('rep_correct')}</div></div>
       <div class="card" style="flex:1;min-width:330px"><div class="field"><label>${t('rep_bycat')}</label>${catRows}</div><div class="field"><label>${t('rep_bydiff')}</label>${diffRows}</div></div>
     </div>
-    ${weak.length?`<div class="weak"><b>${t('rep_weak')}</b> ${weak.map(([c])=>c).join(' · ')}.<br>${t('rep_weak2')}</div>`:`<div class="weak" style="border-color:var(--mint);background:rgba(94,234,212,.07)"><b>${t('rep_solid')}</b> ${t('rep_solid2')}</div>`}
+    ${weak.length?`<div class="weak"><b>${t('rep_weak')}</b> ${weak.map(([c])=>catLabel(c)).join(' · ')}.<br>${t('rep_weak2')}</div>`:`<div class="weak" style="border-color:var(--mint);background:rgba(94,234,212,.07)"><b>${t('rep_solid')}</b> ${t('rep_solid2')}</div>`}
+    <div class="card" style="margin-top:16px"><div class="field"><label>🤖 ${t('rep_ai_t')}</label><div id="repAI" class="repai">${t('rep_ai_loading')}</div></div></div>
     <div class="card" style="margin-top:16px"><div class="field"><label>${t('rep_detail')}</label><div style="font-family:var(--mono)">${qlist}</div></div></div>
     <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap"><button class="primary" onclick="switchMode('exam')">${t('rep_new')}</button><button onclick="switchMode('stats')">${t('rep_prog')}</button><button class="ghost" onclick="switchMode('practice')">${t('rep_prac')}</button></div>`;
   $('#gridv').classList.remove('examrun');$('#ovReport').classList.add('show');
+  loadAIRecommendation(a);
+}
+async function loadAIRecommendation(a){
+  const el=$('#repAI');if(!el)return;
+  const endpoint=(()=>{try{return localStorage.getItem('ai_endpoint');}catch{return null;}})();
+  if(!endpoint){el.textContent=t('rep_ai_off');return;}
+  const byCat={};Object.entries(a.byCat).forEach(([k,o])=>byCat[catLabel(k)]=o);
+  try{
+    const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'recommend',byCat,pct:a.pct,lang})});
+    const d=await r.json();
+    if(!r.ok||d.error){el.textContent=t('rep_ai_off');return;}
+    el.textContent=(d.text||'').trim()||t('rep_ai_off');
+  }catch(err){el.textContent=t('rep_ai_off');}
 }
 function renderStats(){
   const h=stats.history,ordCats=orderedCats(),m={};ordCats.forEach(k=>m[k]={s:0,t:0});EX.forEach(e=>{const k=catKey(e);if(m[k])m[k].t++;if(state.solved[e.id]&&m[k])m[k].s++;});
@@ -5641,7 +5784,7 @@ figure {margin:22px 0;border:1px solid var(--g-line);border-radius:14px;overflow
     <a href="#h2" class="sub">Preguntas al entrevistador</a>
     <a href="#h3" class="sub">Errores comunes</a>
     <a href="#quick" class="sub">Quick Reference: trade-offs</a>
-    <div class="grp">Proyectos Prácticos</div>
+    <div class="grp featured">🚀 Proyectos Prácticos</div>
     <a href="#q1" class="sub">Stack 100% gratis</a>
     <a href="#q2" class="sub">Proyecto 1 · Ingesta + API</a>
     <a href="#q3" class="sub">Proyecto 2 · Lakehouse dbt</a>
@@ -7131,9 +7274,12 @@ mask = (df['x'] &lt; Q1-1.5*IQR) | (df['x'] &gt; Q3+1.5*IQR)  # outliers por IQR
 <!-- ============ SECTION L · TRENDS 2025-2026 ============ -->
 
 <!-- ============ SECTION Q · PROYECTOS PRÁCTICOS ============ -->
+<div class="feature-banner">
+<span class="feature-badge">🚀 Módulo destacado</span>
 <h2 id="proyectos" class="green">Proyectos Prácticos — construye tu portafolio</h2>
 <p class="lede">Estos <strong>no</strong> son ejercicios para resolver dentro del dojo: son <strong>proyectos end-to-end que desarrollas por tu cuenta</strong> (tu máquina, tu repo) con herramientas 100% gratuitas, del estilo de un challenge real de Data Engineer. Cada uno integra lo que enseña esta guía y te deja un artefacto para tu portafolio y para contar en entrevista. Van de menor a mayor alcance; puedes hacer uno o encadenarlos.</p>
 <div class="note"><b>Cómo usar este módulo:</b> elige un proyecto, crea un repo, y trabaja por los <em>requisitos</em> y <em>entregables</em>. No hay solución "correcta" única — te evalúas contra los <em>criterios</em> (los mismos que usa la industria). Los datasets son públicos y gratuitos; si no encuentras uno, genera datos sintéticos con <code>Faker</code>/<code>Mockaroo</code> (incluye errores a propósito para practicar calidad de datos).</div>
+</div>
 
 <h3 id="q1">Stack 100% gratuito (reutilizable)</h3>
 <div class="scroll"><table class="tbl">
