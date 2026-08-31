@@ -34,7 +34,10 @@
  *   GROQ_API_KEY       (secret, optional — powers action:'grade'/'recommend')
  *   ALLOW_ORIGIN       (optional, defaults to "*"; set to your site origin to lock down)
  *   MODEL              (optional, Anthropic model, defaults to claude-sonnet-4-6)
- *   GROQ_MODEL         (optional, defaults to llama-3.3-70b-versatile)
+ *   GROQ_MODEL         (optional, defaults to openai/gpt-oss-120b — must be a Groq
+ *                      "Production Model" on the self-serve tier; see
+ *                      https://console.groq.com/docs/models. "Enterprise / Contact
+ *                      Sales" entries like llama-3.3-70b-versatile 404 on a normal key.)
  */
 
 const RATE = { windowMs: 60_000, max: 20 };       // 20 tutor calls per IP per minute
@@ -78,7 +81,7 @@ async function callGroq(env, system, user, maxTokens) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.GROQ_API_KEY}` },
     body: JSON.stringify({
-      model: env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+      model: env.GROQ_MODEL || 'openai/gpt-oss-120b',
       temperature: 0.2,
       max_tokens: maxTokens,
       messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
