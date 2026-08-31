@@ -9,18 +9,23 @@
  *   action:'tutor'     (default if omitted, for backward compat) — hint/review
  *                       on an exercise. Uses Anthropic. Body: { prompt }
  *   action:'grade'     — AI-grades a free-text interview answer against a
- *                       rubric. Uses Groq (open-source model). Body:
+ *                       rubric. Uses Gemini (Google AI Studio). Body:
  *                       { question, rubric, answer, lang }
  *   action:'recommend' — after an exam/practice session, turns the
  *                       per-category score breakdown into a short natural-
- *                       language study recommendation. Uses Groq. Body:
+ *                       language study recommendation. Uses Gemini. Body:
  *                       { byCat, pct, lang }
+ *
+ * NOTE on Gemini access: a consumer "Gemini Pro/Advanced" app subscription
+ * (Google One) does NOT include API access. You need a separate API key from
+ * Google AI Studio: https://aistudio.google.com/apikey — it has its own
+ * (often free) usage tier, billed independently from any app subscription.
  *
  * Deploy (all free):
  *   1. npm i -g wrangler                # one-time
  *   2. cd workers/ai-tutor
  *   3. wrangler secret put ANTHROPIC_API_KEY   # for action:'tutor' (optional)
- *   4. wrangler secret put GROQ_API_KEY        # for action:'grade'/'recommend' (optional)
+ *   4. wrangler secret put GEMINI_API_KEY      # for action:'grade'/'recommend' (optional)
  *   5. wrangler deploy
  *   6. In the app (browser console, once):
  *        localStorage.setItem('ai_endpoint','https://<your-worker>.workers.dev')
@@ -31,13 +36,12 @@
  *
  * Env:
  *   ANTHROPIC_API_KEY  (secret, optional — powers action:'tutor')
- *   GROQ_API_KEY       (secret, optional — powers action:'grade'/'recommend')
+ *   GEMINI_API_KEY     (secret, optional — powers action:'grade'/'recommend')
  *   ALLOW_ORIGIN       (optional, defaults to "*"; set to your site origin to lock down)
  *   MODEL              (optional, Anthropic model, defaults to claude-sonnet-4-6)
- *   GROQ_MODEL         (optional, defaults to openai/gpt-oss-120b — must be a Groq
- *                      "Production Model" on the self-serve tier; see
- *                      https://console.groq.com/docs/models. "Enterprise / Contact
- *                      Sales" entries like llama-3.3-70b-versatile 404 on a normal key.)
+ *   GEMINI_MODEL       (optional, defaults to gemini-2.5-flash — verify current
+ *                      pricing/availability at https://ai.google.dev/gemini-api/docs/pricing
+ *                      before relying on the default; model names change.)
  */
 
 const RATE = { windowMs: 60_000, max: 20 };       // 20 tutor calls per IP per minute
@@ -76,20 +80,27 @@ function extractJson(text) {
   try { return JSON.parse(raw.slice(start, end + 1)); } catch { return null; }
 }
 
-async function callGroq(env, system, user, maxTokens) {
-  const upstream = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+// jsonSchema, if given, is passed as Gemini's responseSchema so the model is
+// constrained to emit that exact shape (more reliable than prompting alone).
+async function callGemini(env, system, user, maxTokens, jsonSchema) {
+  const model = env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+  const generationConfig = { temperature: 0.2, maxOutputTokens: maxTokens };
+  if (jsonSchema) { generationConfig.responseMimeType = 'application/json'; generationConfig.responseSchema = jsonSchema; }
+  const upstream = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.GROQ_API_KEY}` },
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
     body: JSON.stringify({
-      model: env.GROQ_MODEL || 'openai/gpt-oss-120b',
-      temperature: 0.2,
-      max_tokens: maxTokens,
-      messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: 'user', parts: [{ text: user }] }],
+      generationConfig,
     }),
   });
   if (!upstream.ok) { const detail = await upstream.text(); throw Object.assign(new Error('upstream'), { status: 502, detail: detail.slice(0, 500) }); }
   const data = await upstream.json();
-  return (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content || '').trim();
+  const cand = data.candidates && data.candidates[0];
+  const parts = cand && cand.content && cand.content.parts || [];
+  return parts.map(p => p.text || '').join('').trim();
 }
 
 async function handleTutor(body, env, headers) {
@@ -108,8 +119,20 @@ async function handleTutor(body, env, headers) {
   return json({ text }, 200, headers);
 }
 
+const GRADE_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    score: { type: 'INTEGER' },
+    pass: { type: 'BOOLEAN' },
+    covered: { type: 'ARRAY', items: { type: 'STRING' } },
+    missed: { type: 'ARRAY', items: { type: 'STRING' } },
+    feedback: { type: 'STRING' },
+  },
+  required: ['score', 'pass', 'covered', 'missed', 'feedback'],
+};
+
 async function handleGrade(body, env, headers) {
-  if (!env.GROQ_API_KEY) return json({ error: 'server_not_configured' }, 503, headers);
+  if (!env.GEMINI_API_KEY) return json({ error: 'server_not_configured' }, 503, headers);
   const question = typeof body.question === 'string' ? body.question.slice(0, 2000) : '';
   const rubric = typeof body.rubric === 'string' ? body.rubric.slice(0, 2000) : '';
   const answer = typeof body.answer === 'string' ? body.answer.slice(0, 6000) : '';
@@ -117,11 +140,11 @@ async function handleGrade(body, env, headers) {
   if (!question || !answer) return json({ error: 'missing_fields' }, 400, headers);
 
   const system = lang === 'en'
-    ? 'You are a strict but fair senior Data Engineering interviewer grading a candidate\'s spoken/written answer to an interview question. Compare the answer against the rubric (the key points a strong answer should cover). Reply with ONLY a JSON object, no prose, no markdown fence: {"score": <0-100 integer>, "pass": <boolean, true if score>=65>, "covered": ["point the answer got right", ...], "missed": ["key rubric point the answer missed or got wrong", ...], "feedback": "<2-4 sentences of direct, actionable feedback in the tone of a senior interviewer, in English>"}. Be concrete: reference what was actually said. A short but correct answer can still score well; a long answer that misses the key trade-off should not.'
-    : 'Eres un entrevistador senior de Data Engineering, estricto pero justo, calificando la respuesta (escrita) de un candidato a una pregunta de entrevista. Compara la respuesta contra la rúbrica (los puntos clave que debería cubrir una buena respuesta). Responde SOLO con un objeto JSON, sin prosa, sin bloque de código: {"score": <entero 0-100>, "pass": <boolean, true si score>=65>, "covered": ["punto que la respuesta cubrió bien", ...], "missed": ["punto clave de la rúbrica que faltó o estuvo mal", ...], "feedback": "<2-4 frases de feedback directo y accionable, en tono de entrevistador senior, en español>"}. Sé concreto: referencia lo que realmente se dijo. Una respuesta corta pero correcta puede calificar bien; una respuesta larga que se salta el trade-off clave no debería.';
+    ? 'You are a strict but fair senior Data Engineering interviewer grading a candidate\'s spoken/written answer to an interview question. Compare the answer against the rubric (the key points a strong answer should cover). score is 0-100; pass is true if score>=65. covered lists points the answer got right; missed lists key rubric points it missed or got wrong; feedback is 2-4 sentences of direct, actionable feedback in the tone of a senior interviewer. Be concrete: reference what was actually said. A short but correct answer can still score well; a long answer that misses the key trade-off should not.'
+    : 'Eres un entrevistador senior de Data Engineering, estricto pero justo, calificando la respuesta (escrita) de un candidato a una pregunta de entrevista. Compara la respuesta contra la rúbrica (los puntos clave que debería cubrir una buena respuesta). score es 0-100; pass es true si score>=65. covered son los puntos que la respuesta cubrió bien; missed son puntos clave de la rúbrica que faltaron o estuvieron mal; feedback son 2-4 frases de feedback directo y accionable, en tono de entrevistador senior, en español. Sé concreto: referencia lo que realmente se dijo. Una respuesta corta pero correcta puede calificar bien; una respuesta larga que se salta el trade-off clave no debería.';
   const user = `${lang === 'en' ? 'Question' : 'Pregunta'}: ${question}\n\n${lang === 'en' ? 'Rubric (key points)' : 'Rúbrica (puntos clave)'}: ${rubric}\n\n${lang === 'en' ? 'Candidate answer' : 'Respuesta del candidato'}:\n${answer}`;
 
-  const raw = await callGroq(env, system, user, 500);
+  const raw = await callGemini(env, system, user, 700, GRADE_SCHEMA);
   const parsed = extractJson(raw);
   if (!parsed || typeof parsed.score !== 'number') return json({ error: 'bad_model_output', raw: raw.slice(0, 300) }, 502, headers);
   parsed.score = Math.max(0, Math.min(100, Math.round(parsed.score)));
@@ -130,7 +153,7 @@ async function handleGrade(body, env, headers) {
 }
 
 async function handleRecommend(body, env, headers) {
-  if (!env.GROQ_API_KEY) return json({ error: 'server_not_configured' }, 503, headers);
+  if (!env.GEMINI_API_KEY) return json({ error: 'server_not_configured' }, 503, headers);
   const byCat = body.byCat && typeof body.byCat === 'object' ? body.byCat : null;
   const lang = body.lang === 'en' ? 'en' : 'es';
   if (!byCat) return json({ error: 'missing_fields' }, 400, headers);
@@ -147,7 +170,7 @@ async function handleRecommend(body, env, headers) {
     : 'Eres un coach de entrevistas de Data Engineering. Con el desglose de puntaje por tema de un examen de práctica, escribe una recomendación de estudio corta, específica y motivadora (texto plano, sin encabezados markdown, máx ~120 palabras). Nombra los 2-3 temas más débiles por su etiqueta exacta, di brevemente POR QUÉ suelen importar en una entrevista real de DE, y sugiere una acción concreta siguiente (p.ej. "repite la categoría Snowflake en dificultad difícil" o "repasa la sección Databricks Deep Dive de la guía"). Si todo está sólido, dilo y sugiere subir la dificultad.';
   const user = `${lang === 'en' ? 'Overall score' : 'Puntaje general'}: ${pct != null ? pct + '%' : 'n/a'}\n\n${lang === 'en' ? 'By topic' : 'Por tema'}:\n${lines}`;
 
-  const text = await callGroq(env, system, user, 300);
+  const text = await callGemini(env, system, user, 400);
   return json({ text: text.slice(0, 1200) }, 200, headers);
 }
 
