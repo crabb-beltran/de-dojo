@@ -16,6 +16,9 @@ GEMINI_MODEL = "gemini-2.5-flash"
 # GEMINI_API_KEY comes from Google AI Studio (https://aistudio.google.com/apikey),
 # NOT from a consumer Gemini Pro/Advanced app subscription — those are separate.
 #
-# GEMINI_MODEL above must exist and be enabled for your key — verify current
-# names/pricing at https://ai.google.dev/gemini-api/docs/pricing before relying
-# on the default; model availability changes over time.
+# GEMINI_MODEL above (confirmed against the live model catalog, Aug 2026) is
+# the "best price-performance ... reasoning" tier — a good fit for grading
+# text against a rubric. Newer "Gemini 3.x Flash" endpoints also exist
+# (gemini-3.5-flash, gemini-3.6-flash, gemini-3.7-flash) if you want to try a
+# newer generation; that family iterates fast, so 2.5 was picked for
+# stability. Full catalog: https://ai.google.dev/gemini-api/docs/pricing
