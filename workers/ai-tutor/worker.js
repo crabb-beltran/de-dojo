@@ -39,9 +39,11 @@
  *   GEMINI_API_KEY     (secret, optional — powers action:'grade'/'recommend')
  *   ALLOW_ORIGIN       (optional, defaults to "*"; set to your site origin to lock down)
  *   MODEL              (optional, Anthropic model, defaults to claude-sonnet-4-6)
- *   GEMINI_MODEL       (optional, defaults to gemini-2.5-flash — verify current
- *                      pricing/availability at https://ai.google.dev/gemini-api/docs/pricing
- *                      before relying on the default; model names change.)
+ *   GEMINI_MODEL       (optional, defaults to gemini-2.5-flash — confirmed against
+ *                      the live model catalog Aug 2026. Newer "Gemini 3.x Flash"
+ *                      endpoints exist too (gemini-3.5-flash, -3.6-flash, -3.7-flash)
+ *                      if you want a newer generation; see
+ *                      https://ai.google.dev/gemini-api/docs/pricing for the full list.)
  */
 
 const RATE = { windowMs: 60_000, max: 20 };       // 20 tutor calls per IP per minute
