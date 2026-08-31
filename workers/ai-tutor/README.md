@@ -17,8 +17,12 @@ its key.
 
 - **Hosting: free.** Cloudflare Workers free tier = 100,000 requests/day.
 - **Anthropic usage** (tutor) billed per token once `ANTHROPIC_API_KEY` is set.
-- **Groq usage** (grade/recommend) has a generous free tier for open-source
-  models (e.g. `llama-3.3-70b-versatile`); billed only if you exceed it.
+- **Groq usage** (grade/recommend) uses an open-source model from Groq's
+  **Production Models** tier (self-serve pricing — e.g. `openai/gpt-oss-120b`,
+  default). Some listed models (e.g. `llama-3.3-70b-versatile`) are
+  Enterprise-only ("Contact Sales") and will 404 on a normal key — check
+  https://console.groq.com/docs/models for what's actually available on your
+  account before changing `GROQ_MODEL`.
 - Until a given secret is set, its action returns `503` and the app falls back
   to a non-AI behavior for that feature — nothing else breaks.
 

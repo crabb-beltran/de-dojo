@@ -7,9 +7,12 @@ compatibility_date = "2024-11-01"
 [vars]
 ALLOW_ORIGIN = "https://crabb-beltran.github.io"
 # MODEL = "claude-sonnet-4-6"
+GROQ_MODEL = "openai/gpt-oss-120b"
 
 # Set the API keys as secrets (never commit them):
 #   wrangler secret put ANTHROPIC_API_KEY   # powers action:'tutor' (hint/review)
 #   wrangler secret put GROQ_API_KEY        # powers action:'grade' and 'recommend'
-# MODEL      = "claude-sonnet-4-6"   # Anthropic model for the tutor
-# GROQ_MODEL = "llama-3.3-70b-versatile"   # Groq open-source model for grading
+# MODEL = "claude-sonnet-4-6"   # Anthropic model for the tutor
+# GROQ_MODEL above is a Groq "Production Model" (self-serve pricing tier) — see
+# https://console.groq.com/docs/models for the current list. Avoid "Enterprise /
+# Contact Sales" entries (e.g. llama-3.3-70b-versatile) — those 404 on a normal key.
