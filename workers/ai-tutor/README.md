@@ -10,19 +10,20 @@ its key.
 | action | Powers | Upstream | Secret |
 |---|---|---|---|
 | `tutor` (default) | Exercise hint / review | Anthropic | `ANTHROPIC_API_KEY` |
-| `grade` | AI-grading of free-text interview answers | Groq (open-source model) | `GROQ_API_KEY` |
-| `recommend` | Post-exam personalized study recommendation | Groq (open-source model) | `GROQ_API_KEY` |
+| `grade` | AI-grading of free-text interview answers | Gemini (Google AI Studio) | `GEMINI_API_KEY` |
+| `recommend` | Post-exam personalized study recommendation | Gemini (Google AI Studio) | `GEMINI_API_KEY` |
 
 ## Cost
 
 - **Hosting: free.** Cloudflare Workers free tier = 100,000 requests/day.
 - **Anthropic usage** (tutor) billed per token once `ANTHROPIC_API_KEY` is set.
-- **Groq usage** (grade/recommend) uses an open-source model from Groq's
-  **Production Models** tier (self-serve pricing — e.g. `openai/gpt-oss-120b`,
-  default). Some listed models (e.g. `llama-3.3-70b-versatile`) are
-  Enterprise-only ("Contact Sales") and will 404 on a normal key — check
-  https://console.groq.com/docs/models for what's actually available on your
-  account before changing `GROQ_MODEL`.
+- **Gemini usage** (grade/recommend) needs a key from
+  **[Google AI Studio](https://aistudio.google.com/apikey)** — this is
+  *separate* from a consumer Gemini Pro/Advanced app subscription (Google
+  One), which does not grant API access. The AI Studio key has its own usage
+  tier; check current pricing/free-tier limits at
+  https://ai.google.dev/gemini-api/docs/pricing before relying on it being
+  $0 — model availability and pricing change over time.
 - Until a given secret is set, its action returns `503` and the app falls back
   to a non-AI behavior for that feature — nothing else breaks.
 
@@ -32,7 +33,7 @@ its key.
 npm i -g wrangler                       # one-time
 cd workers/ai-tutor
 wrangler secret put ANTHROPIC_API_KEY   # optional — enables the hint/review tutor
-wrangler secret put GROQ_API_KEY        # optional — enables AI grading + recommendations
+wrangler secret put GEMINI_API_KEY      # optional — enables AI grading + recommendations
 wrangler deploy                          # prints https://<name>.<acct>.workers.dev
 ```
 
