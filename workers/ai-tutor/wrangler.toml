@@ -7,7 +7,7 @@ compatibility_date = "2024-11-01"
 [vars]
 ALLOW_ORIGIN = "https://crabb-beltran.github.io"
 # MODEL = "claude-sonnet-4-6"
-GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_MODEL = "gemini-3.7-flash"
 
 # Set the API keys as secrets (never commit them):
 #   wrangler secret put ANTHROPIC_API_KEY   # powers action:'tutor' (hint/review)
@@ -16,15 +16,13 @@ GEMINI_MODEL = "gemini-2.5-flash"
 # GEMINI_API_KEY comes from Google AI Studio (https://aistudio.google.com/apikey),
 # NOT from a consumer Gemini Pro/Advanced app subscription — those are separate.
 #
-# GEMINI_MODEL above (confirmed against the live model catalog, Aug 2026) is
-# the "best price-performance ... reasoning" tier — a good fit for grading
-# text against a rubric. Newer "Gemini 3.x Flash" endpoints also exist
-# (gemini-3.5-flash, gemini-3.6-flash, gemini-3.7-flash) if you want to try a
-# newer generation; that family iterates fast, so 2.5 was picked for
-# stability. Full catalog: https://ai.google.dev/gemini-api/docs/pricing
-#
-# The Worker calls Gemini's Interactions API (POST /v1beta/interactions),
-# the primary interface since June 2026 — the older generateContent endpoint
-# 404s for some models/accounts. See worker.js's callGemini() and
+# The Worker calls Gemini's Interactions API (POST /v1beta/interactions), the
+# primary interface since June 2026. GEMINI_MODEL above is gemini-3.7-flash
+# because the Interactions API rejects some older models (confirmed live:
+# gemini-2.5-flash — a valid model on the legacy generateContent endpoint —
+# 404s here with "This model ... use the Interactions API"). Both official
+# Interactions API examples in Google's docs use a Gemini 3.x Flash model;
+# 3.7 is the newest "Stable" (non-preview) one. Other 3.x Flash options:
+# gemini-3.5-flash, gemini-3.6-flash. See worker.js's callGemini() and
 # https://ai.google.dev/gemini-api/docs/migrate-to-interactions if the wire
 # format changes again.
