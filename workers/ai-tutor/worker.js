@@ -46,11 +46,15 @@
  *   GEMINI_API_KEY     (secret, optional — powers action:'grade'/'recommend')
  *   ALLOW_ORIGIN       (optional, defaults to "*"; set to your site origin to lock down)
  *   MODEL              (optional, Anthropic model, defaults to claude-sonnet-4-6)
- *   GEMINI_MODEL       (optional, defaults to gemini-3.7-flash. The Interactions
+ *   GEMINI_MODEL       (optional, defaults to gemini-3.6-flash. The Interactions
  *                      API rejects some older models -- gemini-2.5-flash, valid
- *                      on the legacy generateContent endpoint, 404s here. Other
- *                      Gemini 3.x Flash options: gemini-3.5-flash, -3.6-flash;
- *                      see https://ai.google.dev/gemini-api/docs/pricing.)
+ *                      on the legacy generateContent endpoint, 404s here. The
+ *                      newest model (gemini-3.7-flash) is the most likely to hit
+ *                      capacity errors, so 3.6 is the default; see
+ *                      https://ai.google.dev/gemini-api/docs/pricing.)
+ *   GEMINI_FALLBACK_MODEL (optional, defaults to gemini-3.5-flash — used to retry
+ *                      once when the primary model returns a transient capacity
+ *                      error, so a demand spike doesn't disable AI grading.)
  */
 
 const RATE = { windowMs: 60_000, max: 20 };       // 20 tutor calls per IP per minute
@@ -89,26 +93,51 @@ function extractJson(text) {
   try { return JSON.parse(raw.slice(start, end + 1)); } catch { return null; }
 }
 
+// Capacity/transient errors worth retrying on a different model. Google returns
+// these as 429/500/503, or as an "api_error" whose message says the model is
+// "experiencing high demand" — observed live on the newest Flash model.
+function isTransient(status, detail) {
+  if (status === 429 || status === 500 || status === 503) return true;
+  return /high demand|overloaded|try again|unavailable|resource[_ ]exhausted/i.test(detail || '');
+}
+
+async function geminiFetch(env, model, body) {
+  const upstream = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
+    body: JSON.stringify({ ...body, model }),
+  });
+  if (!upstream.ok) {
+    const detail = await upstream.text();
+    throw Object.assign(new Error('upstream'), { status: 502, upstreamStatus: upstream.status, detail: detail.slice(0, 500) });
+  }
+  return upstream.json();
+}
+
 // jsonSchema, if given (standard JSON Schema, lowercase types), is passed via
 // response_format so the model is constrained to emit that exact shape (more
 // reliable than prompting alone). Uses the Interactions API (generateContent
 // is legacy as of mid-2026 and 404s for some models/accounts).
 async function callGemini(env, system, user, maxTokens, jsonSchema) {
-  const model = env.GEMINI_MODEL || 'gemini-3.7-flash';
   const body = {
-    model,
     system_instruction: system,
     input: user,
     generation_config: { temperature: 0.2, max_output_tokens: maxTokens },
   };
   if (jsonSchema) body.response_format = [{ type: 'text', mime_type: 'application/json', schema: jsonSchema }];
-  const upstream = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
-    body: JSON.stringify(body),
-  });
-  if (!upstream.ok) { const detail = await upstream.text(); throw Object.assign(new Error('upstream'), { status: 502, detail: detail.slice(0, 500) }); }
-  const data = await upstream.json();
+
+  const primary = env.GEMINI_MODEL || 'gemini-3.6-flash';
+  const fallback = env.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash';
+  let data;
+  try {
+    data = await geminiFetch(env, primary, body);
+  } catch (err) {
+    // A capacity spike on one model shouldn't take the feature down — the app's
+    // only other option is to degrade to manual self-assessment.
+    if (!isTransient(err.upstreamStatus, err.detail) || fallback === primary) throw err;
+    data = await geminiFetch(env, fallback, body);
+  }
+
   const steps = Array.isArray(data.steps) ? data.steps : [];
   const text = steps.filter(s => s.type === 'model_output')
     .flatMap(s => (s.content || []).map(c => c.text || ''))
