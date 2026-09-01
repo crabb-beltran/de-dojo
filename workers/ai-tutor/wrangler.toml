@@ -6,13 +6,11 @@ compatibility_date = "2024-11-01"
 # deployed app can call the tutor. Uncomment and set your Pages origin:
 [vars]
 ALLOW_ORIGIN = "https://crabb-beltran.github.io"
-# MODEL = "claude-sonnet-4-6"
 GEMINI_MODEL = "gemini-3.6-flash"
 GEMINI_FALLBACK_MODEL = "gemini-3.5-flash"
 
 # Set the API keys as secrets (never commit them):
-#   wrangler secret put ANTHROPIC_API_KEY   # powers action:'tutor' (hint/review)
-#   wrangler secret put GEMINI_API_KEY      # powers action:'grade' and 'recommend'
+#   wrangler secret put GEMINI_API_KEY      # powers every action
 #
 # GEMINI_API_KEY comes from Google AI Studio (https://aistudio.google.com/apikey),
 # NOT from a consumer Gemini Pro/Advanced app subscription — those are separate.

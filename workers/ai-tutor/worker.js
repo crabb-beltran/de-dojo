@@ -1,13 +1,13 @@
 /**
  * DE Dojo — AI proxy (Cloudflare Worker, free tier).
  *
- * The browser app must NEVER hold an API key. This Worker sits in front of
- * two upstream LLM APIs, injects keys from server-side secrets, enforces
- * CORS + a light per-IP rate limit, and returns plain JSON. One endpoint,
- * routed by `action` in the POST body:
+ * The browser app must NEVER hold an API key. This Worker sits in front of the
+ * Gemini API, injects the key from a server-side secret, enforces CORS + a
+ * light per-IP rate limit, and returns plain JSON. One endpoint, routed by
+ * `action` in the POST body:
  *
  *   action:'tutor'     (default if omitted, for backward compat) — hint/review
- *                       on an exercise. Uses Anthropic. Body: { prompt }
+ *                       on an exercise. Uses Gemini. Body: { prompt }
  *   action:'grade'     — AI-grades a free-text interview answer against a
  *                       rubric. Uses Gemini (Google AI Studio). Body:
  *                       { question, rubric, answer, lang }
@@ -31,21 +31,18 @@
  * Deploy (all free):
  *   1. npm i -g wrangler                # one-time
  *   2. cd workers/ai-tutor
- *   3. wrangler secret put ANTHROPIC_API_KEY   # for action:'tutor' (optional)
- *   4. wrangler secret put GEMINI_API_KEY      # for action:'grade'/'recommend' (optional)
- *   5. wrangler deploy
- *   6. In the app (browser console, once):
+ *   3. wrangler secret put GEMINI_API_KEY      # powers ALL actions
+ *   4. wrangler deploy
+ *   5. In the app (browser console, once):
  *        localStorage.setItem('ai_endpoint','https://<your-worker>.workers.dev')
  *
- * Each action degrades independently: if its key isn't set, that action
- * returns 503 server_not_configured and the app falls back to a local
- * (non-AI) behavior — nothing else breaks.
+ * If GEMINI_API_KEY isn't set, every action returns 503
+ * server_not_configured and the app falls back to local (non-AI) behavior —
+ * nothing breaks, the AI features just go quiet.
  *
  * Env:
- *   ANTHROPIC_API_KEY  (secret, optional — powers action:'tutor')
- *   GEMINI_API_KEY     (secret, optional — powers action:'grade'/'recommend')
+ *   GEMINI_API_KEY     (secret, required — powers every action)
  *   ALLOW_ORIGIN       (optional, defaults to "*"; set to your site origin to lock down)
- *   MODEL              (optional, Anthropic model, defaults to claude-sonnet-4-6)
  *   GEMINI_MODEL       (optional, defaults to gemini-3.6-flash. The Interactions
  *                      API rejects some older models -- gemini-2.5-flash, valid
  *                      on the legacy generateContent endpoint, 404s here. The
@@ -149,18 +146,11 @@ async function callGemini(env, system, user, maxTokens, jsonSchema) {
 }
 
 async function handleTutor(body, env, headers) {
-  if (!env.ANTHROPIC_API_KEY) return json({ error: 'server_not_configured' }, 503, headers);
+  if (!env.GEMINI_API_KEY) return json({ error: 'server_not_configured' }, 503, headers);
   const prompt = typeof body.prompt === 'string' ? body.prompt.slice(0, 8000) : '';
   if (!prompt) return json({ error: 'missing_prompt' }, 400, headers);
-
-  const upstream = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: env.MODEL || 'claude-sonnet-4-6', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] }),
-  });
-  if (!upstream.ok) { const detail = await upstream.text(); return json({ error: 'upstream', status: upstream.status, detail: detail.slice(0, 500) }, 502, headers); }
-  const data = await upstream.json();
-  const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+  // The app already builds the full instruction (hint vs review) into `prompt`.
+  const text = await callGemini(env, 'You are a helpful senior Data Engineering mentor. Follow the instruction in the message exactly, and answer in the same language it is written in.', prompt, 1200);
   return json({ text }, 200, headers);
 }
 
@@ -189,7 +179,10 @@ async function handleGrade(body, env, headers) {
     : 'Eres un entrevistador senior de Data Engineering, estricto pero justo, calificando la respuesta (escrita) de un candidato a una pregunta de entrevista. Compara la respuesta contra la rúbrica (los puntos clave que debería cubrir una buena respuesta). score es 0-100; pass es true si score>=65. covered son los puntos que la respuesta cubrió bien; missed son puntos clave de la rúbrica que faltaron o estuvieron mal; feedback son 2-4 frases de feedback directo y accionable, en tono de entrevistador senior, en español. Sé concreto: referencia lo que realmente se dijo. Una respuesta corta pero correcta puede calificar bien; una respuesta larga que se salta el trade-off clave no debería.';
   const user = `${lang === 'en' ? 'Question' : 'Pregunta'}: ${question}\n\n${lang === 'en' ? 'Rubric (key points)' : 'Rúbrica (puntos clave)'}: ${rubric}\n\n${lang === 'en' ? 'Candidate answer' : 'Respuesta del candidato'}:\n${answer}`;
 
-  const raw = await callGemini(env, system, user, 700, GRADE_SCHEMA);
+  // Budget generously: a real rubric produces several covered/missed entries
+  // plus feedback, and Gemini 3.x spends part of the output budget on internal
+  // reasoning. Too low and the JSON comes back truncated -> unparseable.
+  const raw = await callGemini(env, system, user, 3000, GRADE_SCHEMA);
   const parsed = extractJson(raw);
   if (!parsed || typeof parsed.score !== 'number') return json({ error: 'bad_model_output', raw: raw.slice(0, 300) }, 502, headers);
   parsed.score = Math.max(0, Math.min(100, Math.round(parsed.score)));
@@ -215,7 +208,7 @@ async function handleRecommend(body, env, headers) {
     : 'Eres un coach de entrevistas de Data Engineering. Con el desglose de puntaje por tema de un examen de práctica, escribe una recomendación de estudio corta, específica y motivadora (texto plano, sin encabezados markdown, máx ~120 palabras). Nombra los 2-3 temas más débiles por su etiqueta exacta, di brevemente POR QUÉ suelen importar en una entrevista real de DE, y sugiere una acción concreta siguiente (p.ej. "repite la categoría Snowflake en dificultad difícil" o "repasa la sección Databricks Deep Dive de la guía"). Si todo está sólido, dilo y sugiere subir la dificultad.';
   const user = `${lang === 'en' ? 'Overall score' : 'Puntaje general'}: ${pct != null ? pct + '%' : 'n/a'}\n\n${lang === 'en' ? 'By topic' : 'Por tema'}:\n${lines}`;
 
-  const text = await callGemini(env, system, user, 400);
+  const text = await callGemini(env, system, user, 1500);
   return json({ text: text.slice(0, 1200) }, 200, headers);
 }
 

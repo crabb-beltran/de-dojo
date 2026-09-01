@@ -5104,13 +5104,17 @@ async function runOpen(){
         if(ok)await award(e);
         return ok;
       }
-      if(d.error!=='server_not_configured')throw new Error(d.error||('HTTP '+r.status));
-    }catch(err){/* fall through to self-assessment below */}
+      // Only "not configured" is an expected, silent degrade. Any other error
+      // is a real failure and must be shown — hiding it behind the generic
+      // fallback makes the feature look broken with no way to diagnose it.
+      if(d.error!=='server_not_configured')throw new Error(d.detail?`${d.error}: ${String(d.detail).slice(0,300)}`:(d.error||('HTTP '+r.status)));
+    }catch(err){return openSelfAssess(e,err.message);}
   }
   return openSelfAssess(e);
 }
-function openSelfAssess(e){
-  showConsole(`<div class="console">${t('w_grade_off')}<br><br><b>${t('w_keypoints')}:</b><br>${fld(e,'rubric')||''}<br><br><b>${t('w_selfgrade')}</b><br>
+function openSelfAssess(e,errMsg){
+  const why=errMsg?`<span style="color:var(--bad)">${escv(errMsg)}</span><br><br>`:'';
+  showConsole(`<div class="console">${why}${t('w_grade_off')}<br><br><b>${t('w_keypoints')}:</b><br>${fld(e,'rubric')||''}<br><br><b>${t('w_selfgrade')}</b><br>
     <button class="primary" id="selfYes" style="margin-top:8px">${t('w_selfyes')}</button> <button id="selfNo">${t('w_selfno')}</button></div>`);
   $('#selfYes').onclick=()=>{$('#verdict').textContent='✓';$('#verdict').className='verdict pass';award(e);};
   $('#selfNo').onclick=()=>{$('#verdict').textContent='✗';$('#verdict').className='verdict fail';};
@@ -5187,6 +5191,7 @@ async function examSubmitOpen(){
   const e=cur,ta=$('#openAns'),answer=(ta?ta.value:'').trim();
   if(!answer){toast(t('w_write_first'));return;}
   const finish=ok=>{exam.results[e.id]={ok,cat:e.cat,diff:e.diff,kind:e.kind};exam.times[e.id]=Math.round((Date.now()-exam.qStart)/1000);advanceExam();};
+  let errMsg='';
   const endpoint=(()=>{try{return localStorage.getItem('ai_endpoint');}catch{return null;}})();
   if(endpoint){
     showConsole(`<div class="console">${t('w_grading')}</div>`);
@@ -5194,10 +5199,11 @@ async function examSubmitOpen(){
       const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'grade',question:fld(e,'task')||fld(e,'context')||'',rubric:fld(e,'rubric')||'',answer,lang})});
       const d=await r.json();
       if(r.ok&&!d.error){finish(!!d.pass);return;}
-      if(d.error!=='server_not_configured')throw new Error(d.error||('HTTP '+r.status));
-    }catch(err){/* fall through to self-assessment below */}
+      if(d.error!=='server_not_configured')throw new Error(d.detail?`${d.error}: ${String(d.detail).slice(0,300)}`:(d.error||('HTTP '+r.status)));
+    }catch(err){errMsg=err.message;}
   }
-  showConsole(`<div class="console">${t('w_grade_off')}<br><br><b>${t('w_keypoints')}:</b><br>${fld(e,'rubric')||''}<br><br><b>${t('w_selfgrade')}</b><br>
+  const why=errMsg?`<span style="color:var(--bad)">${escv(errMsg)}</span><br><br>`:'';
+  showConsole(`<div class="console">${why}${t('w_grade_off')}<br><br><b>${t('w_keypoints')}:</b><br>${fld(e,'rubric')||''}<br><br><b>${t('w_selfgrade')}</b><br>
     <button class="primary" id="selfYes" style="margin-top:8px">${t('w_selfyes')}</button> <button id="selfNo">${t('w_selfno')}</button></div>`);
   $('#selfYes').onclick=()=>finish(true);$('#selfNo').onclick=()=>finish(false);
 }
