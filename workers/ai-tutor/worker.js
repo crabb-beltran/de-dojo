@@ -21,6 +21,13 @@
  * Google AI Studio: https://aistudio.google.com/apikey — it has its own
  * (often free) usage tier, billed independently from any app subscription.
  *
+ * NOTE on the Gemini endpoint: grade/recommend call the Interactions API
+ * (POST /v1beta/interactions), which became the primary Gemini interface in
+ * June 2026. The older generateContent endpoint is legacy and 404s for some
+ * models/accounts — if Google changes the wire format again, see
+ * https://ai.google.dev/gemini-api/docs/migrate-to-interactions for the
+ * current request/response shape before editing callGemini() below.
+ *
  * Deploy (all free):
  *   1. npm i -g wrangler                # one-time
  *   2. cd workers/ai-tutor
@@ -82,27 +89,34 @@ function extractJson(text) {
   try { return JSON.parse(raw.slice(start, end + 1)); } catch { return null; }
 }
 
-// jsonSchema, if given, is passed as Gemini's responseSchema so the model is
-// constrained to emit that exact shape (more reliable than prompting alone).
+// jsonSchema, if given (standard JSON Schema, lowercase types), is passed via
+// response_format so the model is constrained to emit that exact shape (more
+// reliable than prompting alone). Uses the Interactions API (generateContent
+// is legacy as of mid-2026 and 404s for some models/accounts).
 async function callGemini(env, system, user, maxTokens, jsonSchema) {
   const model = env.GEMINI_MODEL || 'gemini-2.5-flash';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-  const generationConfig = { temperature: 0.2, maxOutputTokens: maxTokens };
-  if (jsonSchema) { generationConfig.responseMimeType = 'application/json'; generationConfig.responseSchema = jsonSchema; }
-  const upstream = await fetch(url, {
+  const body = {
+    model,
+    system_instruction: system,
+    input: user,
+    generation_config: { temperature: 0.2, max_output_tokens: maxTokens },
+  };
+  if (jsonSchema) body.response_format = [{ type: 'text', mime_type: 'application/json', schema: jsonSchema }];
+  const upstream = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: system }] },
-      contents: [{ role: 'user', parts: [{ text: user }] }],
-      generationConfig,
-    }),
+    body: JSON.stringify(body),
   });
   if (!upstream.ok) { const detail = await upstream.text(); throw Object.assign(new Error('upstream'), { status: 502, detail: detail.slice(0, 500) }); }
   const data = await upstream.json();
-  const cand = data.candidates && data.candidates[0];
-  const parts = cand && cand.content && cand.content.parts || [];
-  return parts.map(p => p.text || '').join('').trim();
+  const steps = Array.isArray(data.steps) ? data.steps : [];
+  const text = steps.filter(s => s.type === 'model_output')
+    .flatMap(s => (s.content || []).map(c => c.text || ''))
+    .join('').trim();
+  // Fallback in case the response shape differs from what we expect (SDK
+  // convenience getters like output_text aren't guaranteed to mirror the raw
+  // REST JSON) — try a couple of other plausible top-level fields.
+  return text || (typeof data.output_text === 'string' ? data.output_text.trim() : '') || (typeof data.output === 'string' ? data.output.trim() : '');
 }
 
 async function handleTutor(body, env, headers) {
@@ -122,13 +136,13 @@ async function handleTutor(body, env, headers) {
 }
 
 const GRADE_SCHEMA = {
-  type: 'OBJECT',
+  type: 'object',
   properties: {
-    score: { type: 'INTEGER' },
-    pass: { type: 'BOOLEAN' },
-    covered: { type: 'ARRAY', items: { type: 'STRING' } },
-    missed: { type: 'ARRAY', items: { type: 'STRING' } },
-    feedback: { type: 'STRING' },
+    score: { type: 'integer' },
+    pass: { type: 'boolean' },
+    covered: { type: 'array', items: { type: 'string' } },
+    missed: { type: 'array', items: { type: 'string' } },
+    feedback: { type: 'string' },
   },
   required: ['score', 'pass', 'covered', 'missed', 'feedback'],
 };

@@ -10,8 +10,14 @@ its key.
 | action | Powers | Upstream | Secret |
 |---|---|---|---|
 | `tutor` (default) | Exercise hint / review | Anthropic | `ANTHROPIC_API_KEY` |
-| `grade` | AI-grading of free-text interview answers | Gemini (Google AI Studio) | `GEMINI_API_KEY` |
-| `recommend` | Post-exam personalized study recommendation | Gemini (Google AI Studio) | `GEMINI_API_KEY` |
+| `grade` | AI-grading of free-text interview answers | Gemini Interactions API | `GEMINI_API_KEY` |
+| `recommend` | Post-exam personalized study recommendation | Gemini Interactions API | `GEMINI_API_KEY` |
+
+`grade`/`recommend` call Google's **Interactions API** (`POST /v1beta/interactions`),
+the primary Gemini interface since June 2026 — not the older `generateContent`
+endpoint, which is legacy and 404s for some models/accounts. If Google changes
+the wire format again, see `callGemini()` in `worker.js` and
+https://ai.google.dev/gemini-api/docs/migrate-to-interactions.
 
 ## Cost
 
