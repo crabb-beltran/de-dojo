@@ -22,3 +22,9 @@ GEMINI_MODEL = "gemini-2.5-flash"
 # (gemini-3.5-flash, gemini-3.6-flash, gemini-3.7-flash) if you want to try a
 # newer generation; that family iterates fast, so 2.5 was picked for
 # stability. Full catalog: https://ai.google.dev/gemini-api/docs/pricing
+#
+# The Worker calls Gemini's Interactions API (POST /v1beta/interactions),
+# the primary interface since June 2026 — the older generateContent endpoint
+# 404s for some models/accounts. See worker.js's callGemini() and
+# https://ai.google.dev/gemini-api/docs/migrate-to-interactions if the wire
+# format changes again.
