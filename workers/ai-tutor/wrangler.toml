@@ -7,7 +7,8 @@ compatibility_date = "2024-11-01"
 [vars]
 ALLOW_ORIGIN = "https://crabb-beltran.github.io"
 # MODEL = "claude-sonnet-4-6"
-GEMINI_MODEL = "gemini-3.7-flash"
+GEMINI_MODEL = "gemini-3.6-flash"
+GEMINI_FALLBACK_MODEL = "gemini-3.5-flash"
 
 # Set the API keys as secrets (never commit them):
 #   wrangler secret put ANTHROPIC_API_KEY   # powers action:'tutor' (hint/review)
@@ -17,12 +18,12 @@ GEMINI_MODEL = "gemini-3.7-flash"
 # NOT from a consumer Gemini Pro/Advanced app subscription — those are separate.
 #
 # The Worker calls Gemini's Interactions API (POST /v1beta/interactions), the
-# primary interface since June 2026. GEMINI_MODEL above is gemini-3.7-flash
-# because the Interactions API rejects some older models (confirmed live:
-# gemini-2.5-flash — a valid model on the legacy generateContent endpoint —
-# 404s here with "This model ... use the Interactions API"). Both official
-# Interactions API examples in Google's docs use a Gemini 3.x Flash model;
-# 3.7 is the newest "Stable" (non-preview) one. Other 3.x Flash options:
-# gemini-3.5-flash, gemini-3.6-flash. See worker.js's callGemini() and
+# primary interface since June 2026. Model choice, both confirmed live:
+#   - gemini-2.5-flash 404s here ("This model ... use the Interactions API") —
+#     it's valid only on the legacy generateContent endpoint. Use a 3.x model.
+#   - gemini-3.7-flash (newest) returned "currently experiencing high demand",
+#     so the default is gemini-3.6-flash, with GEMINI_FALLBACK_MODEL retried
+#     once on transient capacity errors. Swap either freely.
+# See worker.js's callGemini() and
 # https://ai.google.dev/gemini-api/docs/migrate-to-interactions if the wire
 # format changes again.
