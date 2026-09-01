@@ -9,11 +9,11 @@ its key.
 
 | action | Powers | Upstream | Secret |
 |---|---|---|---|
-| `tutor` (default) | Exercise hint / review | Anthropic | `ANTHROPIC_API_KEY` |
+| `tutor` (default) | Exercise hint / review | Gemini Interactions API | `GEMINI_API_KEY` |
 | `grade` | AI-grading of free-text interview answers | Gemini Interactions API | `GEMINI_API_KEY` |
 | `recommend` | Post-exam personalized study recommendation | Gemini Interactions API | `GEMINI_API_KEY` |
 
-`grade`/`recommend` call Google's **Interactions API** (`POST /v1beta/interactions`),
+All three actions call Google's **Interactions API** (`POST /v1beta/interactions`),
 the primary Gemini interface since June 2026 — not the older `generateContent`
 endpoint, which is legacy and 404s for some models/accounts. If Google changes
 the wire format again, see `callGemini()` in `worker.js` and
@@ -22,8 +22,7 @@ https://ai.google.dev/gemini-api/docs/migrate-to-interactions.
 ## Cost
 
 - **Hosting: free.** Cloudflare Workers free tier = 100,000 requests/day.
-- **Anthropic usage** (tutor) billed per token once `ANTHROPIC_API_KEY` is set.
-- **Gemini usage** (grade/recommend) needs a key from
+- **Gemini usage** (all actions) needs a key from
   **[Google AI Studio](https://aistudio.google.com/apikey)** — this is
   *separate* from a consumer Gemini Pro/Advanced app subscription (Google
   One), which does not grant API access. The AI Studio key has its own usage
@@ -38,8 +37,7 @@ https://ai.google.dev/gemini-api/docs/migrate-to-interactions.
 ```bash
 npm i -g wrangler                       # one-time
 cd workers/ai-tutor
-wrangler secret put ANTHROPIC_API_KEY   # optional — enables the hint/review tutor
-wrangler secret put GEMINI_API_KEY      # optional — enables AI grading + recommendations
+wrangler secret put GEMINI_API_KEY      # powers every action (tutor, grading, recommendations)
 wrangler deploy                          # prints https://<name>.<acct>.workers.dev
 ```
 
