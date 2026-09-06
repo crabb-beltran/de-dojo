@@ -321,6 +321,19 @@
   .row .fill{display:block;height:100%;background:linear-gradient(90deg,var(--coral),var(--gold))}.row .pct{width:58px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--muted)}
   .weak{border:1px solid var(--bad);background:rgba(255,92,119,.07);border-radius:10px;padding:12px 14px;margin-top:16px;font-size:13.5px;line-height:1.5}
   .repai{font-size:13.5px;line-height:1.6;color:var(--text);white-space:pre-line}
+  .reco{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:18px 0;padding:16px 18px;border:1px solid var(--coral);border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--coral) 12%,transparent),transparent)}
+  .reco .reco-txt{flex:1;min-width:220px}
+  .reco .reco-h{font-family:var(--mono);font-size:10.5px;letter-spacing:.7px;text-transform:uppercase;color:var(--coral);font-weight:700}
+  .reco .reco-name{font-size:15px;font-weight:700;margin:4px 0 3px}
+  .reco .reco-meta{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .reco.done{justify-content:center;border-color:var(--mint);background:color-mix(in srgb,var(--mint) 8%,transparent);font-size:13.5px}
+  .keyshelp{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:70;padding:20px}
+  .keyshelp.show{display:flex}
+  .keyshelp .kh-box{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px 22px;width:min(420px,100%);box-shadow:var(--shadow)}
+  .keyshelp h3{margin:0 0 14px;font-size:15px}
+  .kh-row{display:flex;align-items:center;gap:12px;padding:7px 0;font-size:13px;border-top:1px solid var(--border)}
+  .kh-row .kh-k{flex:none;min-width:132px}
+  .kh-row kbd{font-family:var(--mono);font-size:11px;padding:2px 6px;border:1px solid var(--border);border-bottom-width:2px;border-radius:5px;background:var(--surface)}
   .feature-banner{border:2px solid var(--mint);border-radius:16px;padding:22px 24px 6px;margin:40px 0 24px;background:linear-gradient(160deg,color-mix(in srgb,var(--mint) 10%,transparent),transparent)}
   .feature-banner h2{margin-top:2px}
   .feature-badge{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:4px 11px;border-radius:999px;background:var(--mint);color:#052e2b}
@@ -336,7 +349,7 @@
 </head>
 <body>
 <div class="top">
-  <button class="menub" id="menub">☰</button>
+  <button class="menub" id="menub" aria-label="Abrir/cerrar lista de ejercicios">☰</button>
   <div class="brand" onclick="switchMode('home')"><img class="blogo" src="assets/de-dojo-icon.png" alt="DE Dojo" width="26" height="26">DE<em>Dojo</em></div>
   <div class="nav" id="nav">
     <button class="navbtn" data-m="home">Inicio</button>
@@ -346,11 +359,12 @@
     <button class="navbtn" data-m="stats">Stats</button>
   </div>
   <div class="spacer"></div>
-  <div class="lang"><button id="langEs" class="on" onclick="setLang('es')">ES</button><button id="langEn" onclick="setLang('en')">EN</button></div>
+  <div class="lang" role="group" aria-label="Idioma / Language"><button id="langEs" class="on" onclick="setLang('es')" aria-label="Español">ES</button><button id="langEn" onclick="setLang('en')" aria-label="English">EN</button></div>
   <div class="xpmini">Lv <b id="lvl">1</b> · <span id="xptxt">0 XP</span></div>
   <button class="ghostbtn userbtn" id="userBtn" onclick="openAccount()">👤</button>
-  <button class="ghostbtn" id="themeBtn" title="theme">🌙</button>
-  <button class="ghostbtn" id="resetBtn">reset</button>
+  <button class="ghostbtn" id="keysBtn" title="Atajos de teclado (?)" aria-label="Atajos de teclado">⌨</button>
+  <button class="ghostbtn" id="themeBtn" title="theme" aria-label="Tema claro/oscuro">🌙</button>
+  <button class="ghostbtn" id="resetBtn" aria-label="Borrar mi progreso">reset</button>
 </div>
 
 <!-- HOME -->
@@ -373,8 +387,8 @@
     <div class="actions" id="actions"></div>
     <div class="results" id="results">
       <div class="rhd"><span id="rhdLabel">test cases</span> <span class="verdict" id="verdict"></span></div>
-      <div id="cases"><div class="console"></div></div>
-      <div class="tutor" id="tutor"></div>
+      <div id="cases" role="status" aria-live="polite"><div class="console"></div></div>
+      <div class="tutor" id="tutor" role="status" aria-live="polite"></div>
     </div>
   </section>
   <div class="overlay" id="ovSetup"></div>
@@ -1894,6 +1908,160 @@ src=[{"id":1,"v":"a"}]; upsert(src,[{"id":1,"v":"z"}]); chk("no muta entrada", s
    {t:{es:'Hacer SELECT * para cachear.',en:'Run SELECT * to cache.'},ok:false}],
  explain:{es:'Clustering optimiza filtros por RANGO en columnas de baja/media cardinalidad (fecha, región). Para lookups de punto muy selectivos en alta cardinalidad (email, id) se usa Search Optimization Service, que mantiene una estructura de búsqueda. Cada uno resuelve un patrón distinto; tienen costo.',en:'Clustering optimizes RANGE filters on low/medium-cardinality columns (date, region). For highly selective point lookups on high cardinality (email, id), use the Search Optimization Service, which maintains a search structure. Each solves a different pattern; both have a cost.'}
 },
+/* ===== Snowflake / Databricks — PRÁCTICA (hands-on, no solo quiz) ===== */
+{
+ id:'sql_sf_merge_upsert',cat:'S · Snowflake Avanzado',kind:'sql',diff:'m',xp:25,
+ title:{es:'MERGE idempotente: upsert por clave de negocio',en:'Idempotent MERGE: upsert by business key'},tags:'merge · upsert · idempotencia',
+ context:{es:'Es el patrón #1 de Snowflake y Delta Lake: cargar un lote a una tabla Silver sin duplicar si el job se re-ejecuta. Snowflake usa <code>MERGE INTO</code>; aquí lo practicas con el <code>UPSERT</code> de SQLite, que tiene la misma semántica.',en:'This is the #1 pattern in Snowflake and Delta Lake: load a batch into a Silver table without duplicating if the job re-runs. Snowflake uses <code>MERGE INTO</code>; here you practice it with SQLite’s <code>UPSERT</code>, same semantics.'},
+ task:{es:'Aplica el lote <code>stg_cliente</code> sobre <code>dim_cliente</code>: si el <code>id</code> existe, actualiza sus campos; si no, insértalo.',en:'Apply the <code>stg_cliente</code> batch onto <code>dim_cliente</code>: if the <code>id</code> exists, update its fields; otherwise insert it.'},
+ bullets:[{es:'Se verifica el <b>estado final de la tabla</b>, no un SELECT.',en:'The <b>final table state</b> is checked, not a SELECT.'},
+   {es:'Debe ser <b>idempotente</b>: correrlo dos veces deja el mismo resultado.',en:'It must be <b>idempotent</b>: running it twice leaves the same result.'},
+   {es:'Sintaxis: <code>INSERT INTO ... SELECT ... WHERE true ON CONFLICT(id) DO UPDATE SET col = excluded.col</code>.',en:'Syntax: <code>INSERT INTO ... SELECT ... WHERE true ON CONFLICT(id) DO UPDATE SET col = excluded.col</code>.'}],
+ sources:[S('dim_cliente',['id','nombre','segmento','updated_at'],[[1,'Ana','SMB',100],[2,'Beto','SMB',100]],'destino (Silver)'),
+   S('stg_cliente',['id','nombre','segmento','updated_at'],[[2,'Beto','Enterprise',200],[3,'Caro','SMB',200]],'lote entrante')],
+ expected:'1 Ana SMB 100\n2 Beto Enterprise 200\n3 Caro SMB 200',
+ datasets:[`CREATE TABLE dim_cliente(id INTEGER PRIMARY KEY,nombre TEXT,segmento TEXT,updated_at INT);INSERT INTO dim_cliente VALUES (1,'Ana','SMB',100),(2,'Beto','SMB',100);CREATE TABLE stg_cliente(id INT,nombre TEXT,segmento TEXT,updated_at INT);INSERT INTO stg_cliente VALUES (2,'Beto','Enterprise',200),(3,'Caro','SMB',200);`],
+ ref:`INSERT INTO dim_cliente(id,nombre,segmento,updated_at) SELECT id,nombre,segmento,updated_at FROM stg_cliente WHERE true ON CONFLICT(id) DO UPDATE SET nombre=excluded.nombre,segmento=excluded.segmento,updated_at=excluded.updated_at`,
+ verify:`SELECT id,nombre,segmento,updated_at FROM dim_cliente ORDER BY id`,
+ starter:`INSERT INTO dim_cliente (id, nombre, segmento, updated_at)\nSELECT id, nombre, segmento, updated_at\nFROM stg_cliente\nWHERE true\nON CONFLICT(id) DO UPDATE SET\n  -- ... actualiza los campos con los valores entrantes (excluded.*)\n;`
+},
+{
+ id:'sql_sf_scd2',cat:'S · Snowflake Avanzado',kind:'sql',diff:'h',xp:30,
+ title:{es:'SCD Tipo 2: cerrar la versión vieja y abrir la nueva',en:'SCD Type 2: close the old version, open the new one'},tags:'scd2 · historia · dimensión',
+ context:{es:'Una dimensión con historia guarda cada versión de la fila. Cuando llega un cambio, no se sobrescribe: se <b>cierra</b> la versión vigente y se <b>inserta</b> una nueva. Es lo que alimentan Streams+Tasks en Snowflake y el CDF de Delta.',en:'A historized dimension keeps every version of a row. When a change arrives you do not overwrite: you <b>close</b> the current version and <b>insert</b> a new one. This is what Snowflake Streams+Tasks and Delta CDF feed.'},
+ task:{es:'Para los <code>id</code> que llegan en <code>stg_prod</code>: cierra la fila vigente (<code>valid_to</code> = <code>ts</code> entrante, <code>is_current</code> = 0) e inserta la nueva versión vigente.',en:'For the <code>id</code>s arriving in <code>stg_prod</code>: close the current row (<code>valid_to</code> = incoming <code>ts</code>, <code>is_current</code> = 0) and insert the new current version.'},
+ bullets:[{es:'Se verifica el <b>estado final</b> de <code>dim_prod</code>.',en:'The <b>final state</b> of <code>dim_prod</code> is checked.'},
+   {es:'La nueva versión abre con <code>valid_from</code> = <code>ts</code>, <code>valid_to</code> = <code>NULL</code>, <code>is_current</code> = 1.',en:'The new version opens with <code>valid_from</code> = <code>ts</code>, <code>valid_to</code> = <code>NULL</code>, <code>is_current</code> = 1.'},
+   {es:'Son <b>dos sentencias</b>: primero el UPDATE que cierra, luego el INSERT que abre.',en:'It is <b>two statements</b>: first the closing UPDATE, then the opening INSERT.'}],
+ sources:[S('dim_prod',['id','precio','valid_from','valid_to','is_current'],[[1,100,100,'∅',1],[2,50,100,'∅',1]],'∅ = NULL (versión vigente)'),
+   S('stg_prod',['id','precio','ts'],[[1,120,200]],'cambio entrante')],
+ expected:'1 100 100 200 0\n1 120 200 -1 1\n2 50 100 -1 1',
+ datasets:[`CREATE TABLE dim_prod(sk INTEGER PRIMARY KEY AUTOINCREMENT,id INT,precio INT,valid_from INT,valid_to INT,is_current INT);INSERT INTO dim_prod(id,precio,valid_from,valid_to,is_current) VALUES (1,100,100,NULL,1),(2,50,100,NULL,1);CREATE TABLE stg_prod(id INT,precio INT,ts INT);INSERT INTO stg_prod VALUES (1,120,200);`],
+ ref:`UPDATE dim_prod SET valid_to=(SELECT ts FROM stg_prod WHERE stg_prod.id=dim_prod.id), is_current=0 WHERE is_current=1 AND id IN (SELECT id FROM stg_prod); INSERT INTO dim_prod(id,precio,valid_from,valid_to,is_current) SELECT id,precio,ts,NULL,1 FROM stg_prod;`,
+ verify:`SELECT id,precio,valid_from,COALESCE(valid_to,-1),is_current FROM dim_prod ORDER BY id,valid_from`,
+ starter:`-- 1) cierra la versión vigente de los ids que cambiaron\nUPDATE dim_prod\nSET   -- ...\nWHERE -- ...\n;\n\n-- 2) abre la nueva versión\nINSERT INTO dim_prod (id, precio, valid_from, valid_to, is_current)\n-- ...\n;`
+},
+{
+ id:'sql_sf_watermark',cat:'S · Snowflake Avanzado',kind:'sql',diff:'m',xp:25,
+ title:{es:'Carga incremental con watermark',en:'Incremental load with a watermark'},tags:'incremental · watermark · control',
+ context:{es:'Antes de tener Streams o Auto Loader, el patrón universal de carga incremental es el <b>watermark</b>: una tabla de control guarda hasta qué punto se cargó, y cada corrida trae solo lo nuevo. Sigue siendo la base de todo pipeline incremental.',en:'Before Streams or Auto Loader, the universal incremental pattern is the <b>watermark</b>: a control table records how far you loaded, and each run brings only what is new. It is still the basis of every incremental pipeline.'},
+ task:{es:'Carga a <code>tgt</code> solo las filas de <code>src</code> más nuevas que el watermark, y luego <b>avanza</b> el watermark al máximo cargado.',en:'Load into <code>tgt</code> only the rows of <code>src</code> newer than the watermark, then <b>advance</b> the watermark to the max loaded.'},
+ bullets:[{es:'Se verifica el estado final de <code>tgt</code> y el watermark en <code>ctl</code>.',en:'The final state of <code>tgt</code> and the watermark in <code>ctl</code> are checked.'},
+   {es:'Estrictamente <code>&gt;</code> el watermark, no <code>&gt;=</code>: si no, recargas la última fila cada corrida.',en:'Strictly <code>&gt;</code> the watermark, not <code>&gt;=</code>: otherwise you reload the last row every run.'},
+   {es:'Son <b>dos sentencias</b>: el INSERT incremental y el UPDATE del control.',en:'It is <b>two statements</b>: the incremental INSERT and the control UPDATE.'}],
+ sources:[S('src',['id','val','updated_at'],[[1,'a',100],[2,'b',200],[3,'c',300]],'fuente'),
+   S('tgt',['id','val','updated_at'],[[1,'a',100]],'ya cargado'),
+   S('ctl',['tabla','last_ts'],[['src',100]],'tabla de control')],
+ expected:'1 a 100\n2 b 200\n3 c 300\n999 watermark 300',
+ datasets:[`CREATE TABLE src(id INT,val TEXT,updated_at INT);INSERT INTO src VALUES (1,'a',100),(2,'b',200),(3,'c',300);CREATE TABLE tgt(id INT,val TEXT,updated_at INT);INSERT INTO tgt VALUES (1,'a',100);CREATE TABLE ctl(tabla TEXT,last_ts INT);INSERT INTO ctl VALUES ('src',100);`],
+ ref:`INSERT INTO tgt(id,val,updated_at) SELECT id,val,updated_at FROM src WHERE updated_at > (SELECT last_ts FROM ctl WHERE tabla='src'); UPDATE ctl SET last_ts=(SELECT MAX(updated_at) FROM tgt) WHERE tabla='src';`,
+ verify:`SELECT id,val,updated_at FROM tgt UNION ALL SELECT 999,'watermark',last_ts FROM ctl WHERE tabla='src' ORDER BY id`,
+ starter:`-- 1) trae solo lo nuevo\nINSERT INTO tgt (id, val, updated_at)\nSELECT id, val, updated_at\nFROM src\nWHERE -- ... compara contra el watermark de ctl\n;\n\n-- 2) avanza el watermark\nUPDATE ctl\nSET -- ...\nWHERE tabla = 'src';`
+},
+{
+ id:'sql_dbx_skew',cat:'databricks',kind:'sql',diff:'m',xp:20,
+ title:{es:'Diagnosticar data skew antes de optimizar',en:'Diagnose data skew before optimizing'},tags:'skew · diagnóstico · spark',
+ context:{es:'Un job de Spark tarda 10x y unas pocas tareas nunca terminan. Antes de saltar a salting o a subir el cluster, la primera consulta que corre un DE senior es contar filas por clave: si una clave concentra la mayoría, es skew — y ninguna cantidad de nodos extra lo arregla.',en:'A Spark job takes 10x longer and a few tasks never finish. Before jumping to salting or a bigger cluster, the first query a senior DE runs is counting rows per key: if one key holds most of the data, it is skew — and no amount of extra nodes fixes that.'},
+ task:{es:'Por cada <code>user_id</code> devuelve cuántas filas tiene y qué <b>porcentaje del total</b> representa, de mayor a menor.',en:'For each <code>user_id</code> return how many rows it has and what <b>percentage of the total</b> it represents, highest first.'},
+ bullets:[{es:'Salida: <code>user_id</code>, <code>filas</code>, <code>pct</code>. Orden: <code>filas DESC</code>, luego <code>user_id</code>.',en:'Output: <code>user_id</code>, <code>filas</code>, <code>pct</code>. Order: <code>filas DESC</code>, then <code>user_id</code>.'},
+   {es:'<code>pct</code> redondeado a 1 decimal. Cuidado con la división entera: multiplica por <code>100.0</code>.',en:'<code>pct</code> rounded to 1 decimal. Watch out for integer division: multiply by <code>100.0</code>.'}],
+ sources:[S('eventos',['user_id','val'],[[1,10],[1,11],[1,12],[1,13],[1,14],[1,15],[2,20],[2,21],[3,30],[3,31]],'10 filas en total')],
+ expected:'1 6 60.0\n2 2 20.0\n3 2 20.0',
+ datasets:[`CREATE TABLE eventos(user_id INT,val INT);INSERT INTO eventos VALUES (1,10),(1,11),(1,12),(1,13),(1,14),(1,15),(2,20),(2,21),(3,30),(3,31);`],
+ ref:`SELECT user_id, COUNT(*) filas, ROUND(COUNT(*)*100.0/(SELECT COUNT(*) FROM eventos),1) pct FROM eventos GROUP BY user_id ORDER BY filas DESC, user_id`,
+ starter:`SELECT\n  user_id,\n  -- filas\n  -- pct sobre el total\nFROM eventos\nGROUP BY user_id\nORDER BY -- ...\n;`
+},
+{
+ id:'py_dbx_salting',cat:'databricks',kind:'python',diff:'h',xp:30,
+ title:{es:'Salting: agregar una clave caliente en dos fases',en:'Salting: aggregate a hot key in two phases'},tags:'skew · salting · spark',
+ context:{es:'Cuando una clave concentra los datos, una sola tarea hace todo el trabajo. El <b>salting</b> reparte esa clave en N sub-claves, agrega en paralelo, y luego suma los parciales — el resultado final es idéntico, pero el trabajo sí se distribuye.',en:'When one key holds most of the data, a single task does all the work. <b>Salting</b> splits that key into N sub-keys, aggregates in parallel, then sums the partials — the final result is identical, but the work actually distributes.'},
+ task:{es:'Implementa <code>salted_counts(df, n_salts)</code> que cuente filas por <code>key</code> usando dos fases (con salt y luego sin él) y devuelva un <code>dict</code> <code>{key: total}</code>.',en:'Implement <code>salted_counts(df, n_salts)</code> that counts rows per <code>key</code> using two phases (with salt, then without) and returns a <code>dict</code> <code>{key: total}</code>.'},
+ bullets:[{es:'El resultado debe ser <b>idéntico</b> a un <code>groupby</code> directo — el salting cambia el <em>cómo</em>, no el <em>qué</em>.',en:'The result must be <b>identical</b> to a plain <code>groupby</code> — salting changes the <em>how</em>, not the <em>what</em>.'},
+   {es:'Fase 1: agrupa por <code>(key, salt)</code>. Fase 2: agrupa el parcial por <code>key</code> y suma.',en:'Phase 1: group by <code>(key, salt)</code>. Phase 2: group the partial by <code>key</code> and sum.'},
+   {es:'Valores <code>int</code> de Python en el dict de salida.',en:'Python <code>int</code> values in the output dict.'}],
+ sources:[S('df',['key'],[['a'],['a'],['a'],['b'],['…']],'"a" concentra la mayoría de las filas')],
+ expected:'{"a": 5, "b": 2}',
+ pyPackages:['pandas'],
+ ref:`import pandas as pd
+
+def salted_counts(df, n_salts=4):
+    d = df.copy()
+    d["_salt"] = [i % n_salts for i in range(len(d))]
+    partial = d.groupby(["key", "_salt"]).size().reset_index(name="c")
+    final = partial.groupby("key")["c"].sum()
+    return {k: int(v) for k, v in final.items()}`,
+ starter:`import pandas as pd\n\ndef salted_counts(df, n_salts=4):\n    d = df.copy()\n    # fase 1: reparte cada fila en una de n_salts sub-claves y agrega por (key, salt)\n    # fase 2: suma los parciales por key\n    ...\n`,
+ pytests:`
+import pandas as pd
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("clave caliente + normal", salted_counts(pd.DataFrame({"key":["a"]*5+["b"]*2})), {"a":5,"b":2})
+chk("coincide con groupby directo", salted_counts(pd.DataFrame({"key":list("aaabbc")})), {"a":3,"b":2,"c":1})
+chk("n_salts no cambia el resultado", salted_counts(pd.DataFrame({"key":["x"]*7}), 3), {"x":7})
+`
+},
+{
+ id:'py_dbx_cdf',cat:'databricks',kind:'python',diff:'h',xp:30,
+ title:{es:'Aplicar un Change Data Feed (insert/update/delete)',en:'Apply a Change Data Feed (insert/update/delete)'},tags:'delta · cdf · cdc',
+ context:{es:'El Change Data Feed de Delta expone los cambios fila a fila con su tipo. El consumidor downstream los aplica en orden sobre su tabla destino — es la base del CDC incremental sin releer toda la fuente.',en:'Delta’s Change Data Feed exposes changes row by row with their type. The downstream consumer applies them in order onto its target table — the basis of incremental CDC without re-reading the whole source.'},
+ task:{es:'Implementa <code>apply_cdf(target, cdf)</code>: aplica en orden los cambios (<code>insert</code>, <code>update</code>, <code>delete</code>) sobre <code>target</code> y devuelve un <code>dict</code> <code>{id: val}</code> ordenado por <code>id</code>.',en:'Implement <code>apply_cdf(target, cdf)</code>: apply the changes (<code>insert</code>, <code>update</code>, <code>delete</code>) in order onto <code>target</code> and return a <code>dict</code> <code>{id: val}</code> sorted by <code>id</code>.'},
+ bullets:[{es:'<code>delete</code> quita la clave; <code>insert</code> y <code>update</code> la escriben (upsert).',en:'<code>delete</code> removes the key; <code>insert</code> and <code>update</code> write it (upsert).'},
+   {es:'Un <code>delete</code> de una clave inexistente <b>no debe fallar</b> — el feed puede repetirse.',en:'A <code>delete</code> of a missing key <b>must not fail</b> — the feed can be replayed.'},
+   {es:'Claves <code>int</code>, ordenadas ascendente en el dict de salida.',en:'<code>int</code> keys, ascending order in the output dict.'}],
+ sources:[S('target',['id','val'],[[1,'a'],[2,'b']],'estado actual'),
+   S('cdf',['id','val','change_type'],[[2,'B','update'],[3,'c','insert'],[1,'a','delete']],'en Delta la columna real es _change_type')],
+ expected:'{2: "B", 3: "c"}',
+ pyPackages:['pandas'],
+ ref:`import pandas as pd
+
+def apply_cdf(target, cdf):
+    d = {int(r.id): r.val for r in target.itertuples()}
+    for r in cdf.itertuples():
+        if r.change_type == "delete":
+            d.pop(int(r.id), None)
+        else:
+            d[int(r.id)] = r.val
+    return dict(sorted(d.items()))`,
+ starter:`import pandas as pd\n\ndef apply_cdf(target, cdf):\n    # empieza del estado actual de target\n    # aplica cada cambio del cdf en orden (delete quita, insert/update escriben)\n    ...\n`,
+ pytests:`
+import pandas as pd
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+t=pd.DataFrame({"id":[1,2],"val":["a","b"]})
+c=pd.DataFrame({"id":[2,3,1],"val":["B","c","a"],"change_type":["update","insert","delete"]})
+chk("aplica update/insert/delete", apply_cdf(t,c), {2:"B",3:"c"})
+chk("delete inexistente no falla", apply_cdf(pd.DataFrame({"id":[1],"val":["a"]}), pd.DataFrame({"id":[9],"val":["z"],"change_type":["delete"]})), {1:"a"})
+first = apply_cdf(t, c)
+again = apply_cdf(pd.DataFrame({"id":list(first.keys()),"val":list(first.values())}), c)
+chk("replay del mismo feed es idempotente", again, {2:"B",3:"c"})
+`
+},
+{
+ id:'py_dbx_window',cat:'databricks',kind:'python',diff:'m',xp:25,
+ title:{es:'Window de Spark en pandas: acumulado por partición',en:'Spark window in pandas: running total per partition'},tags:'window · cumsum · spark',
+ context:{es:'<code>SUM(amt) OVER (PARTITION BY user ORDER BY ts)</code> es de lo más pedido en entrevistas. En PySpark es una <code>Window</code>; en pandas es <code>groupby().cumsum()</code> — misma idea, y entender la equivalencia te permite traducir entre SQL, Spark y pandas sin perder el hilo.',en:'<code>SUM(amt) OVER (PARTITION BY user ORDER BY ts)</code> is one of the most asked interview patterns. In PySpark it is a <code>Window</code>; in pandas it is <code>groupby().cumsum()</code> — same idea, and understanding the equivalence lets you translate between SQL, Spark and pandas without losing the thread.'},
+ task:{es:'Implementa <code>running_total(df)</code>: por cada <code>user</code>, el acumulado de <code>amt</code> ordenado por <code>ts</code>. Devuelve una lista de tuplas <code>(user, ts, acumulado)</code>.',en:'Implement <code>running_total(df)</code>: per <code>user</code>, the running sum of <code>amt</code> ordered by <code>ts</code>. Return a list of tuples <code>(user, ts, running)</code>.'},
+ bullets:[{es:'Ordena por <code>user</code> y luego <code>ts</code> antes de acumular — el orden es parte de la definición de la window.',en:'Sort by <code>user</code> then <code>ts</code> before accumulating — ordering is part of the window definition.'},
+   {es:'El acumulado <b>reinicia</b> en cada <code>user</code> (eso es el <code>PARTITION BY</code>).',en:'The running total <b>resets</b> per <code>user</code> (that is the <code>PARTITION BY</code>).'},
+   {es:'<code>ts</code> y el acumulado como <code>int</code> de Python.',en:'<code>ts</code> and the running total as Python <code>int</code>.'}],
+ sources:[S('df',['user','ts','amt'],[['a',1,10],['a',2,5],['b',1,7]])],
+ expected:'[("a",1,10), ("a",2,15), ("b",1,7)]',
+ pyPackages:['pandas'],
+ ref:`import pandas as pd
+
+def running_total(df):
+    d = df.sort_values(["user", "ts"]).copy()
+    d["cum"] = d.groupby("user")["amt"].cumsum()
+    return [(r.user, int(r.ts), int(r.cum)) for r in d.itertuples()]`,
+ starter:`import pandas as pd\n\ndef running_total(df):\n    # ordena por user, ts\n    # acumula amt reiniciando en cada user\n    # devuelve [(user, ts, acumulado), ...]\n    ...\n`,
+ pytests:`
+import pandas as pd
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("acumula y reinicia por user", running_total(pd.DataFrame({"user":["a","a","b"],"ts":[1,2,1],"amt":[10,5,7]})), [("a",1,10),("a",2,15),("b",1,7)])
+chk("respeta el orden de ts", running_total(pd.DataFrame({"user":["a","a"],"ts":[2,1],"amt":[5,10]})), [("a",1,10),("a",2,15)])
+`
+},
 /* ===================== DATABRICKS / SPARK (+6) ===================== */
 {
  id:'q_dbx_planes',cat:'databricks',kind:'quiz',diff:'e',xp:10,timer:90,
@@ -3153,6 +3321,8 @@ const T={
   sql_fail:'No se pudo cargar sql.js',write_q:'Escribe una query.',no_res:'Sin resultados.',tutor_off:'Tutor IA no disponible aquí',hint_sys:'Da UNA pista breve (máx 3 líneas) que oriente sin resolver.',rev_sys:'Eres un Senior Data Engineer revisando código de un colega senior. Feedback directo, máx 8 líneas: correctitud, edge cases, idempotencia/coste/rendimiento, estilo de producción. Señala líneas concretas. No reescribas todo.',
   w_open_ph:'Escribe tu respuesta como se la darías a un entrevistador (varias frases, con ejemplos concretos si aplica)…',w_grade:'Calificar con IA',w_grading:'Calificando…',w_grade_off:'Calificación IA no disponible aquí — autoevalúate contra los puntos clave.',w_selfgrade:'¿Cubriste los puntos clave?',w_selfyes:'Sí, los cubrí',w_selfno:'No / a medias',w_keypoints:'Puntos clave esperados',w_covered:'Cubriste',w_missed:'Te faltó',w_write_first:'Escribe tu respuesta antes de calificar.',
   rep_ai_t:'Recomendación IA',rep_ai_loading:'Generando recomendación personalizada…',rep_ai_off:'Recomendación IA no disponible aquí — usa el resumen por categoría de arriba.',
+  reco_t:'Tu siguiente ejercicio',reco_why:'Elegido por tu tema más flojo',reco_go:'Practicar ahora →',reco_done:'¡Todo resuelto! Sube la dificultad o repite en modo examen.',
+  keys_t:'Atajos de teclado',keys_run:'Ejecutar / comprobar',keys_opt:'Elegir opción 1-4 (quiz)',keys_next:'Enviar y siguiente (examen)',keys_hint:'Pista IA',keys_help:'Mostrar/ocultar esta ayuda',keys_esc:'Cerrar',
   expected:'esperado',got:'tu salida',rows:'fila(s)',output:'salida',
   toast_xp:'XP',toast_timeup:'⏱ Tiempo agotado — puedes seguir, pero rinde ½ XP',toast_examtime:'⏱ Tiempo del examen agotado',
   acct_title:'Tu cuenta',acct_sub:'Cada usuario guarda su propio XP, ejercicios resueltos e historial.',
@@ -3196,6 +3366,8 @@ const T={
   sql_fail:'Could not load sql.js',write_q:'Write a query.',no_res:'No results.',tutor_off:'AI tutor unavailable here',hint_sys:'Give ONE short hint (max 3 lines) that guides without solving.',rev_sys:'You are a Senior Data Engineer reviewing code from a senior peer. Direct feedback, max 8 lines: correctness, edge cases, idempotency/cost/performance, production style. Point to concrete lines. Do not rewrite everything.',
   w_open_ph:'Write your answer as you would give it to an interviewer (a few sentences, with concrete examples if relevant)…',w_grade:'Grade with AI',w_grading:'Grading…',w_grade_off:'AI grading unavailable here — self-assess against the key points.',w_selfgrade:'Did you cover the key points?',w_selfyes:'Yes, I covered them',w_selfno:'No / partially',w_keypoints:'Expected key points',w_covered:'You covered',w_missed:'You missed',w_write_first:'Write your answer before grading.',
   rep_ai_t:'AI recommendation',rep_ai_loading:'Generating a personalized recommendation…',rep_ai_off:'AI recommendation unavailable here — use the per-category summary above.',
+  reco_t:'Your next exercise',reco_why:'Picked from your weakest topic',reco_go:'Practice now →',reco_done:'All solved! Raise the difficulty or retry in exam mode.',
+  keys_t:'Keyboard shortcuts',keys_run:'Run / check',keys_opt:'Pick option 1-4 (quiz)',keys_next:'Submit & next (exam)',keys_hint:'AI hint',keys_help:'Show/hide this help',keys_esc:'Close',
   expected:'expected',got:'your output',rows:'row(s)',output:'output',
   toast_xp:'XP',toast_timeup:'⏱ Time up — you can continue, but it yields ½ XP',toast_examtime:'⏱ Exam time is up',
   acct_title:'Your account',acct_sub:'Each user keeps their own XP, solved exercises and history.',
@@ -4947,6 +5119,7 @@ function renderHome(){
       <div class="s"><b>${ncat}</b><span>${t('s_cat')}</span></div>
       <div class="s"><b>4</b><span>${t('s_modes')}</span></div>
     </div>
+    ${state.xp>0?recoCard():''}
     <div class="mods">
       <div class="mod guide" onclick="switchMode('guide')"><div class="ic">📘</div><span class="arr">→</span><h3>${t('mod_guide_t')}</h3><p>${t('mod_guide_d')}</p></div>
       <div class="mod" onclick="switchMode('practice')"><div class="ic">🧪</div><span class="arr">→</span><h3>${t('mod_practice_t')}</h3><p>${t('mod_practice_d')}</p></div>
@@ -4999,9 +5172,13 @@ function renderProblem(){
   const bl=fld(e,'bullets');if(bl)h+=`<h3>${t('p_req')}</h3><ul>${bl.map(b=>`<li>${L(b)}</li>`).join('')}</ul>`;
   if(e.sources)h+=`<h3>${t('p_sources')}</h3>${e.sources.map(srcTable).join('')}`;
   if(e.expected)h+=`<h3>${t('p_expected')}</h3><div class="exp">${fld(e,'expected')}</div>`;
-  if(e.kind==='quiz'){const ord=(e._order&&e._order.length===e.options.length)?e._order:e.options.map((_,i)=>i);h+=`<h3>${t('p_select')}</h3><div id="opts">`+ord.map((oi,pos)=>`<label class="opt" data-i="${oi}"><span class="mk">${String.fromCharCode(65+pos)}</span>${optText(e,oi)}</label>`).join('')+`</div>`;}
+  if(e.kind==='quiz'){const ord=(e._order&&e._order.length===e.options.length)?e._order:e.options.map((_,i)=>i);h+=`<h3 id="optsLbl">${t('p_select')}</h3><div id="opts" role="radiogroup" aria-labelledby="optsLbl">`+ord.map((oi,pos)=>`<label class="opt" data-i="${oi}" role="radio" aria-checked="false" tabindex="0"><span class="mk">${String.fromCharCode(65+pos)}</span>${optText(e,oi)}</label>`).join('')+`</div>`;}
   $('#prob').innerHTML=h;
-  if(e.kind==='quiz')document.querySelectorAll('.opt').forEach(o=>o.onclick=()=>{if(answered)return;document.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));o.classList.add('sel');quizSel=+o.dataset.i;});
+  if(e.kind==='quiz')document.querySelectorAll('.opt').forEach(o=>{
+    const pick=()=>{if(answered)return;document.querySelectorAll('.opt').forEach(x=>{x.classList.remove('sel');x.setAttribute('aria-checked','false');});o.classList.add('sel');o.setAttribute('aria-checked','true');quizSel=+o.dataset.i;};
+    o.onclick=pick;
+    o.onkeydown=ev=>{if(ev.key===' '||ev.key==='Enter'){ev.preventDefault();pick();}};
+  });
 }
 function renderWork(){
   const e=cur,tabs=$('#wtabs'),host=$('#edhost'),act=$('#actions');
@@ -5140,6 +5317,28 @@ async function ai(modeAi){const e=cur,panel=$('#tutor');panel.classList.add('sho
 function catAccuracy(){const acc={};orderedCats().forEach(k=>acc[k]={p:0,t:0});
   stats.history.forEach(a=>{Object.entries(a.byCat||{}).forEach(([k,o])=>{if(!acc[k])acc[k]={p:0,t:0};acc[k].p+=o.p;acc[k].t+=o.t;});});return acc;}
 function weakness(k){const a=catAccuracy()[k];if(!a||a.t===0){const items=EX.filter(e=>catKey(e)===k);if(!items.length)return .5;const s=items.filter(e=>state.solved[e.id]).length;return 1-(s/items.length);}return 1-(a.p/a.t);}
+/* Pick what to do next: weakest category first, then easiest unsolved item in it.
+   weakness() already blends exam accuracy with practice completion. */
+function nextRecommended(){
+  const pool=EX.filter(e=>!state.solved[e.id]&&isUnlocked(e));
+  if(!pool.length)return null;
+  const w={};orderedCats().forEach(k=>w[k]=weakness(k));
+  const dOrder={e:0,m:1,h:2};
+  return pool.slice().sort((a,b)=>{
+    const dw=(w[catKey(b)]??.5)-(w[catKey(a)]??.5);
+    if(Math.abs(dw)>1e-3)return dw;
+    return (dOrder[a.diff]??1)-(dOrder[b.diff]??1);
+  })[0];
+}
+function recoCard(){
+  const e=nextRecommended();
+  if(!e)return `<div class="reco done">✅ ${t('reco_done')}</div>`;
+  return `<div class="reco"><div class="reco-txt"><div class="reco-h">🎯 ${t('reco_t')}</div>
+    <div class="reco-name">${fld(e,'title')}</div>
+    <div class="reco-meta">${catLabel(catKey(e))} · ${e.kind.toUpperCase()} · ${dl(e.diff)} · ${t('reco_why')}</div></div>
+    <button class="primary" onclick="gotoReco('${e.id}')">${t('reco_go')}</button></div>`;
+}
+function gotoReco(id){switchMode('practice');open(id);}
 function buildSetup(){
   const cats=orderedCats();setupCfg={cats:new Set(cats),count:10,diff:'all',spaced:false};
   const spLabel=lang==='en'?'Spaced repetition — prioritize my weak categories':'Repetición espaciada — priorizar mis categorías débiles';
@@ -5231,6 +5430,7 @@ function renderReport(a){
       <div class="card" style="flex:1;min-width:330px"><div class="field"><label>${t('rep_bycat')}</label>${catRows}</div><div class="field"><label>${t('rep_bydiff')}</label>${diffRows}</div></div>
     </div>
     ${weak.length?`<div class="weak"><b>${t('rep_weak')}</b> ${weak.map(([c])=>catLabel(c)).join(' · ')}.<br>${t('rep_weak2')}</div>`:`<div class="weak" style="border-color:var(--mint);background:rgba(94,234,212,.07)"><b>${t('rep_solid')}</b> ${t('rep_solid2')}</div>`}
+    ${recoCard()}
     <div class="card" style="margin-top:16px"><div class="field"><label>🤖 ${t('rep_ai_t')}</label><div id="repAI" class="repai">${t('rep_ai_loading')}</div></div></div>
     <div class="card" style="margin-top:16px"><div class="field"><label>${t('rep_detail')}</label><div style="font-family:var(--mono)">${qlist}</div></div></div>
     <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap"><button class="primary" onclick="switchMode('exam')">${t('rep_new')}</button><button onclick="switchMode('stats')">${t('rep_prog')}</button><button class="ghost" onclick="switchMode('practice')">${t('rep_prac')}</button></div>`;
@@ -5262,6 +5462,7 @@ function renderStats(){
         <div class="scoresub" style="text-align:center;margin-top:10px">${state.xp} XP · 🔥 ${state.streak} · ${t('stats_best')}: ${best}%</div></div>
       <div class="card" style="flex:1;min-width:340px"><div class="field"><label>${t('stats_mastery')}</label>${mastery}</div></div>
     </div>
+    ${recoCard()}
     <div class="card" style="margin-top:16px"><div class="field"><label>${t('stats_hist')}</label><div class="hist">${rows}</div></div></div>
     <div style="margin-top:16px;display:flex;gap:10px"><button class="primary" onclick="switchMode('exam')">${t('stats_start')}</button><button class="ghost" onclick="switchMode('practice')">${t('nav_practice')}</button></div>`;
 }
@@ -5525,6 +5726,52 @@ document.querySelectorAll('#nav .navbtn').forEach(b=>b.onclick=()=>switchMode(b.
 $('#themeBtn').onclick=()=>{const ld=document.documentElement.getAttribute('data-theme')==='light';document.documentElement.setAttribute('data-theme',ld?'':'light');$('#themeBtn').textContent=ld?'🌙':'☀️';store.set('delab:theme',ld?'dark':'light');};
 $('#menub').onclick=()=>document.querySelector('.rail').classList.toggle('open');
 $('#resetBtn').onclick=async()=>{if(confirm(t('reset_c'))){state={solved:{},xp:0,streak:0,lastDay:null};stats={history:[]};await save();await saveStats();renderXP();if(mode==='practice')renderRail();if(mode==='stats')renderStats();}};
+
+/* ---------- keyboard shortcuts ---------- */
+function toggleKeysHelp(){
+  let el=$('#keysHelp');
+  if(!el){el=document.createElement('div');el.id='keysHelp';el.className='keyshelp';document.body.appendChild(el);
+    el.addEventListener('click',ev=>{if(ev.target===el)el.classList.remove('show');});}
+  if(el.classList.contains('show')){el.classList.remove('show');return;}
+  const row=(k,d)=>`<div class="kh-row"><span class="kh-k">${k}</span><span>${d}</span></div>`;
+  el.innerHTML=`<div class="kh-box" role="dialog" aria-modal="true" aria-label="${t('keys_t')}">
+    <h3>⌨ ${t('keys_t')}</h3>
+    ${row('<kbd>Ctrl</kbd>+<kbd>Enter</kbd>',t('keys_run'))}
+    ${row('<kbd>Ctrl</kbd>+<kbd>Enter</kbd>',t('keys_next'))}
+    ${row('<kbd>1</kbd>…<kbd>4</kbd>',t('keys_opt'))}
+    ${row('<kbd>h</kbd>',t('keys_hint'))}
+    ${row('<kbd>?</kbd>',t('keys_help'))}
+    ${row('<kbd>Esc</kbd>',t('keys_esc'))}
+    <button class="ghost" style="margin-top:12px" onclick="toggleKeysHelp()">${t('keys_esc')}</button></div>`;
+  el.classList.add('show');
+}
+$('#keysBtn').onclick=toggleKeysHelp;
+function typingInField(el){
+  if(!el)return false;
+  const tag=(el.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='textarea'||el.isContentEditable)return true;
+  return !!(el.closest&&el.closest('.CodeMirror'));
+}
+document.addEventListener('keydown',ev=>{
+  const help=$('#keysHelp');
+  if(ev.key==='Escape'&&help&&help.classList.contains('show')){help.classList.remove('show');return;}
+  if(document.body.classList.contains('locked'))return;
+  // Ctrl/Cmd+Enter fires even while typing — running what you just wrote is the point.
+  if((ev.ctrlKey||ev.metaKey)&&ev.key==='Enter'){
+    if(mode==='exam'&&exam&&!exam.finished){ev.preventDefault();examSubmit();}
+    else if(mode==='practice'&&cur){ev.preventDefault();runTests();}
+    return;
+  }
+  if(ev.ctrlKey||ev.metaKey||ev.altKey||typingInField(ev.target))return;
+  if(ev.key==='?'){ev.preventDefault();toggleKeysHelp();return;}
+  if(!cur||(mode!=='practice'&&mode!=='exam'))return;
+  if(cur.kind==='quiz'&&/^[1-4]$/.test(ev.key)){
+    const opt=document.querySelectorAll('.opt')[+ev.key-1];
+    if(opt){ev.preventDefault();opt.click();}
+    return;
+  }
+  if(ev.key==='h'&&mode==='practice'){ev.preventDefault();ai('hint');}
+});
 
 window.addEventListener('load',async()=>{
   await loadLang();await initUser();        // user bucket first: state/stats are per-user
