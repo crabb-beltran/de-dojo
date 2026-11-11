@@ -83,6 +83,30 @@ create policy "approved update" on public.progress for update
 Also set **Authentication → URL Configuration → Site URL** to the deployed
 app (e.g. `https://<user>.github.io/de-dojo/`) and keep **Confirm email** on.
 
+## Google sign-in (OAuth 2.0 + PKCE, free)
+
+The app talks to Supabase Auth with plain `fetch` (no SDK) using the PKCE flow:
+the access token never travels in the URL. Progress is unaffected — it is keyed
+by `auth.users.id`, and Supabase links a Google identity to an existing account
+with the same verified email, so password users keep their history.
+
+1. **Google Cloud Console** → new project → *APIs & Services → OAuth consent
+   screen*: External, scopes `openid`, `email`, `profile`; **Publish app**
+   ("In production"). In *Testing* only 100 test users can sign in and
+   sessions expire after 7 days. These scopes need no Google verification.
+2. *Credentials → Create credentials → OAuth client ID* → **Web application**.
+   Authorized redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`.
+3. **Supabase → Authentication → Providers → Google**: paste Client ID and
+   Client secret, enable.
+4. **Supabase → Authentication → URL Configuration**: *Site URL* = the
+   production URL (Cloudflare Pages); *Redirect URLs* = that URL, the GitHub
+   Pages URL and `http://localhost:8000` for local testing.
+5. In `index.html` set `const AUTH_GOOGLE=true;` and push. The lock screen
+   shows **Continuar con Google** above the email form.
+
+New Google users go through the same `handle_new_user` trigger, so they also
+land as **pending** until approved.
+
 ## Approving a user (admin, ~10 seconds)
 
 Supabase Dashboard → **Table Editor → profiles** → find the row by email →
@@ -97,6 +121,36 @@ Equivalent SQL:
 update public.profiles
 set approved = true, approved_at = now(), plan = 'pro'
 where email = 'cliente@correo.com';
+```
+
+## Usage telemetry for validation (admin, SQL Editor)
+
+Each practice/exam attempt is appended to `progress.data -> 'stats' -> 'attempts'`
+(schema in `docs/ARCHITECTURE.md` §4). The SQL Editor runs as the service role,
+so the admin can aggregate across users; RLS still prevents users from reading
+each other's rows.
+
+```sql
+-- one row per attempt
+create or replace view public.v_attempts as
+select p.user_id,
+       to_timestamp((a->>'ts')::bigint / 1000.0) as ts,
+       a->>'id' as exercise_id, a->>'k' as category, a->>'kind' as kind, a->>'d' as diff,
+       a->>'m' as mode, (a->>'ok')::int as ok, (a->>'p')::int as passed, (a->>'n')::int as total,
+       a->>'err' as diag, (a->>'ms')::int as time_on_task_ms, (a->>'x')::int as exec_ms, (a->>'h')::int as hints
+from public.progress p
+cross join lateral jsonb_array_elements(coalesce(p.data->'stats'->'attempts','[]'::jsonb)) a;
+revoke all on public.v_attempts from anon, authenticated;
+
+-- validation KPIs (TRL5): active users, attempts, first-attempt success, most frequent failure classes
+select count(distinct user_id) as users, count(*) as attempts,
+       round(100.0 * avg(ok) filter (where mode = 'p'), 1) as practice_success_pct
+from public.v_attempts where kind in ('sql','python');
+
+select category, count(*) as attempts, round(100.0*avg(ok),1) as success_pct
+from public.v_attempts where kind in ('sql','python') group by category order by success_pct;
+
+select diag, count(*) from public.v_attempts where ok = 0 and diag is not null group by diag order by 2 desc;
 ```
 
 ## Charging for access (billing flows)

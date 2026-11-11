@@ -42,7 +42,7 @@ A browser-based training platform to **practice and self-assess Data Engineering
 | **dbt (advanced)** | incremental models (`is_incremental` + `unique_key`), snapshots (SCD2), generic vs singular tests, materializations, `ref()`/lineage, source freshness, Jinja/macros, exposures, model contracts, incremental strategies |
 | Python + Databases | idempotent upsert (`ON CONFLICT`/MERGE), parametrized queries (anti SQL-injection) |
 | Logic / Algorithms | merge intervals, flatten nested JSON, top-K frequent, topological sort (DAG), running median, cosine similarity, text chunking |
-| Data Quality / Stats | orphan rows, z-score & PSI drift, data-contract validation, anomaly detection |
+| Data Quality / Stats | orphan rows, z-score & PSI drift, data-contract validation, anomaly detection, **dirty-data drills**: NULL vs. empty fallbacks, inconsistent-email normalization, text amounts with thousands separators, record cleaning, robust parsing, DataFrame quality profile |
 | NoSQL | DynamoDB key design & single-table, Cassandra query-first, MongoDB embed-vs-reference, Redis, hot-partition sharding, TTL, consistency |
 | Modeling / Architecture | grain, surrogate keys, fact types, conformed dimensions, factless facts, Medallion, CAP, exactly-once |
 | **Trends 2025-2026** (guide) | Iceberg vs Delta/Hudi/Paimon + REST catalogs, DuckDB/Polars, Airflow 3/Dagster, data contracts, streaming lakehouse, OpenLineage, RAG/vector DBs |
@@ -113,13 +113,21 @@ build instead of shipping.
 ## AI tutor proxy (optional, free to host)
 
 `workers/ai-tutor/` is a Cloudflare Worker (free tier) that proxies the tutor to
-the Anthropic API with a server-side key. Hosting is free; the only cost is
-Anthropic usage, and only once you add a key. See `workers/ai-tutor/README.md`.
+the Google Gemini API with a server-side key. Hosting is free; the only cost is
+model usage, and only once you add a key. See `workers/ai-tutor/README.md`.
+
+The tutor is optional. Without it, practice still offers **3-level static hints**,
+a **deterministic diagnosis** of every failed run and the **reference solution**
+after the attempt (see `docs/ARCHITECTURE.md` §4).
 Point the app at it with `localStorage.setItem('ai_endpoint', '<worker-url>')`.
 
-## Deploy (GitHub Pages)
+## Deploy
 
-Pushing to `main` triggers `.github/workflows/pages.yml`, which publishes the site. Then enable Pages in **Settings → Pages → Source: GitHub Actions**. Live URL: `https://<user>.github.io/<repo>/`.
+**Cloudflare Pages (primary).** Connect the repo in Cloudflare → Workers & Pages → Create → Pages → *Connect to Git*; framework preset **None**, build command **empty**, output directory **`/`**. Every push to `main` redeploys. Then add the Pages URL to Supabase → Authentication → URL Configuration (see `docs/ACCOUNTS.md`).
+
+**GitHub Pages (kept as fallback).** Pushing to `main` also triggers `.github/workflows/pages.yml`. Enable it in **Settings → Pages → Source: GitHub Actions**. Live URL: `https://<user>.github.io/<repo>/`.
+
+**Versions.** `release/v1-baseline` freezes the app as it was before the 2026 graduation-project increment (TRL5 work); `main` carries the increment on top, without removing any feature.
 
 ## Architecture notes (trade-offs)
 
