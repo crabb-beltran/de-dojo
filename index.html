@@ -231,6 +231,12 @@
   .term .prompt{color:#7ee0c8;margin-bottom:8px}.term .prompt .okc{color:var(--mint);font-weight:700}.term .prompt .failc{color:var(--bad);font-weight:700}
   .term .clabel{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin:10px 0 4px}
   .term .cerr{color:var(--bad);white-space:pre-wrap}
+  .term .diag{margin-top:8px;padding:8px 10px;border-left:3px solid var(--gold);background:rgba(245,165,36,.08);white-space:normal;font-family:var(--ui);font-size:13px;line-height:1.55}
+  .xms{margin-left:10px;color:var(--muted);font-size:11.5px}
+  .refbox{margin:10px 12px;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px}.refbox summary{cursor:pointer;color:var(--blue)}
+  .refexp{margin-top:6px;font-family:var(--ui);line-height:1.55}
+  .hintpre{margin:6px 0 0;padding:8px 10px;background:var(--editorbg,#0b1220);border-radius:6px;font-family:var(--mono);font-size:12.5px;white-space:pre-wrap;overflow-x:auto}
+  .orsep{text-align:center;color:var(--muted);font-size:12px;margin:4px 0 8px}.gbtn b{font-family:var(--ui)}
   .term .stdout{color:#cdd6e4;white-space:pre-wrap;line-height:1.5}
   table.cout{border-collapse:collapse;font-size:11.5px;margin:2px 0}
   table.cout th{color:#7ee0c8;text-align:left;padding:3px 10px 3px 0;border-bottom:1px solid #2a3343;white-space:nowrap}
@@ -3272,9 +3278,176 @@ chk("correlacion negativa", pearson([1,2,3],[3,2,1]), -1.0)
 chk("varianza 0 -> 0", pearson([5,5,5],[1,2,3]), 0.0)
 `
 },
+{
+ id:'dq_contact_fallback',cat:'C · Transformación y DQ',kind:'sql',diff:'e',xp:15,
+ title:'Canal de contacto con datos incompletos (NULL vs. vacío)',tags:'NULL · COALESCE · NULLIF · TRIM',
+ context:'El CRM llega con correos en <code>NULL</code>, vacíos o con solo espacios. Marketing necesita un canal de contacto por cliente sin perder a nadie.',
+ task:'Devuelve por cliente el <code>contact</code>: el correo limpio si existe; si no, el teléfono; si no hay ninguno, <code>\'sin_contacto\'</code>.',
+ bullets:['Salida: <code>customer_id</code>, <code>contact</code>.','Un correo vacío o con solo espacios cuenta como ausente (<code>NULLIF(TRIM(...), \'\')</code>).','Aplica la misma limpieza al teléfono. Cualquier orden.'],
+ sources:[S('customers',['customer_id','email','phone'],[[1,' ana@mail.com ','3001112233'],[2,'NULL','3104445566'],[3,'   ','NULL'],[4,'NULL','NULL']],'NULL = valor nulo; la fila 3 tiene un correo de solo espacios')],
+ expected:'1 ana@mail.com\n2 3104445566\n3 sin_contacto\n4 sin_contacto',
+ datasets:[`CREATE TABLE customers(customer_id INT,email TEXT,phone TEXT);INSERT INTO customers VALUES (1,' ana@mail.com ','3001112233'),(2,NULL,'3104445566'),(3,'   ',NULL),(4,NULL,NULL);`,
+  `CREATE TABLE customers(customer_id INT,email TEXT,phone TEXT);INSERT INTO customers VALUES (10,'',' '),(11,'luis@mail.com',NULL),(12,NULL,'3200000000'),(13,'  ','3159998877');`],
+ ref:`SELECT customer_id, COALESCE(NULLIF(TRIM(email),''), NULLIF(TRIM(phone),''), 'sin_contacto') AS contact FROM customers`,
+ starter:`SELECT customer_id,\n       COALESCE(/* correo limpio */, /* teléfono */, 'sin_contacto') AS contact\nFROM customers;`
+},
+{
+ id:'dq_email_normalize',cat:'C · Transformación y DQ',kind:'sql',diff:'m',xp:20,
+ title:'Clientes únicos con correos inconsistentes',tags:'normalización · LOWER · TRIM · GROUP BY',
+ context:'El mismo cliente se registró varias veces con el correo en mayúsculas, minúsculas o con espacios. Finanzas necesita la fecha del <b>primer</b> registro de cada cliente real.',
+ task:'Normaliza el correo (minúsculas y sin espacios en los extremos) y devuelve por correo normalizado la primera fecha de registro y cuántos registros duplicados tenía.',
+ bullets:['Salida: <code>email_norm</code>, <code>first_signup</code>, <code>n_records</code>.','Ignora las filas cuyo correo sea NULL o vacío tras normalizar.','Ordena por <code>email_norm</code>.'],
+ sources:[S('signups',['id','email','signup_date'],[[1,'Ana@Mail.com','2026-03-02'],[2,' ana@mail.com','2026-01-15'],[3,'luis@mail.com','2026-02-10'],[4,'NULL','2026-02-11'],[5,'LUIS@MAIL.COM ','2026-04-01']])],
+ expected:'ana@mail.com  2026-01-15  2\nluis@mail.com 2026-02-10  2',
+ datasets:[`CREATE TABLE signups(id INT,email TEXT,signup_date TEXT);INSERT INTO signups VALUES (1,'Ana@Mail.com','2026-03-02'),(2,' ana@mail.com','2026-01-15'),(3,'luis@mail.com','2026-02-10'),(4,NULL,'2026-02-11'),(5,'LUIS@MAIL.COM ','2026-04-01');`,
+  `CREATE TABLE signups(id INT,email TEXT,signup_date TEXT);INSERT INTO signups VALUES (1,'  ','2026-01-01'),(2,'Zoe@x.co','2026-05-05'),(3,'zoe@X.CO','2026-05-01'),(4,'zoe@x.co ','2026-06-01'),(5,'max@x.co','2026-01-20');`],
+ ref:`SELECT LOWER(TRIM(email)) AS email_norm, MIN(signup_date) AS first_signup, COUNT(*) AS n_records FROM signups WHERE NULLIF(TRIM(email),'') IS NOT NULL GROUP BY LOWER(TRIM(email)) ORDER BY email_norm`,
+ starter:`SELECT LOWER(TRIM(email)) AS email_norm,\n       /* primera fecha */ AS first_signup,\n       /* registros */ AS n_records\nFROM signups\nWHERE /* descarta NULL y vacíos */\nGROUP BY /* ... */\nORDER BY email_norm;`
+},
+{
+ id:'dq_amount_text',cat:'C · Transformación y DQ',kind:'sql',diff:'m',xp:20,
+ title:'Montos en texto: separar válidos de inválidos',tags:'calidad · CAST · GLOB · CASE',
+ context:'Un archivo de proveedor trae <code>amount</code> como texto: con separador de miles, espacios, <code>NULL</code> y valores como <code>n/a</code>. Antes de cargar a Silver hay que medir cuánto se puede usar.',
+ task:'Devuelve en una sola fila cuántas filas son válidas, cuántas inválidas y la suma de los montos válidos redondeada a 2 decimales.',
+ bullets:['Salida: <code>valid_rows</code>, <code>invalid_rows</code>, <code>total_amount</code>.','Limpia quitando espacios y comas de miles; es válido si queda no vacío y solo contiene dígitos y como máximo un punto decimal.','NULL cuenta como inválido.'],
+ sources:[S('payments',['id','amount'],[[1,'1,200.50'],[2,' 300 '],[3,'NULL'],[4,'n/a'],[5,'99.9']])],
+ expected:'valid_rows invalid_rows total_amount\n3          2            1600.4',
+ datasets:[`CREATE TABLE payments(id INT,amount TEXT);INSERT INTO payments VALUES (1,'1,200.50'),(2,' 300 '),(3,NULL),(4,'n/a'),(5,'99.9');`,
+  `CREATE TABLE payments(id INT,amount TEXT);INSERT INTO payments VALUES (1,'10'),(2,'1.2.3'),(3,''),(4,'2,000'),(5,'abc'),(6,'0.75');`],
+ ref:`WITH c AS (SELECT REPLACE(TRIM(amount),',','') AS a FROM payments), v AS (SELECT a, (a IS NOT NULL AND a<>'' AND a NOT GLOB '*[^0-9.]*' AND a NOT GLOB '*.*.*' AND a<>'.') AS ok FROM c) SELECT SUM(ok) AS valid_rows, SUM(1-ok) AS invalid_rows, ROUND(SUM(CASE WHEN ok THEN CAST(a AS REAL) ELSE 0 END),2) AS total_amount FROM v`,
+ starter:`WITH clean AS (\n  SELECT REPLACE(TRIM(amount), ',', '') AS a\n  FROM payments\n), flagged AS (\n  SELECT a, /* 1 si es válido, 0 si no */ AS ok\n  FROM clean\n)\nSELECT /* ... */\nFROM flagged;`
+},
+{
+ id:'py_dq_clean_records',cat:'C · Transformación y DQ',kind:'python',diff:'e',xp:15,
+ title:'Limpieza de registros antes de cargar',tags:'normalización · None · strip',
+ context:'Un formulario web entrega registros con espacios sobrantes, correos en mayúsculas, cadenas vacías en lugar de nulos y, a veces, sin <code>id</code>.',
+ task:'Implementa <code>clean(records)</code>: recorta espacios de todos los textos, pasa <code>email</code> a minúsculas, convierte cadenas vacías en <code>None</code> y descarta los registros sin <code>id</code>.',
+ bullets:['Firma: <code>def clean(records: list[dict]) -> list[dict]</code>.','No modifiques la lista de entrada; conserva el orden.','Solo los valores <code>str</code> se recortan; los números quedan igual.'],
+ sources:[S('records (entrada)',['ejemplo'],[['{"id":1,"email":" Ana@Mail.com ","city":""}'],['{"id":None,"email":"x@y.co","city":"Cali"}  ← se descarta'],['{"id":2,"email":"","city":" Bogotá "}']])],
+ expected:'[{"id":1,"email":"ana@mail.com","city":None}, {"id":2,"email":None,"city":"Bogotá"}]',
+ ref:`def clean(records):
+    out = []
+    for r in records:
+        if r.get("id") is None:
+            continue
+        row = {}
+        for k, v in r.items():
+            if isinstance(v, str):
+                v = v.strip()
+                if k == "email":
+                    v = v.lower()
+                if v == "":
+                    v = None
+            row[k] = v
+        out.append(row)
+    return out`,
+ starter:`def clean(records):\n    out = []\n    for r in records:\n        # 1) descarta si no hay id\n        # 2) recorta textos, email en minúsculas, "" -> None\n        pass\n    return out\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+inp=[{"id":1,"email":" Ana@Mail.com ","city":""},{"id":None,"email":"x@y.co","city":"Cali"},{"id":2,"email":"","city":" Bogotá "}]
+snap=[dict(r) for r in inp]
+chk("caso base", clean(inp), [{"id":1,"email":"ana@mail.com","city":None},{"id":2,"email":None,"city":"Bogotá"}])
+chk("no muta la entrada", inp, snap)
+chk("lista vacía", clean([]), [])
+chk("sin id se descarta", clean([{"email":"a@b.co"}]), [])
+chk("números intactos", clean([{"id":3,"qty":0,"name":"  x "}]), [{"id":3,"qty":0,"name":"x"}])
+`
+},
+{
+ id:'py_dq_parse_amounts',cat:'C · Transformación y DQ',kind:'python',diff:'m',xp:20,
+ title:'Parseo robusto de montos en texto',tags:'parsing · validación · float',
+ context:'El extracto de un banco trae montos como <code>"$1,200.50"</code>, <code>" 300 "</code>, <code>None</code> o <code>"n/a"</code>. El pipeline no puede caerse por un valor sucio, pero tampoco ocultarlo.',
+ task:'Implementa <code>parse_amounts(values)</code> que devuelva <code>(total, invalid)</code>: la suma de los montos válidos redondeada a 2 decimales y cuántos valores no se pudieron interpretar.',
+ bullets:['Firma: <code>def parse_amounts(values: list) -> tuple[float, int]</code>.','Quita espacios, el símbolo <code>$</code> y las comas de miles antes de convertir.','<code>None</code>, vacíos y textos no numéricos cuentan como inválidos. Los números (<code>int</code>/<code>float</code>) son válidos tal cual.'],
+ sources:[S('values (entrada)',['ejemplo'],[['"$1,200.50"'],['" 300 "'],['None'],['"n/a"'],['99.9']])],
+ expected:'(1600.4, 2)',
+ ref:`def parse_amounts(values):
+    total = 0.0
+    invalid = 0
+    for v in values:
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            total += v
+            continue
+        if not isinstance(v, str):
+            invalid += 1
+            continue
+        s = v.strip().replace("$", "").replace(",", "")
+        try:
+            total += float(s)
+        except ValueError:
+            invalid += 1
+    return (round(total, 2), invalid)`,
+ starter:`def parse_amounts(values):\n    total = 0.0\n    invalid = 0\n    for v in values:\n        # números: suma directa; texto: limpia y convierte; lo demás: inválido\n        pass\n    return (round(total, 2), invalid)\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("caso base", parse_amounts(["$1,200.50"," 300 ",None,"n/a",99.9]), (1600.4, 2))
+chk("todo inválido", parse_amounts([None,"","abc"]), (0.0, 3))
+chk("lista vacía", parse_amounts([]), (0.0, 0))
+chk("enteros y negativos", parse_amounts([10,"-2.5","$0.75"]), (8.25, 0))
+`
+},
+{
+ id:'py_dq_profile',cat:'C · Transformación y DQ',kind:'python',diff:'m',xp:20,pyPackages:['pandas'],
+ title:'Perfil de calidad de un DataFrame',tags:'pandas · isna · duplicated · data quality',
+ context:'Antes de promover una tabla a Gold, el equipo exige un reporte mínimo de calidad: nulos por columna (contando los textos vacíos como nulos) y filas duplicadas.',
+ task:'Implementa <code>profile(records)</code>: construye un DataFrame y devuelve <code>{"rows": n, "nulls": {col: n_nulos}, "dup_rows": n_duplicadas}</code>.',
+ bullets:['Firma: <code>def profile(records: list[dict]) -> dict</code>.','Un texto vacío o de solo espacios cuenta como nulo.','<code>dup_rows</code> = filas idénticas a una anterior (<code>duplicated()</code>), después de normalizar los vacíos a nulo. Valores en <code>int</code> de Python.'],
+ sources:[S('records (entrada)',['id','city'],[[1,'Cali'],[2,'""'],[2,'"  "'],[3,'None']],'Las filas 2 y 3 quedan iguales tras normalizar los vacíos')],
+ expected:'{"rows": 4, "nulls": {"id": 0, "city": 3}, "dup_rows": 1}',
+ ref:`import pandas as pd
+
+def profile(records):
+    df = pd.DataFrame(records)
+    df = df.apply(lambda c: c.map(lambda v: None if isinstance(v, str) and v.strip() == "" else v))
+    return {
+        "rows": int(len(df)),
+        "nulls": {c: int(df[c].isna().sum()) for c in df.columns},
+        "dup_rows": int(df.duplicated().sum()),
+    }`,
+ starter:`import pandas as pd\n\ndef profile(records):\n    df = pd.DataFrame(records)\n    # normaliza "" y "  " a None\n    # ...\n    return {"rows": 0, "nulls": {}, "dup_rows": 0}\n`,
+ pytests:`
+cases=[]
+def chk(n,got,exp): cases.append({"name":n,"ok":got==exp,"got":repr(got),"expected":repr(exp)})
+chk("caso base", profile([{"id":1,"city":"Cali"},{"id":2,"city":""},{"id":2,"city":"  "},{"id":3,"city":None}]), {"rows":4,"nulls":{"id":0,"city":3},"dup_rows":1})
+chk("sin problemas", profile([{"a":1,"b":"x"},{"a":2,"b":"y"}]), {"rows":2,"nulls":{"a":0,"b":0},"dup_rows":0})
+chk("todo duplicado", profile([{"a":1},{"a":1},{"a":1}]), {"rows":3,"nulls":{"a":0},"dup_rows":2})
+`
+},
 ];
 /* English overlay for legacy (Spanish-authored) exercises. Resolver: fld() prefers EN[id][field] when lang==='en'. */
 const EN={
+ dq_contact_fallback:{title:'Contact channel with incomplete data (NULL vs. empty)',
+  context:'The CRM arrives with emails that are <code>NULL</code>, empty or whitespace-only. Marketing needs one contact channel per customer without losing anyone.',
+  task:'Return per customer the <code>contact</code>: the clean email if present; otherwise the phone; if neither, <code>\'sin_contacto\'</code>.',
+  bullets:['Output: <code>customer_id</code>, <code>contact</code>.','An empty or whitespace-only email counts as missing (<code>NULLIF(TRIM(...), \'\')</code>).','Apply the same cleaning to the phone. Any order.'],
+  expected:'1 ana@mail.com\n2 3104445566\n3 sin_contacto\n4 sin_contacto'},
+ dq_email_normalize:{title:'Unique customers with inconsistent emails',
+  context:'The same customer signed up several times with the email in upper case, lower case or with spaces. Finance needs the date of the <b>first</b> sign-up of each real customer.',
+  task:'Normalize the email (lower case, trimmed) and return, per normalized email, the first sign-up date and how many duplicate records it had.',
+  bullets:['Output: <code>email_norm</code>, <code>first_signup</code>, <code>n_records</code>.','Ignore rows whose email is NULL or empty after normalizing.','Order by <code>email_norm</code>.'],
+  expected:'ana@mail.com  2026-01-15  2\nluis@mail.com 2026-02-10  2'},
+ dq_amount_text:{title:'Amounts stored as text: split valid from invalid',
+  context:'A vendor file brings <code>amount</code> as text: with thousands separators, spaces, <code>NULL</code> and values such as <code>n/a</code>. Before loading to Silver you must measure how much is usable.',
+  task:'Return a single row with how many rows are valid, how many invalid, and the sum of the valid amounts rounded to 2 decimals.',
+  bullets:['Output: <code>valid_rows</code>, <code>invalid_rows</code>, <code>total_amount</code>.','Clean by removing spaces and thousands commas; a value is valid if it is non-empty and has only digits and at most one decimal point.','NULL counts as invalid.'],
+  expected:'valid_rows invalid_rows total_amount\n3          2            1600.4'},
+ py_dq_clean_records:{title:'Cleaning records before loading',
+  context:'A web form delivers records with stray spaces, upper-case emails, empty strings instead of nulls and, sometimes, no <code>id</code>.',
+  task:'Implement <code>clean(records)</code>: trim every text value, lower-case <code>email</code>, turn empty strings into <code>None</code> and drop records without <code>id</code>.',
+  bullets:['Signature: <code>def clean(records: list[dict]) -> list[dict]</code>.','Do not mutate the input list; keep the order.','Only <code>str</code> values are trimmed; numbers stay as they are.'],
+  expected:'[{"id":1,"email":"ana@mail.com","city":None}, {"id":2,"email":None,"city":"Bogotá"}]'},
+ py_dq_parse_amounts:{title:'Robust parsing of text amounts',
+  context:'A bank statement brings amounts such as <code>"$1,200.50"</code>, <code>" 300 "</code>, <code>None</code> or <code>"n/a"</code>. The pipeline must not crash on a dirty value, nor hide it.',
+  task:'Implement <code>parse_amounts(values)</code> returning <code>(total, invalid)</code>: the sum of the valid amounts rounded to 2 decimals and how many values could not be parsed.',
+  bullets:['Signature: <code>def parse_amounts(values: list) -> tuple[float, int]</code>.','Strip spaces, the <code>$</code> sign and thousands commas before converting.','<code>None</code>, empty and non-numeric strings are invalid. Numbers (<code>int</code>/<code>float</code>) are valid as they are.'],
+  expected:'(1600.4, 2)'},
+ py_dq_profile:{title:'Data-quality profile of a DataFrame',
+  context:'Before promoting a table to Gold, the team requires a minimal quality report: nulls per column (counting empty strings as null) and duplicate rows.',
+  task:'Implement <code>profile(records)</code>: build a DataFrame and return <code>{"rows": n, "nulls": {col: n_nulls}, "dup_rows": n_duplicates}</code>.',
+  bullets:['Signature: <code>def profile(records: list[dict]) -> dict</code>.','An empty or whitespace-only string counts as null.','<code>dup_rows</code> = rows identical to an earlier one (<code>duplicated()</code>), after normalizing blanks to null. Values as Python <code>int</code>.'],
+  expected:'{"rows": 4, "nulls": {"id": 0, "city": 3}, "dup_rows": 1}'},
  sql_topn:{title:'2nd highest salary per department',
   context:'HR asks, per team, for the second-highest salary for a pay band. If two people earn the same, it counts as one level.',
   task:'Return per <code>dept</code> the <b>second-highest distinct salary</b>.',
@@ -3426,7 +3599,7 @@ const T={
   mod_stats_t:'Progreso',mod_stats_d:'Dominio por categoría e historial de exámenes para medir y mejorar tus skills.',
   guide_title:'Guía de entrevista DE',guide_open:'abrir en pestaña ↗',guide_back:'← inicio',
   p_context:'Contexto',p_task:'Tarea',p_req:'Requisitos',p_sources:'Fuentes / datos disponibles',p_expected:'Salida esperada (muestra)',p_select:'Selecciona',
-  w_answer:'respuesta',w_runtests:'Run tests ▸',w_check:'Comprobar',w_hint:'Pista IA',w_review:'Review IA',w_reveal:'Ver solución',w_reveal_c:'¿Mostrar una solución de referencia?',w_noref:'# (referencia no disponible)',
+  w_answer:'respuesta',w_runtests:'Run tests ▸',w_check:'Comprobar',w_hint:'Pista IA',w_review:'Review IA',w_reveal:'Ver solución',w_reveal_c:'¿Mostrar una solución de referencia?',w_noref:'# (referencia no disponible)',w_hint_p:'Pista',hint_l1:'Concepto clave',hint_l2:'Construcciones que probablemente necesitas',hint_l3:'Esqueleto de la solución (completa los ___)',hint_last:'Ya viste todas las pistas. Si sigues bloqueado, usa «Ver solución».',hint_none:'Este ejercicio no tiene pistas estáticas; usa la Pista IA.',diag_t:'Diagnóstico',diag_syntax:'Error de sintaxis: revisa comas, paréntesis y palabras reservadas.',diag_nocol:'Columna inexistente: {x}. Revisa nombres y alias contra las fuentes.',diag_notab:'Tabla inexistente: {x}. Usa solo las tablas listadas en «Fuentes».',diag_runtime:'Error de ejecución: {x}',diag_cols:'Devuelves {g} columna(s) y se esperan {x}. Revisa la lista del SELECT.',diag_more:'Devuelves más filas de las esperadas ({g} vs {x}): posible JOIN que multiplica filas, falta un filtro o un GROUP BY/DISTINCT.',diag_fewer:'Devuelves menos filas de las esperadas ({g} vs {x}): posible INNER JOIN que debería ser LEFT, un filtro de más o un WHERE que descarta NULL.',diag_order:'Las filas son correctas pero el orden no: revisa el ORDER BY pedido.',diag_values:'Mismo número de filas pero valores distintos: revisa cálculos, redondeo, agregaciones y el marco de la ventana.',diag_hidden:'Pasas el dataset visible pero fallas {k} dataset(s) oculto(s): la solución no generaliza. Piensa en NULL, duplicados, empates o grupos vacíos.',diag_pyexc:'{x}: {y}',diag_pytype:'Tipo de dato distinto: devolviste {g} y se esperaba {x}.',diag_pypart:'{p} de {n} casos correctos. Falla «{c}»: revisa ese caso borde.',diag_pyval:'Valor incorrecto en «{c}»: compara tu salida con la esperada.',exec_t:'ejecución',ref_t:'Solución de referencia: compárala con la tuya',ref_after:'¿Bloqueado? Ver la solución de referencia',stats_tel:'Telemetría de práctica',stats_att:'intentos registrados',stats_first:'acierto al primer intento',stats_tts:'tiempo medio hasta resolver',stats_hints:'ejercicios resueltos con pistas',stats_export:'Exportar mis intentos (CSV)',stats_att_none:'Aún no hay intentos registrados.',google_btn:'Continuar con Google',or_sep:'o con correo',oauth_err:'No se pudo completar el inicio de sesión con Google',
   res_label:'test cases',res_prompt:'Pulsa <b>Run tests</b> para evaluar.',correct:'Correcto',incorrect:'Incorrecto',choose:'Selecciona una opción primero.',already:'Ya resuelto ✓',
   exam_q:'Pregunta',exam_finish:'Finalizar',exam_finish_c:'¿Finalizar ahora? Las preguntas sin enviar cuentan como falladas.',exam_run:'Probar',exam_next:'Enviar y siguiente ▸',exam_skip:'Saltar',exam_choose:'Elige una opción',
   exam_quiz_note:'Elige una opción a la izquierda y envía.',exam_prompt:'Resuelve y pulsa <b>Enviar y siguiente</b>.',registered:'respuesta registrada',
@@ -3471,7 +3644,7 @@ const T={
   mod_stats_t:'Progress',mod_stats_d:'Category mastery and exam history to measure and improve your skills.',
   guide_title:'DE interview guide',guide_open:'open in tab ↗',guide_back:'← home',
   p_context:'Context',p_task:'Task',p_req:'Requirements',p_sources:'Sources / available data',p_expected:'Expected output (sample)',p_select:'Select',
-  w_answer:'answer',w_runtests:'Run tests ▸',w_check:'Check',w_hint:'AI hint',w_review:'AI review',w_reveal:'Reveal solution',w_reveal_c:'Show a reference solution?',w_noref:'# (no reference available)',
+  w_answer:'answer',w_runtests:'Run tests ▸',w_check:'Check',w_hint:'AI hint',w_review:'AI review',w_reveal:'Reveal solution',w_reveal_c:'Show a reference solution?',w_noref:'# (no reference available)',w_hint_p:'Hint',hint_l1:'Key concept',hint_l2:'Constructs you will likely need',hint_l3:'Solution skeleton (fill in the ___)',hint_last:'You have seen every hint. If still stuck, use “Reveal solution”.',hint_none:'This exercise has no static hints; use the AI hint.',diag_t:'Diagnosis',diag_syntax:'Syntax error: check commas, parentheses and reserved words.',diag_nocol:'Unknown column: {x}. Check names and aliases against the sources.',diag_notab:'Unknown table: {x}. Use only the tables listed under “Sources”.',diag_runtime:'Runtime error: {x}',diag_cols:'You return {g} column(s) and {x} are expected. Check the SELECT list.',diag_more:'More rows than expected ({g} vs {x}): a JOIN may be fanning out rows, or a filter / GROUP BY / DISTINCT is missing.',diag_fewer:'Fewer rows than expected ({g} vs {x}): an INNER JOIN that should be LEFT, an extra filter, or a WHERE that drops NULLs.',diag_order:'Rows are right but the order is not: check the required ORDER BY.',diag_values:'Same row count but different values: check calculations, rounding, aggregations and the window frame.',diag_hidden:'You pass the visible dataset but fail {k} hidden dataset(s): the solution does not generalize. Think NULLs, duplicates, ties or empty groups.',diag_pyexc:'{x}: {y}',diag_pytype:'Different data type: you returned {g} and {x} was expected.',diag_pypart:'{p} of {n} cases pass. “{c}” fails: check that edge case.',diag_pyval:'Wrong value in “{c}”: compare your output with the expected one.',exec_t:'execution',ref_t:'Reference solution: compare it with yours',ref_after:'Stuck? See the reference solution',stats_tel:'Practice telemetry',stats_att:'attempts logged',stats_first:'first-attempt success',stats_tts:'mean time to solve',stats_hints:'solved with hints',stats_export:'Export my attempts (CSV)',stats_att_none:'No attempts logged yet.',google_btn:'Continue with Google',or_sep:'or with email',oauth_err:'Google sign-in could not be completed',
   res_label:'test cases',res_prompt:'Press <b>Run tests</b> to evaluate.',correct:'Correct',incorrect:'Incorrect',choose:'Select an option first.',already:'Already solved ✓',
   exam_q:'Question',exam_finish:'Finish',exam_finish_c:'Finish now? Unsubmitted questions count as failed.',exam_run:'Run',exam_next:'Submit & next ▸',exam_skip:'Skip',exam_choose:'Pick an option',
   exam_quiz_note:'Pick an option on the left and submit.',exam_prompt:'Solve and press <b>Submit & next</b>.',registered:'answer recorded',
@@ -3524,7 +3697,7 @@ function explainText(e){if(lang==='en'&&typeof EN!=='undefined'&&EN[e.id]&&EN[e.
 /* ===========================  state  =========================== */
 const $=s=>document.querySelector(s);
 let state={solved:{},xp:0,streak:0,lastDay:null};
-let stats={history:[]};
+let stats={history:[],attempts:[]};
 let mode='home',cur=null,editor=null,SQL=null,pyodide=null,pyLoading=null,quizSel=null,answered=false;
 let timer={remaining:0,id:null,paused:false,expired:false};
 let exam=null,examTimer={remaining:0,id:null},setupCfg={cats:new Set(),count:10,diff:'all',spaced:false};
@@ -6355,7 +6528,7 @@ function renderRail(){
   $('#rail').innerHTML=html;
   document.querySelectorAll('.ex').forEach(el=>el.onclick=()=>{if(el.classList.contains('locked')){toast(t('locked_msg'));return;}open(el.dataset.id);document.querySelector('.rail').classList.remove('open');});
 }
-function open(id){const e=EX.find(e=>e.id===id);if(!e)return;if(!isUnlocked(e)){toast(t('locked_msg'));return;}cur=e;answered=false;quizSel=null;if(cur.kind==='quiz')cur._order=shuffled(cur.options.length);renderRail();renderProblem();renderWork();$('#cases').innerHTML=`<div class="console">${t('res_prompt')}</div>`;$('#verdict').textContent='';$('#verdict').className='verdict';$('#tutor').classList.remove('show');startTimer(cur.timer||DT[cur.diff]);}
+function open(id){const e=EX.find(e=>e.id===id);if(!e)return;if(!isUnlocked(e)){toast(t('locked_msg'));return;}cur=e;answered=false;hintLvl=0;failCount=0;openedAt=Date.now();lastRun=null;quizSel=null;if(cur.kind==='quiz')cur._order=shuffled(cur.options.length);renderRail();renderProblem();renderWork();$('#cases').innerHTML=`<div class="console">${t('res_prompt')}</div>`;$('#verdict').textContent='';$('#verdict').className='verdict';$('#tutor').classList.remove('show');startTimer(cur.timer||DT[cur.diff]);}
 function srcTable(s){let h=`<div class="src"><div class="nm">📄 <b>${s.name}</b></div><table class="dt"><tr>${s.cols.map(c=>`<th>${c}</th>`).join('')}</tr>`;h+=s.rows.map(r=>`<tr>${r.map(v=>`<td>${v}</td>`).join('')}</tr>`).join('');h+=`</table>${s.note?`<div class="srcnote">${s.note}</div>`:''}</div>`;return h;}
 function renderProblem(){
   const e=cur;let h=`<h1>${fld(e,'title')}</h1><div class="ptag">${catLabel(catKey(e))} · ${e.kind.toUpperCase()} · ${dl(e.diff)} · ${e.xp} XP</div>`;
@@ -6382,9 +6555,9 @@ function renderWork(){
     act.innerHTML=`<button class="primary" id="run">${t('w_grade')}</button><button id="hint">${t('w_hint')}</button><button class="ghost" id="reveal">${t('w_reveal')}</button>`;
     $('#reveal').onclick=()=>{if(confirm(t('w_reveal_c'))){showConsole(`<b>${t('w_keypoints')}:</b><br>${fld(e,'rubric')||''}`);}};}
   else{host.innerHTML='';editor=CodeMirror(host,{value:e.starter,mode:e.kind==='sql'?'text/x-sql':'python',theme:'material-darker',lineNumbers:true,lineWrapping:true,indentUnit:e.kind==='python'?4:2});setTimeout(()=>editor.refresh(),40);
-    act.innerHTML=`<button class="primary" id="run">${t('w_runtests')}</button><button id="hint">${t('w_hint')}</button><button id="review">${t('w_review')}</button><button class="ghost" id="reveal">${t('w_reveal')}</button>`;
+    act.innerHTML=`<button class="primary" id="run">${t('w_runtests')}</button><button id="hintS">${t('w_hint_p')} 1/${HINT_MAX}</button><button id="hint">${t('w_hint')}</button><button id="review">${t('w_review')}</button><button class="ghost" id="reveal">${t('w_reveal')}</button>`;
     $('#reveal').onclick=()=>{if(confirm(t('w_reveal_c'))){const c=e.kind==='python'?'#':'--';editor.setValue(e.ref?(`${c} ref:\n`+e.ref+(e.kind==='sql'?';':'')):t('w_noref'));}};$('#review').onclick=()=>ai('review');}
-  $('#run').onclick=runTests;$('#hint').onclick=()=>ai('hint');paintClock();
+  $('#run').onclick=runTests;$('#hint').onclick=()=>ai('hint');{const hs=$('#hintS');if(hs)hs.onclick=showHint;}paintClock();
 }
 function showCases(list){const pass=list.filter(c=>c.ok).length,all=pass===list.length&&list.length>0;$('#verdict').textContent=`${pass}/${list.length}`;$('#verdict').className='verdict '+(all?'pass':'fail');$('#cases').innerHTML=list.map(c=>`<div class="case ${c.ok?'pass':'fail'}"><span class="s">${c.ok?'✓':'✗'}</span><span class="d">${c.name}${c.detail?`<br><small>${c.detail}</small>`:''}</span></div>`).join('');return all;}
 function showConsole(m){$('#cases').innerHTML=`<div class="console">${m}</div>`;$('#verdict').textContent='';}
@@ -6407,31 +6580,37 @@ function barChart(r){const rows=r.rows.slice(0,24).map(row=>[String(row[0]),pars
 function term(inner){return `<div class="term"><div class="termbar"><i class="d r"></i><i class="d y"></i><i class="d g"></i><span class="ttl">de_dojo · result</span></div><div class="termbody">${inner}</div></div>`;}
 function runStmts(lib,dataset,sql,verify){const db=new lib.Database();try{db.run(dataset);if(verify){db.run(sql);return exec(db,verify);}return exec(db,sql);}finally{db.close();}}
 async function runSQL(){
+  lastRun=null;
   const e=cur,userSQL=editor.getValue().trim().replace(/;+\s*$/,'');
   if(!userSQL){showConsole(t('write_q'));return false;}
   let lib;try{lib=await ensureSQL();}catch(err){showConsole(t('sql_fail')+': '+escv(String(err)));return false;}
-  const cases=[],ordered=/order\s+by/i.test(e.verify||e.ref);let g0=null,x0=null,fail=null;
+  const cases=[],det=[],ordered=/order\s+by/i.test(e.verify||e.ref);let g0=null,x0=null,fail=null,xms=0;
   for(let i=0;i<e.datasets.length;i++){
-    let exp;try{exp=runStmts(lib,e.datasets[i],e.ref,e.verify);}catch(err){cases.push({name:`dataset ${i+1}`,ok:false});if(!fail)fail={err:'ref error: '+err};continue;}
-    let got;try{got=runStmts(lib,e.datasets[i],userSQL,e.verify);}catch(err){cases.push({name:`dataset ${i+1}`,ok:false});if(!fail)fail={err:String(err.message||err)};continue;}
-    const ok=rowsEq(got.rows,exp.rows,ordered);
+    let exp;try{exp=runStmts(lib,e.datasets[i],e.ref,e.verify);}catch(err){cases.push({name:`dataset ${i+1}`,ok:false});det.push({ok:false,err:'ref error'});if(!fail)fail={err:'ref error: '+err};continue;}
+    let got;const t0=performance.now();try{got=runStmts(lib,e.datasets[i],userSQL,e.verify);}catch(err){xms+=performance.now()-t0;cases.push({name:`dataset ${i+1}`,ok:false});det.push({ok:false,err:String(err.message||err)});if(!fail)fail={err:String(err.message||err)};continue;}
+    xms+=performance.now()-t0;
+    const ok=rowsEq(got.rows,exp.rows,ordered);det.push({ok,got,exp});
     if(i===0){g0=got;x0=exp;}
     if(!ok&&!fail)fail={got,exp};
     cases.push({name:`dataset ${i+1} · ${exp.rows.length} ${t('rows')}`,ok});
   }
   const pass=cases.filter(c=>c.ok).length,all=pass===cases.length&&cases.length>0;
   $('#verdict').textContent=`${pass}/${cases.length}`;$('#verdict').className='verdict '+(all?'pass':'fail');
-  let body=`<div class="prompt">de_dojo=# run · <span class="${all?'okc':'failc'}">${all?'PASS':'FAIL'}</span> ${pass}/${cases.length}</div>`;
+  const dg=all?null:diagSQL(det,ordered);if(!all)failCount++;
+  lastRun={p:pass,n:cases.length,err:dg?dg.c:null,x:Math.round(xms)};
+  let body=`<div class="prompt">de_dojo=# run · <span class="${all?'okc':'failc'}">${all?'PASS':'FAIL'}</span> ${pass}/${cases.length} <span class="xms">⏱ ${xms<1?'&lt;1':Math.round(xms)} ms ${t('exec_t')}</span></div>`;
   if(fail&&fail.err){body+=`<div class="cerr">✗ ${escv(fail.err)}</div>`;}
+  body+=diagBox(dg);
   const showR=(fail&&fail.got)?fail.got:g0;
   if(showR){body+=`<div class="clabel">${all?t('output'):t('got')}</div>`+sqlTable(showR);if(e.viz&&isChartable(showR))body+=barChart(showR);}
   if(!all&&fail&&fail.exp){body+=`<div class="clabel">${t('expected')}</div>`+sqlTable(fail.exp);if(e.viz&&isChartable(fail.exp))body+=barChart(fail.exp);}
-  $('#cases').innerHTML=term(body)+`<div class="caselist">`+cases.map(c=>`<span class="cchip ${c.ok?'ok':'no'}">${c.ok?'✓':'✗'} ${c.name}</span>`).join('')+`</div>`;
+  $('#cases').innerHTML=term(body)+`<div class="caselist">`+cases.map(c=>`<span class="cchip ${c.ok?'ok':'no'}">${c.ok?'✓':'✗'} ${c.name}</span>`).join('')+`</div>`+refBox(e,all);
   if(all)await award(e);return all;
 }
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('load fail '+src));document.head.appendChild(s);});}
 async function ensurePy(){if(pyodide)return pyodide;if(pyLoading)return pyLoading;showConsole(t('loading_py')+' <span class="pulse">●</span>');pyLoading=(async()=>{await loadScript('https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js');pyodide=await loadPyodide({indexURL:'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/'});return pyodide;})();return pyLoading;}
 async function runPy(){
+  lastRun=null;
   const e=cur;let py;try{py=await ensurePy();}catch(err){showConsole(t('py_blocked')+'<br><small>'+escv(String(err.message||err))+'</small>');return false;}
   const code=editor.getValue()+'\n'+e.pytests+'\nimport json\nprint("__RESULTS__"+json.dumps(cases))';
   // Pyodide un-vendors some stdlib modules (sqlite3, ssl, …) into loadable packages
@@ -6439,22 +6618,31 @@ async function runPy(){
   if(/\bimport\s+sqlite3\b|\bfrom\s+sqlite3\b/.test(code)&&!pkgs.includes('sqlite3'))pkgs.push('sqlite3');
   if(pkgs.length){try{showConsole(t('loading_pkg')+': '+pkgs.join(', ')+'… <span class="pulse">●</span>');await py.loadPackage(pkgs);}catch(err){showConsole('pkg error: '+escv(String(err)));return false;}}
   let out='';py.setStdout({batched:s=>out+=s+'\n'});
-  try{await py.runPythonAsync(code);}catch(err){showConsole('Error:\n'+escv(String(err.message||err)));return false;}
-  const m=out.indexOf('__RESULTS__');if(m<0){showConsole(t('no_res')+'\n'+escv(out));return false;}
+  const t0=performance.now();
+  try{await py.runPythonAsync(code);}catch(err){const xe=Math.round(performance.now()-t0),dg=pyErrDiag(err.message||err);failCount++;lastRun={p:0,n:0,err:dg.c,x:xe};
+    $('#verdict').textContent='✗';$('#verdict').className='verdict fail';
+    $('#cases').innerHTML=term(`<div class="prompt">$ python · <span class="failc">ERROR</span></div><div class="cerr">${escv(String(err.message||err))}</div>${diagBox(dg)}`)+refBox(e,false);return false;}
+  const xms=Math.round(performance.now()-t0);
+  const m=out.indexOf('__RESULTS__');if(m<0){lastRun={p:0,n:0,err:'no_results',x:xms};showConsole(t('no_res')+'\n'+escv(out));return false;}
   let list;try{list=JSON.parse(out.slice(m+11));}catch(err){showConsole(escv(out));return false;}
   const stdout=out.slice(0,m).replace(/\s+$/,'');
   const cases=list.map(c=>({name:c.name,ok:c.ok,got:c.got,expected:c.expected}));
   const pass=cases.filter(c=>c.ok).length,all=pass===cases.length&&cases.length>0;
   $('#verdict').textContent=`${pass}/${cases.length}`;$('#verdict').className='verdict '+(all?'pass':'fail');
-  let body=`<div class="prompt">$ python · <span class="${all?'okc':'failc'}">${all?'PASS':'FAIL'}</span> ${pass}/${cases.length}</div>`;
+  const dg=all?null:diagPy(cases);if(!all)failCount++;
+  lastRun={p:pass,n:cases.length,err:dg?dg.c:null,x:xms};
+  let body=`<div class="prompt">$ python · <span class="${all?'okc':'failc'}">${all?'PASS':'FAIL'}</span> ${pass}/${cases.length} <span class="xms">⏱ ${xms} ms ${t('exec_t')}</span></div>`;
   if(stdout)body+=`<div class="clabel">stdout</div><div class="stdout">${escv(stdout)}</div>`;
   const f=cases.find(c=>!c.ok);
   if(f)body+=`<div class="clabel">${t('got')} / ${t('expected')}</div><div class="cerr">✗ ${escv(f.name)}\n  ${t('got')}: ${escv(f.got)}\n  ${t('expected')}: ${escv(f.expected)}</div>`;
-  $('#cases').innerHTML=term(body)+`<div class="caselist">`+cases.map(c=>`<span class="cchip ${c.ok?'ok':'no'}">${c.ok?'✓':'✗'} ${escv(c.name)}</span>`).join('')+`</div>`;
+  body+=diagBox(dg);
+  $('#cases').innerHTML=term(body)+`<div class="caselist">`+cases.map(c=>`<span class="cchip ${c.ok?'ok':'no'}">${c.ok?'✓':'✗'} ${escv(c.name)}</span>`).join('')+`</div>`+refBox(e,all);
   if(all)await award(e);return all;
 }
-function runQuiz(){const e=cur;if(quizSel==null){showConsole(t('choose'));return;}answered=true;document.querySelectorAll('.opt').forEach(o=>{const oi=+o.dataset.i;o.classList.remove('sel');if(e.options[oi].ok)o.classList.add('correct');if(oi===quizSel&&!e.options[oi].ok)o.classList.add('wrong');});const ok=e.options[quizSel].ok;showCases([{name:ok?t('correct'):t('incorrect'),ok,detail:explainText(e)}]);if(ok)award(e);}
-function runTests(){if(!cur)return;if(cur.kind==='sql')return runSQL();if(cur.kind==='python')return runPy();if(cur.kind==='quiz')return runQuiz();if(cur.kind==='open')return runOpen();}
+function runQuiz(){const e=cur;if(quizSel==null){showConsole(t('choose'));return;}answered=true;document.querySelectorAll('.opt').forEach(o=>{const oi=+o.dataset.i;o.classList.remove('sel');if(e.options[oi].ok)o.classList.add('correct');if(oi===quizSel&&!e.options[oi].ok)o.classList.add('wrong');});const ok=e.options[quizSel].ok;lastRun={p:ok?1:0,n:1};showCases([{name:ok?t('correct'):t('incorrect'),ok,detail:explainText(e)}]);if(ok)award(e);}
+async function runTests(){if(!cur)return;const e=cur;lastRun=null;let r;
+  if(e.kind==='sql')r=await runSQL();else if(e.kind==='python')r=await runPy();else if(e.kind==='quiz')r=runQuiz();else if(e.kind==='open')return runOpen();
+  if(mode==='practice'&&lastRun)logAttempt(e,'p',lastRun.n>0&&lastRun.p===lastRun.n);return r;}
 async function runOpen(){
   const e=cur,ta=$('#openAns'),answer=(ta?ta.value:'').trim();
   if(!answer){showConsole(t('w_write_first'));return false;}
@@ -6504,6 +6692,182 @@ async function ai(modeAi){const e=cur,panel=$('#tutor');panel.classList.add('sho
     const d=await r.json();if(!r.ok)throw new Error(d.error||('HTTP '+r.status));
     panel.classList.remove('pulse');panel.textContent=(d.text||'').trim()||'—';
   }catch(err){panel.classList.remove('pulse');panel.textContent=t('tutor_off')+': '+err.message;}}
+
+/* ===========================  learning support (Proyecto de Grado · TRL5)  ===========================
+   Additive layer on top of the existing practice/exam engine. Nothing here changes how an
+   exercise is graded; it only adds what the user research asked for:
+   - RF07 progressive static hints (3 levels, derived from the exercise itself; optional e.hints[])
+   - RF08 deterministic diagnosis of a failed run + reference solution after the attempt
+   - RF14 execution time of the user's code (informative only: it depends on the device)
+   - RF15 per-attempt telemetry in stats.attempts (synced with the existing progress row)
+   Exam mode stays help-free: no hints, no diagnosis, no reference. */
+let hintLvl=0,failCount=0,openedAt=Date.now(),lastRun=null;
+const HINT_MAX=3;
+function fmtT(k,o){let s=t(k);Object.entries(o||{}).forEach(([a,b])=>{s=s.split('{'+a+'}').join(b);});return s;}
+const SQL_FEATURES=[
+  [/\bWITH\b/i,'CTE (WITH … AS)'],[/\bLEFT\s+JOIN\b/i,'LEFT JOIN'],[/\b(?:INNER\s+)?JOIN\b/i,'JOIN'],
+  [/\bGROUP\s+BY\b/i,'GROUP BY'],[/\bHAVING\b/i,'HAVING'],[/\bOVER\s*\(/i,'OVER (…)'],[/\bPARTITION\s+BY\b/i,'PARTITION BY'],
+  [/\bROWS\s+BETWEEN\b/i,'ROWS BETWEEN'],[/\bCASE\b/i,'CASE WHEN'],[/\bCOALESCE\b/i,'COALESCE'],[/\bNULLIF\b/i,'NULLIF'],
+  [/\bDISTINCT\b/i,'DISTINCT'],[/\bUNION\b/i,'UNION'],[/\bNOT\s+EXISTS\b/i,'NOT EXISTS'],[/\bEXISTS\b/i,'EXISTS'],
+  [/\bNOT\s+IN\b/i,'NOT IN'],[/(?<!\bAS\s*)\(\s*SELECT\b/i,'subquery'],[/\bORDER\s+BY\b/i,'ORDER BY'],[/\bLIMIT\b/i,'LIMIT'],
+  [/\bCAST\s*\(/i,'CAST'],[/\bON\s+CONFLICT\b/i,'ON CONFLICT'],[/\b(?:UPDATE|DELETE|INSERT)\b/i,'DML']];
+const SQL_FNS=/\b(ROW_NUMBER|RANK|DENSE_RANK|NTILE|LAG|LEAD|FIRST_VALUE|LAST_VALUE|SUM|AVG|COUNT|MIN|MAX|ROUND|TRIM|LOWER|UPPER|REPLACE|SUBSTR|LENGTH|IFNULL|JULIANDAY|STRFTIME|DATE|PRINTF|GROUP_CONCAT)\s*\(/gi;
+const SQL_FN_NAMES=new Set('ROW_NUMBER RANK DENSE_RANK NTILE LAG LEAD FIRST_VALUE LAST_VALUE SUM AVG COUNT MIN MAX ROUND TRIM LOWER UPPER REPLACE SUBSTR LENGTH IFNULL JULIANDAY STRFTIME DATE PRINTF GROUP_CONCAT COALESCE NULLIF'.split(' '));
+const PY_FEATURES=[
+  [/\.groupby\(/,'groupby'],[/\.agg\(/,'agg'],[/\.merge\(/,'merge'],[/\.pivot(?:_table)?\(/,'pivot'],[/\.melt\(/,'melt'],
+  [/\.apply\(/,'apply'],[/\.fillna\(/,'fillna'],[/\.dropna\(/,'dropna'],[/\.isna\(|\.isnull\(/,'isna'],
+  [/\.drop_duplicates\(|\.duplicated\(/,'drop_duplicates / duplicated'],[/\.sort_values\(/,'sort_values'],
+  [/\.rolling\(/,'rolling'],[/\.shift\(/,'shift'],[/\.str\./,'.str (string ops)'],[/pd\.to_datetime/,'pd.to_datetime'],
+  [/\.astype\(/,'astype'],[/sqlite3/,'sqlite3'],[/executemany/,'executemany'],[/\bwith\b[^\n]*:/,'context manager (with)'],
+  [/\[[^\]\n]*\bfor\b[^\]\n]*\]/,'list comprehension'],[/\{[^}\n]*\bfor\b[^}\n]*\}/,'dict/set comprehension'],
+  [/\bsorted\(/,'sorted'],[/Counter/,'collections.Counter'],[/defaultdict/,'collections.defaultdict'],[/heapq/,'heapq'],
+  [/json\.dumps/,'json.dumps'],[/\bset\(/,'set'],[/\bzip\(/,'zip'],[/\benumerate\(/,'enumerate'],[/\btry:/,'try / except'],
+  [/\byield\b/,'generator (yield)'],[/\bwhile\b/,'while'],[/\.append\(/,'list.append'],[/\bdict\(|=\s*\{\s*\}/,'dict'],[/\.get\(/,'dict.get'],[/\.split\(/,'str.split'],[/\bfor\b[^\n]*:\s*$/m,'for loop'],[/%|\/\/|\*\*/,'operadores aritméticos (%, //, **)'],[/\bre\.\w+\(/,'re (regex)'],[/\bround\(/,'round'],[/\bisinstance\(/,'isinstance']];
+const SQL_KEEP=new Set(('SELECT FROM WHERE GROUP BY ORDER HAVING JOIN LEFT RIGHT INNER OUTER CROSS ON AS WITH OVER PARTITION ROWS RANGE BETWEEN '+
+  'UNBOUNDED PRECEDING FOLLOWING CURRENT ROW AND OR NOT IN IS NULL CASE WHEN THEN ELSE END DISTINCT UNION ALL EXISTS LIMIT OFFSET DESC ASC '+
+  'INSERT INTO VALUES UPDATE SET DELETE CONFLICT DO NOTHING CAST REAL INTEGER INT TEXT LIKE GLOB').split(' '));
+const PY_KEEP=new Set(('def return for in if elif else while not and or is None True False import from as with try except finally lambda yield '+
+  'pass continue break class len range sorted set dict list tuple int float str round sum min max abs any all zip enumerate isinstance '+
+  'print pd np json sqlite3 re math collections Counter defaultdict heapq').split(' '));
+function featureList(e){
+  const src=e.ref||'';if(!src)return [];
+  if(e.kind==='sql'){const out=SQL_FEATURES.filter(([re])=>re.test(src)).map(([,l])=>l);
+    const fns=[...new Set((src.match(SQL_FNS)||[]).map(f=>f.replace(/\s*\($/,'').toUpperCase()+'()'))];
+    return out.filter(x=>!(x==='JOIN'&&out.includes('LEFT JOIN'))).concat(fns);}
+  return PY_FEATURES.filter(([re])=>re.test(src)).map(([,l])=>l);
+}
+function skeleton(e){
+  let src=e.ref||'';if(!src)return '';
+  if(e.kind==='sql')src=src.replace(/\s+(FROM|WHERE|GROUP BY|HAVING|ORDER BY|LEFT JOIN|INNER JOIN|JOIN|UNION|LIMIT)\b/gi,'\n$1').replace(/\)\s*SELECT\b/gi,')\nSELECT');
+  const keep=e.kind==='sql'?(w=>SQL_KEEP.has(w.toUpperCase())||SQL_FN_NAMES.has(w.toUpperCase())):(w=>PY_KEEP.has(w));
+  let prevDot=false,prevDef=false;
+  const out=(src.match(/'[^'\n]*'|"[^"\n]*"|\d+(?:\.\d+)?|[A-Za-z_][A-Za-z0-9_]*|\s+|./g)||[]).map(tok=>{
+    let r;
+    if(/^\s+$/.test(tok))return tok;
+    if(/^['"\d]/.test(tok))r='___';
+    else if(/^[A-Za-z_]/.test(tok))r=(prevDot||prevDef||keep(tok))?tok:'___';
+    else r=tok;
+    prevDot=tok==='.';prevDef=(tok==='def');
+    return r;
+  }).join('');
+  return out.replace(/___(\s*\.\s*___)+/g,'___').replace(/[ \t]+$/gm,'');
+}
+function hintText(e,lvl){
+  const own=(lang==='en'&&EN[e.id]&&EN[e.id].hints)||e.hints;
+  if(own&&own[lvl-1])return `<b>${t('w_hint_p')} ${lvl}/${HINT_MAX}</b><br>${own[lvl-1]}`;
+  if(lvl===1){const bl=fld(e,'bullets')||[];const tags=L(e.tags)||catLabel(catKey(e));
+    return `<b>${t('w_hint_p')} 1/${HINT_MAX} · ${t('hint_l1')}:</b> ${escv(tags)}${bl[0]?`<br><small>${L(bl[0])}</small>`:''}`;}
+  if(lvl===2){const f=featureList(e);if(!f.length)return t('hint_none');
+    return `<b>${t('w_hint_p')} 2/${HINT_MAX} · ${t('hint_l2')}:</b><br>${f.map(x=>`<code>${escv(x)}</code>`).join(' · ')}`;}
+  const sk=skeleton(e);if(!sk)return t('hint_none');
+  return `<b>${t('w_hint_p')} 3/${HINT_MAX} · ${t('hint_l3')}:</b><pre class="hintpre">${escv(sk)}</pre>`;
+}
+function showHint(){
+  const e=cur;if(!e||mode!=='practice')return;
+  const panel=$('#tutor');panel.classList.remove('pulse');panel.classList.add('show');
+  if(hintLvl>=HINT_MAX){panel.innerHTML=hintText(e,HINT_MAX)+`<br><small>${t('hint_last')}</small>`;return;}
+  hintLvl++;panel.innerHTML=hintText(e,hintLvl);
+  const b=$('#hintS');if(b)b.textContent=`${t('w_hint_p')} ${Math.min(hintLvl+1,HINT_MAX)}/${HINT_MAX}`;
+}
+/* ---- RF08 diagnosis ---- */
+function diagSQL(det,ordered){
+  const errd=det.find(d=>d.err&&!/^ref error/.test(d.err));
+  if(errd){const m=errd.err;let x;
+    if(/syntax error|incomplete input|unrecognized token/i.test(m))return {c:'syntax',m:t('diag_syntax')+` <small>(${escv(m)})</small>`};
+    if((x=m.match(/no such column:\s*(\S+)/i)))return {c:'nocol',m:fmtT('diag_nocol',{x:`<code>${escv(x[1])}</code>`})};
+    if((x=m.match(/no such table:\s*(\S+)/i)))return {c:'notab',m:fmtT('diag_notab',{x:`<code>${escv(x[1])}</code>`})};
+    return {c:'runtime',m:fmtT('diag_runtime',{x:escv(m)})};}
+  const bad=det.filter(d=>!d.ok);if(!bad.length)return null;
+  if(det[0]&&det[0].ok)return {c:'hidden',m:fmtT('diag_hidden',{k:bad.length})};
+  const f=bad.find(d=>d.got&&d.exp);if(!f)return null;
+  if(f.got.cols.length!==f.exp.cols.length)return {c:'cols',m:fmtT('diag_cols',{g:f.got.cols.length,x:f.exp.cols.length})};
+  if(f.got.rows.length>f.exp.rows.length)return {c:'more',m:fmtT('diag_more',{g:f.got.rows.length,x:f.exp.rows.length})};
+  if(f.got.rows.length<f.exp.rows.length)return {c:'fewer',m:fmtT('diag_fewer',{g:f.got.rows.length,x:f.exp.rows.length})};
+  if(ordered&&rowsEq(f.got.rows,f.exp.rows,false))return {c:'order',m:t('diag_order')};
+  return {c:'values',m:t('diag_values')};
+}
+const PY_EXC={
+  es:{NameError:'nombre no definido (¿variable o import faltante?)',TypeError:'operación con tipos incompatibles (¿None, str e int mezclados?)',KeyError:'clave o columna inexistente',IndexError:'índice fuera de rango (¿lista vacía?)',AttributeError:'método o atributo inexistente para ese tipo',ValueError:'valor inválido para la conversión u operación',ZeroDivisionError:'división por cero: protege el denominador 0',SyntaxError:'error de sintaxis',IndentationError:'indentación inconsistente'},
+  en:{NameError:'name not defined (missing variable or import?)',TypeError:'incompatible types (None, str and int mixed?)',KeyError:'missing key or column',IndexError:'index out of range (empty list?)',AttributeError:'no such method or attribute for that type',ValueError:'invalid value for the conversion or operation',ZeroDivisionError:'division by zero: guard the 0 denominator',SyntaxError:'syntax error',IndentationError:'inconsistent indentation'}};
+function pyErrDiag(msg){const lines=String(msg).trim().split('\n');const last=lines[lines.length-1]||'';const m=last.match(/^(\w+(?:Error|Exception))\s*:?\s*(.*)$/);
+  if(!m)return {c:'runtime',m:fmtT('diag_runtime',{x:escv(last)})};
+  const why=(PY_EXC[lang]||PY_EXC.es)[m[1]];return {c:m[1],m:fmtT('diag_pyexc',{x:`<code>${m[1]}</code>`,y:escv(why||m[2]||'')})+(why&&m[2]?` <small>(${escv(m[2])})</small>`:'')};}
+function reprType(r){r=String(r==null?'':r).trim();if(/^['"]/.test(r))return 'str';if(r.startsWith('['))return 'list';if(r.startsWith('('))return 'tuple';
+  if(r.startsWith('{'))return /^\{\s*\}$|:/.test(r)?'dict':'set';if(r==='None')return 'None';if(r==='True'||r==='False')return 'bool';
+  if(/^-?\d+$/.test(r))return 'int';if(/^-?(\d+\.\d*|\.\d+|\d+e-?\d+|nan|inf)$/i.test(r))return 'float';return 'other';}
+function diagPy(cases){const bad=cases.filter(c=>!c.ok);if(!bad.length)return null;const f=bad[0];
+  const tg=reprType(f.got),tx=reprType(f.expected);
+  if(tg!==tx&&tg!=='other'&&tx!=='other')return {c:'pytype',m:fmtT('diag_pytype',{g:`<code>${tg}</code>`,x:`<code>${tx}</code>`})};
+  const p=cases.length-bad.length;if(p>0)return {c:'partial',m:fmtT('diag_pypart',{p,n:cases.length,c:escv(f.name)})};
+  return {c:'value',m:fmtT('diag_pyval',{c:escv(f.name)})};}
+function diagBox(d){return d&&mode==='practice'?`<div class="diag"><b>🔎 ${t('diag_t')}:</b> ${d.m}</div>`:'';}
+function refBox(e,all){
+  if(mode!=='practice'||!e.ref)return '';
+  if(!all&&failCount<2)return '';
+  const ex=fld(e,'explain');
+  return `<details class="refbox"><summary>${all?t('ref_t'):t('ref_after')}</summary><pre class="hintpre">${escv(e.ref)}</pre>${ex?`<div class="refexp">${ex}</div>`:''}</details>`;
+}
+/* ---- RF15 telemetry ---- */
+const ATT_MAX=2000;
+function logAttempt(e,m,ok,extra){
+  if(!e)return;const r=lastRun||{};
+  const a={ts:Date.now(),id:e.id,k:catKey(e),kind:e.kind,d:e.diff,m,ok:ok?1:0,p:r.p??(ok?1:0),n:r.n??1,err:r.err||null,
+    ms:Math.round(Date.now()-(m==='e'&&exam?exam.qStart:openedAt)),x:r.x??null,h:m==='p'?hintLvl:0,...(extra||{})};
+  (stats.attempts=stats.attempts||[]).push(a);if(stats.attempts.length>ATT_MAX)stats.attempts=stats.attempts.slice(-ATT_MAX);
+  saveStats();
+}
+function attemptSummary(){
+  const at=(stats.attempts||[]).filter(a=>a.m==='p'&&(a.kind==='sql'||a.kind==='python'));
+  const first=new Map(),solved=new Map();
+  at.forEach(a=>{if(!first.has(a.id))first.set(a.id,a);if(a.ok&&!solved.has(a.id))solved.set(a.id,a);});
+  const fa=[...first.values()],sv=[...solved.values()];
+  const firstOk=fa.length?Math.round(fa.filter(a=>a.ok).length/fa.length*100):0;
+  const tts=sv.length?Math.round(sv.reduce((s,a)=>s+a.ms,0)/sv.length/1000):0;
+  const withHints=sv.filter(a=>a.h>0).length;
+  return {n:(stats.attempts||[]).length,firstOk,tts,withHints,solved:sv.length};
+}
+function telemetryCard(){
+  const s=attemptSummary();
+  if(!s.n)return `<div class="card" style="margin-top:16px"><div class="field"><label>${t('stats_tel')}</label><div class="console">${t('stats_att_none')}</div></div></div>`;
+  return `<div class="card" style="margin-top:16px"><div class="field"><label>${t('stats_tel')}</label>
+    <div class="scoresub" style="line-height:1.9"><b>${s.n}</b> ${t('stats_att')} · <b>${s.firstOk}%</b> ${t('stats_first')} · <b>${fmt(s.tts)}</b> ${t('stats_tts')} · <b>${s.withHints}/${s.solved}</b> ${t('stats_hints')}</div>
+    <button class="ghost" style="margin-top:8px" onclick="exportAttempts()">⬇ ${t('stats_export')}</button></div></div>`;
+}
+function exportAttempts(){
+  const cols=['ts','id','k','kind','d','m','ok','p','n','err','ms','x','h'];
+  const rows=(stats.attempts||[]).map(a=>cols.map(c=>{let v=c==='ts'?new Date(a.ts).toISOString():a[c];v=v==null?'':String(v);return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v;}).join(','));
+  const blob=new Blob([cols.join(',')+'\n'+rows.join('\n')],{type:'text/csv'});
+  const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=`dojo-attempts-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);
+}
+/* ---- RF01 Google OAuth 2.0 (PKCE) — plain fetch, same session shape as password sign-in ----
+   Enable after configuring the Google provider + redirect URLs in Supabase (docs/ACCOUNTS.md). */
+const AUTH_GOOGLE=false;
+const b64url=b=>btoa(String.fromCharCode(...b)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+async function signInGoogle(){
+  const cfg=sbCfg();if(!cfg){cloudStatus('err',t('acct_off'));return;}
+  const verifier=b64url(crypto.getRandomValues(new Uint8Array(32)));
+  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier));
+  try{sessionStorage.setItem('delab:pkce',verifier);}catch(e){}
+  const u=new URL(cfg.url+'/auth/v1/authorize');
+  u.searchParams.set('provider','google');u.searchParams.set('redirect_to',location.origin+location.pathname);
+  u.searchParams.set('code_challenge',b64url(new Uint8Array(digest)));u.searchParams.set('code_challenge_method','s256');
+  location.assign(u.toString());
+}
+async function handleOAuthCallback(){
+  const q=new URLSearchParams(location.search),h=new URLSearchParams(location.hash.replace(/^#/,''));
+  const code=q.get('code'),err=q.get('error_description')||h.get('error_description')||q.get('error')||h.get('error');
+  if(!code&&!err)return false;
+  let verifier=null;try{verifier=sessionStorage.getItem('delab:pkce');sessionStorage.removeItem('delab:pkce');}catch(e){}
+  history.replaceState(null,'',location.pathname);
+  if(err||!verifier){lockShow(true,'login');renderLock('login',t('oauth_err')+(err?': '+err:''));return true;}
+  try{
+    const r=await sbFetch('/auth/v1/token?grant_type=pkce',{method:'POST',body:JSON.stringify({auth_code:code,code_verifier:verifier})});
+    if(!r.ok||!r.data||!r.data.access_token)throw new Error((r.data&&(r.data.msg||r.data.error_description||r.data.message))||('HTTP '+r.status));
+    await completeLogin(r.data);
+  }catch(e){lockShow(true,'login');renderLock('login',t('oauth_err')+': '+e.message);}
+  return true;
+}
 
 /* ===========================  exam  =========================== */
 function catAccuracy(){const acc={};orderedCats().forEach(k=>acc[k]={p:0,t:0});
@@ -6577,11 +6941,11 @@ function loadExamQuestion(i){
   if(e.kind!=='quiz'&&e.kind!=='open'){const er=$('#examRun');if(er)er.onclick=()=>{e.kind==='sql'?runSQL():runPy();};}
   $('#cases').innerHTML=`<div class="console">${t('exam_prompt')}</div>`;$('#verdict').textContent='';$('#tutor').classList.remove('show');paintExamClock();
 }
-async function examSubmit(){const e=cur;if(e.kind==='open')return examSubmitOpen();let ok=false;if(e.kind==='quiz'){if(quizSel==null){toast(t('exam_choose'));return;}ok=!!e.options[quizSel].ok;showConsole((ok?'✓ ':'✗ ')+t('registered'));}else{ok=await(e.kind==='sql'?runSQL():runPy());}exam.results[e.id]={ok,cat:e.cat,diff:e.diff,kind:e.kind};exam.times[e.id]=Math.round((Date.now()-exam.qStart)/1000);advanceExam();}
+async function examSubmit(){const e=cur;if(e.kind==='open')return examSubmitOpen();let ok=false;if(e.kind==='quiz'){if(quizSel==null){toast(t('exam_choose'));return;}ok=!!e.options[quizSel].ok;showConsole((ok?'✓ ':'✗ ')+t('registered'));}else{ok=await(e.kind==='sql'?runSQL():runPy());}if(e.kind==='quiz')lastRun=null;logAttempt(e,'e',ok);exam.results[e.id]={ok,cat:e.cat,diff:e.diff,kind:e.kind};exam.times[e.id]=Math.round((Date.now()-exam.qStart)/1000);advanceExam();}
 async function examSubmitOpen(){
   const e=cur,ta=$('#openAns'),answer=(ta?ta.value:'').trim();
   if(!answer){toast(t('w_write_first'));return;}
-  const finish=ok=>{exam.results[e.id]={ok,cat:e.cat,diff:e.diff,kind:e.kind};exam.times[e.id]=Math.round((Date.now()-exam.qStart)/1000);advanceExam();};
+  const finish=ok=>{lastRun=null;logAttempt(e,'e',ok);exam.results[e.id]={ok,cat:e.cat,diff:e.diff,kind:e.kind};exam.times[e.id]=Math.round((Date.now()-exam.qStart)/1000);advanceExam();};
   let errMsg='';
   const endpoint=(()=>{try{return localStorage.getItem('ai_endpoint');}catch{return null;}})();
   if(endpoint){
@@ -6598,7 +6962,7 @@ async function examSubmitOpen(){
     <button class="primary" id="selfYes" style="margin-top:8px">${t('w_selfyes')}</button> <button id="selfNo">${t('w_selfno')}</button></div>`);
   $('#selfYes').onclick=()=>finish(true);$('#selfNo').onclick=()=>finish(false);
 }
-function examSkip(){const e=cur;exam.results[e.id]={ok:false,skipped:true,cat:e.cat,diff:e.diff,kind:e.kind};exam.times[e.id]=Math.round((Date.now()-exam.qStart)/1000);advanceExam();}
+function examSkip(){const e=cur;lastRun=null;logAttempt(e,'e',false,{skip:1});exam.results[e.id]={ok:false,skipped:true,cat:e.cat,diff:e.diff,kind:e.kind};exam.times[e.id]=Math.round((Date.now()-exam.qStart)/1000);advanceExam();}
 function advanceExam(){if(exam.idx<exam.items.length-1)loadExamQuestion(exam.idx+1);else finishExam();}
 function finishExam(){
   if(!exam||exam.finished)return;exam.finished=true;stopExamTimer();
@@ -6655,6 +7019,7 @@ function renderStats(){
       <div class="card" style="flex:1;min-width:340px"><div class="field"><label>${t('stats_mastery')}</label>${mastery}</div></div>
     </div>
     ${recoCard()}
+    ${telemetryCard()}
     <div class="card" style="margin-top:16px"><div class="field"><label>${t('stats_hist')}</label><div class="hist">${rows}</div></div></div>
     <div style="margin-top:16px;display:flex;gap:10px"><button class="primary" onclick="switchMode('exam')">${t('stats_start')}</button><button class="ghost" onclick="switchMode('practice')">${t('nav_practice')}</button></div>`;
 }
@@ -6727,6 +7092,7 @@ function renderLock(mode,msg){
       <div class="syncst" id="cStatus"></div>`;
   }else{
     box.innerHTML=`<div class="mnote" style="text-align:center">${t('lock_login_note')}</div>
+      ${AUTH_GOOGLE?`<div class="mrow"><button class="primary gbtn" onclick="signInGoogle()"><b>G</b> ${t('google_btn')}</button></div><div class="orsep">${t('or_sep')}</div>`:''}
       <input class="minput" id="cEmail" type="email" autocomplete="username" placeholder="${t('acct_email')}">
       <input class="minput" id="cPass" type="password" autocomplete="current-password" placeholder="${t('acct_pass')}"
         onkeydown="if(event.key==='Enter')cloudLogin('signin')">
@@ -6847,7 +7213,11 @@ function mergeProgress(a,b){
   const history=[...((A.stats||{}).history||[]),...((B.stats||{}).history||[])]
     .filter(h=>{const k=JSON.stringify(h);if(seen.has(k))return false;seen.add(k);return true;})
     .sort((x,y)=>(y.date||'').localeCompare(x.date||''));
-  return {state:{solved,xp,streak:lead.streak||0,lastDay:lead.lastDay||null},stats:{history}};
+  const ak=a=>`${a.ts}|${a.id}|${a.m}`,aseen=new Set();
+  const attempts=[...((A.stats||{}).attempts||[]),...((B.stats||{}).attempts||[])]
+    .filter(a=>{const k=ak(a);if(aseen.has(k))return false;aseen.add(k);return true;})
+    .sort((x,y)=>(x.ts||0)-(y.ts||0)).slice(-ATT_MAX);
+  return {state:{solved,xp,streak:lead.streak||0,lastDay:lead.lastDay||null},stats:{history,attempts}};
 }
 async function cloudPull(){
   const s=await liveToken();if(!s)return null;
@@ -6885,7 +7255,11 @@ async function cloudLogin(kind){
     const msg=r.data&&(r.data.msg||r.data.error_description||r.data.message);
     cloudStatus('err',msg||t('acct_badcred'));return;
   }
-  const sess=packSession(r.data);
+  return completeLogin(r.data);
+}
+/* shared by password and Google (OAuth/PKCE) sign-in: same session shape, same gate */
+async function completeLogin(data){
+  const sess=packSession(data);
   // each account has its OWN progress bucket
   await switchBucket('c_'+sess.user_id);
   setSession(sess);
@@ -6909,7 +7283,7 @@ async function cloudLogout(){
 async function save(){await store.set(ukey('state'),JSON.stringify(state));queueCloudPush();}
 async function load(){state={solved:{},xp:0,streak:0,lastDay:null};const v=await store.get(ukey('state'));if(v)try{state=Object.assign(state,JSON.parse(v));}catch(e){}}
 async function saveStats(){await store.set(ukey('stats'),JSON.stringify(stats));queueCloudPush();}
-async function loadStats(){stats={history:[]};const v=await store.get(ukey('stats'));if(v)try{stats=Object.assign({history:[]},JSON.parse(v));}catch(e){}}
+async function loadStats(){stats={history:[],attempts:[]};const v=await store.get(ukey('stats'));if(v)try{stats=Object.assign({history:[],attempts:[]},JSON.parse(v));}catch(e){}}
 async function saveLang(){await store.set('delab:lang',lang);}
 async function loadLang(){const v=await store.get('delab:lang');if(v)lang=v;}
 function toast(m){const el=$('#toast');el.innerHTML=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2400);}
@@ -6917,7 +7291,7 @@ function toast(m){const el=$('#toast');el.innerHTML=m;el.classList.add('show');s
 document.querySelectorAll('#nav .navbtn').forEach(b=>b.onclick=()=>switchMode(b.dataset.m));
 $('#themeBtn').onclick=()=>{const ld=document.documentElement.getAttribute('data-theme')==='light';document.documentElement.setAttribute('data-theme',ld?'':'light');$('#themeBtn').textContent=ld?'🌙':'☀️';store.set('delab:theme',ld?'dark':'light');};
 $('#menub').onclick=()=>document.querySelector('.rail').classList.toggle('open');
-$('#resetBtn').onclick=async()=>{if(confirm(t('reset_c'))){state={solved:{},xp:0,streak:0,lastDay:null};stats={history:[]};await save();await saveStats();renderXP();if(mode==='practice')renderRail();if(mode==='stats')renderStats();}};
+$('#resetBtn').onclick=async()=>{if(confirm(t('reset_c'))){state={solved:{},xp:0,streak:0,lastDay:null};stats={history:[],attempts:[]};await save();await saveStats();renderXP();if(mode==='practice')renderRail();if(mode==='stats')renderStats();}};
 
 /* ---------- keyboard shortcuts ---------- */
 function toggleKeysHelp(){
@@ -6970,6 +7344,7 @@ window.addEventListener('load',async()=>{
   await load();await loadStats();
   try{const th=await store.get('delab:theme');if(th==='light'){document.documentElement.setAttribute('data-theme','light');$('#themeBtn').textContent='☀️';}}catch(e){}
   setLang(lang);renderXP();renderRail();switchMode('home');
+  if(await handleOAuthCallback())return;   // Google sign-in redirect (PKCE) handles its own gate
   await gate();                             // access lock: registered + approved users only
 });
 
