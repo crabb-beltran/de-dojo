@@ -71,7 +71,7 @@ mindmap
 | **Motor SQL** | **sql.js** (SQLite compilado a WebAssembly) | Ejecuta las queries del usuario contra tablas sembradas |
 | **Motor Python** | **Pyodide** (CPython en WASM) + pandas, numpy, scipy, sqlite3 | Ejecuta el código Python y sus tests |
 | **Cuentas / sync** | **Supabase** (Postgres, GoTrue Auth, Row-Level Security) vía REST | Login, aprobación y respaldo de progreso entre dispositivos |
-| **Tutor IA** | **Cloudflare Worker** → API Anthropic | Proxy serverless para que la API key quede del lado servidor |
+| **Tutor IA** (opcional) | **Cloudflare Worker** → API Gemini (Google) | Proxy serverless para que la API key quede del lado servidor |
 | **CI/CD** | **GitHub Actions** + **GitHub Pages** | Validación de contenido y despliegue automático |
 | **Dev tooling** | **Node.js** (validador, remap de i18n), **Playwright** (e2e) | Calidad de contenido y pruebas de navegador |
 
@@ -157,10 +157,10 @@ flowchart LR
   end
 
   subgraph ext["Servicios externos (opcionales)"]
-    pages["GitHub Pages<br/>sirve el archivo"]
+    pages["Cloudflare Pages · GitHub Pages<br/>sirven el archivo"]
     sb[("Supabase<br/>Postgres + Auth")]
     cf["Cloudflare Worker<br/>proxy tutor IA"]
-    anth["API Anthropic"]
+    anth["API Gemini"]
   end
 
   user --> app
@@ -197,6 +197,34 @@ sequenceDiagram
 La corrección es **set-based** (compara conjuntos de filas, sensible al orden
 solo cuando la tarea pide `ORDER BY`) y se evalúa contra **varios datasets
 ocultos** para que no baste con hardcodear la salida de muestra.
+
+### Apoyo al aprendizaje y telemetría (incremento 2026, TRL5)
+
+Capa **aditiva** sobre el motor: no cambia cómo se califica un ejercicio.
+
+| Req. | Qué hace | Dónde |
+|---|---|---|
+| RF07 | Pistas estáticas en 3 niveles: (1) concepto clave, (2) construcciones detectadas en la solución de referencia, (3) esqueleto con identificadores y literales enmascarados (`___`). Un ejercicio puede definir sus propias pistas con `hints:[…]` | `showHint()`, `featureList()`, `skeleton()` |
+| RF08 | Diagnóstico determinista del fallo. SQL: sintaxis, columna o tabla inexistente, columnas, filas de más o de menos, orden, valores, falla solo en datasets ocultos. Python: tipo de excepción, tipo de dato, casos parciales. Tras aprobar (o tras 2 fallos) se ofrece la solución de referencia | `diagSQL()`, `diagPy()`, `pyErrDiag()`, `refBox()` |
+| RF14 | Tiempo de ejecución del código del usuario (informativo: depende del equipo, no califica) | `runSQL()`, `runPy()` |
+| RF15 | Un registro por intento en `stats.attempts`, sincronizado con la fila de progreso existente y exportable a CSV desde *Stats* | `logAttempt()`, `exportAttempts()` |
+
+El **modo examen sigue sin ayudas**: no hay pistas, diagnóstico ni solución de referencia.
+
+Esquema de un intento (claves cortas para no inflar el JSONB):
+
+| Clave | Significado |
+|---|---|
+| `ts` | epoch ms |
+| `id` / `k` / `kind` / `d` | ejercicio, categoría, tipo, dificultad |
+| `m` | `p` práctica · `e` examen |
+| `ok` / `p` / `n` | resultado global y casos aprobados/total |
+| `err` | clase de diagnóstico (`syntax`, `nocol`, `more`, `hidden`, `KeyError`, `pytype`, …) |
+| `ms` | tiempo en la tarea desde que se abrió el ejercicio |
+| `x` | tiempo de ejecución del código del usuario (ms) |
+| `h` | pistas estáticas usadas antes de este intento |
+
+`mergeProgress()` une los intentos de varios dispositivos sin duplicar (`ts|id|m`) y conserva los últimos 2000.
 
 ---
 
@@ -240,7 +268,7 @@ stateDiagram-v2
   [*] --> Bloqueado
   Bloqueado --> Registrando: sign-up (email + password)
   Registrando --> Pendiente: cuenta creada (approved = false)
-  Bloqueado --> Verificando: sign-in
+  Bloqueado --> Verificando: sign-in (correo) o Google OAuth 2.0 + PKCE
   Verificando --> Pendiente: approved = false
   Verificando --> Acceso: approved = true
   Pendiente --> Acceso: admin aprueba (tras pago) + "Revisar de nuevo"
@@ -253,6 +281,7 @@ stateDiagram-v2
 - **`progress`** (tabla): sus políticas RLS exigen `approved = true`.
 - **Cobro:** aprobación manual, o un enlace de pago (`PAY_LINK`) en la pantalla
   de pendiente (Stripe Payment Links / Lemon Squeezy), o a futuro un webhook.
+- **Google OAuth 2.0 + PKCE** (sin SDK): `signInGoogle()` redirige a `/auth/v1/authorize` con `code_challenge`; al volver, `handleOAuthCallback()` canjea el código en `/auth/v1/token?grant_type=pkce` y reutiliza el mismo camino de sesión que el login por correo (`completeLogin()`). Se activa con `AUTH_GOOGLE=true` después de configurar el proveedor.
 - Detalle completo del setup SQL en [`ACCOUNTS.md`](./ACCOUNTS.md).
 
 ---
@@ -323,8 +352,8 @@ flowchart LR
 | Área | Medida |
 |---|---|
 | **CSP** | `<meta>` Content-Security-Policy: `connect-src` limita a Supabase + Worker + CDNs (un script inyectado no exfiltra a un host arbitrario), `object-src 'none'`, `base-uri 'self'`. `script-src` mantiene `'unsafe-inline'/'unsafe-eval'/'wasm-unsafe-eval'` porque los handlers inline y los runtimes WASM lo exigen |
-| XSS | Todo resultado de SQL/Python y nombres de usuario pasan por `escv()` (escapa `& < >`); la respuesta del tutor usa `textContent`, nunca `innerHTML` |
-| Secretos | La app nunca contiene la API key de IA (vive en el Worker); **el tutor solo va vía Worker, sin fallback directo a Anthropic**; la anon key de Supabase es pública por diseño — la protección real es RLS |
+| XSS | Todo resultado de SQL/Python y nombres de usuario pasan por `escv()` (escapa `& < >`); la respuesta del tutor usa `textContent`, nunca `innerHTML`; las pistas estáticas y el diagnóstico solo interpolan contenido del ejercicio (autoría propia) y escapan todo lo derivado del código o de errores |
+| Secretos | La app nunca contiene la API key de IA (vive en el Worker); **el tutor solo va vía Worker, sin fallback directo a la API del modelo**; la anon key de Supabase es pública por diseño — la protección real es RLS |
 | Acceso | Login obligatorio + flag `approved` verificado en servidor vía RLS; contraseña mínima de 8 |
 | Aislamiento | Buckets de progreso por usuario; invitado y cuenta nunca se mezclan |
 | Ejecución de código | El código del usuario corre en el sandbox WASM de su propio navegador (sql.js/Pyodide), no en un servidor |

@@ -18,8 +18,15 @@ Three `kind`s: `sql`, `python`, `quiz`. Shared fields:
   bullets:['requirement 1','requirement 2'],
   sources:[ S('table', ['col1','col2'], [[1,'a'],[2,'b']], 'optional note') ],
   expected:'sample of expected output (plain text)',
+  hints:['level 1','level 2','level 3'],   // optional; HTML ok. Without it the app derives
+                                           // concept → constructs → masked skeleton from `ref`
 }
 ```
+
+`hints` is optional. If omitted, practice mode still offers 3 static hint levels
+generated from the exercise (tags + first bullet, constructs detected in `ref`,
+and `ref` with identifiers/literals masked as `___`). Write your own when the
+derived skeleton would give the answer away (e.g. one-line solutions).
 
 `S(name, cols, rows, note?)` is a helper that renders a sample-data table in the problem panel. Keep it to ~3–5 rows.
 
