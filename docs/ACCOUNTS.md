@@ -127,12 +127,12 @@ where email = 'cliente@correo.com';
 
 Each practice/exam attempt is appended to `progress.data -> 'stats' -> 'attempts'`
 (schema in `docs/ARCHITECTURE.md` §4). The SQL Editor runs as the service role,
-so the admin can aggregate across users; RLS still prevents users from reading
-each other's rows.
+so the admin can aggregate across users. The view is `security_invoker` and
+revoked from `anon`/`authenticated`, so it never bypasses RLS through the API.
 
 ```sql
 -- one row per attempt
-create or replace view public.v_attempts as
+create or replace view public.v_attempts with (security_invoker = true) as
 select p.user_id,
        to_timestamp((a->>'ts')::bigint / 1000.0) as ts,
        a->>'id' as exercise_id, a->>'k' as category, a->>'kind' as kind, a->>'d' as diff,

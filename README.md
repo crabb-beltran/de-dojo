@@ -127,7 +127,15 @@ Point the app at it with `localStorage.setItem('ai_endpoint', '<worker-url>')`.
 
 **GitHub Pages (kept as fallback).** Pushing to `main` also triggers `.github/workflows/pages.yml`. Enable it in **Settings → Pages → Source: GitHub Actions**. Live URL: `https://<user>.github.io/<repo>/`.
 
-**Versions.** `release/v1-baseline` freezes the app as it was before the 2026 graduation-project increment (TRL5 work); `main` carries the increment on top, without removing any feature.
+**Versions and editions.** One codebase, two views, nothing removed:
+
+| Branch / URL | Edition | What it shows |
+|---|---|---|
+| `main` (production) | `full` | Everything: AI tutor, billing link, open interview questions, plus the TRL5 increment |
+| `proyecto-grado` (Cloudflare branch deploy) | `academic` | Scope of the UNAD graduation project: executable SQL/Python practice, progressive hints, diagnosis, exam + gap report, telemetry, accounts. No AI tutor (sends code to a third party), no billing, no AI-graded open questions |
+| `release/v1-baseline` | — | Frozen snapshot from before the 2026 increment |
+
+Any deploy can switch views with `?edition=academic` or `?edition=full`; the choice is remembered per browser. `proyecto-grado` differs from `main` by one line (`DEFAULT_EDITION`), so rebasing it is trivial.
 
 ## Architecture notes (trade-offs)
 

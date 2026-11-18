@@ -13,6 +13,7 @@ La versión anterior queda congelada en la rama `release/v1-baseline`.
 - **Inicio de sesión con Google** (RF01): OAuth 2.0 + PKCE sin SDK, detrás de la bandera `AUTH_GOOGLE`; el correo y contraseña se conservan como respaldo.
 - **6 ejercicios de datos imperfectos** (RF13): 3 SQL y 3 Python sobre nulos frente a vacíos, normalización, montos en texto y perfil de calidad con pandas.
 - Despliegue en **Cloudflare Pages** documentado; GitHub Pages se mantiene como respaldo.
+- **Edición académica** (`?edition=academic` o rama `proyecto-grado`): muestra solo el alcance del proyecto de grado y oculta el tutor IA, el cobro y las preguntas abiertas calificadas por IA. No borra código; `full` sigue siendo la edición por defecto.
 
 ### Cambiado
 - La documentación refleja que el tutor IA usa **Gemini** a través del Worker.

@@ -236,6 +236,7 @@
   .refbox{margin:10px 12px;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px}.refbox summary{cursor:pointer;color:var(--blue)}
   .refexp{margin-top:6px;font-family:var(--ui);line-height:1.55}
   .hintpre{margin:6px 0 0;padding:8px 10px;background:var(--editorbg,#0b1220);border-radius:6px;font-family:var(--mono);font-size:12.5px;white-space:pre-wrap;overflow-x:auto}
+  body.ed-academic #hint,body.ed-academic #review,body.ed-academic .aicard{display:none!important}
   .orsep{text-align:center;color:var(--muted);font-size:12px;margin:4px 0 8px}.gbtn b{font-family:var(--ui)}
   .term .stdout{color:#cdd6e4;white-space:pre-wrap;line-height:1.5}
   table.cout{border-collapse:collapse;font-size:11.5px;margin:2px 0}
@@ -6646,7 +6647,7 @@ async function runTests(){if(!cur)return;const e=cur;lastRun=null;let r;
 async function runOpen(){
   const e=cur,ta=$('#openAns'),answer=(ta?ta.value:'').trim();
   if(!answer){showConsole(t('w_write_first'));return false;}
-  const endpoint=(()=>{try{return localStorage.getItem('ai_endpoint');}catch{return null;}})();
+  const endpoint=aiEp();
   if(endpoint){
     showConsole(`<div class="console">${t('w_grading')}</div>`);
     try{
@@ -6685,7 +6686,7 @@ async function ai(modeAi){const e=cur,panel=$('#tutor');panel.classList.add('sho
   // workers/ai-tutor) so the API key stays server-side. There is no direct
   // browser→Anthropic fallback: a client-side key would leak. Configure once:
   //   localStorage.setItem('ai_endpoint','https://<your-worker>.workers.dev')
-  const endpoint=(()=>{try{return localStorage.getItem('ai_endpoint');}catch{return null;}})();
+  const endpoint=aiEp();
   if(!endpoint){panel.classList.remove('pulse');panel.textContent=t('tutor_off');return;}
   try{
     const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
@@ -6701,6 +6702,19 @@ async function ai(modeAi){const e=cur,panel=$('#tutor');panel.classList.add('sho
    - RF14 execution time of the user's code (informative only: it depends on the device)
    - RF15 per-attempt telemetry in stats.attempts (synced with the existing progress row)
    Exam mode stays help-free: no hints, no diagnosis, no reference. */
+/* ---- Edition: one codebase, two views (no regression) ----
+   'full'     → everything the product has (default; main / production).
+   'academic' → only the scope of the UNAD graduation project: no AI tutor (it sends code to a
+                third party, contrary to RNF02), no billing link, no AI-graded open interviews.
+   Pick it with ?edition=academic | ?edition=full (remembered per browser), or set
+   DEFAULT_EDITION in the `proyecto-grado` branch for a dedicated deploy. */
+const DEFAULT_EDITION='full';
+const EDITION=(()=>{try{const q=new URLSearchParams(location.search).get('edition');
+  if(q==='academic'||q==='full'){localStorage.setItem('delab:edition',q);return q;}
+  return localStorage.getItem('delab:edition')||DEFAULT_EDITION;}catch(e){return DEFAULT_EDITION;}})();
+const ACADEMIC=EDITION==='academic';
+if(ACADEMIC){for(let i=EX.length-1;i>=0;i--)if(EX[i].kind==='open')EX.splice(i,1);}
+function aiEp(){if(ACADEMIC)return null;try{return localStorage.getItem('ai_endpoint');}catch(e){return null;}}
 let hintLvl=0,failCount=0,openedAt=Date.now(),lastRun=null;
 const HINT_MAX=3;
 function fmtT(k,o){let s=t(k);Object.entries(o||{}).forEach(([a,b])=>{s=s.split('{'+a+'}').join(b);});return s;}
@@ -6947,7 +6961,7 @@ async function examSubmitOpen(){
   if(!answer){toast(t('w_write_first'));return;}
   const finish=ok=>{lastRun=null;logAttempt(e,'e',ok);exam.results[e.id]={ok,cat:e.cat,diff:e.diff,kind:e.kind};exam.times[e.id]=Math.round((Date.now()-exam.qStart)/1000);advanceExam();};
   let errMsg='';
-  const endpoint=(()=>{try{return localStorage.getItem('ai_endpoint');}catch{return null;}})();
+  const endpoint=aiEp();
   if(endpoint){
     showConsole(`<div class="console">${t('w_grading')}</div>`);
     try{
@@ -6987,7 +7001,7 @@ function renderReport(a){
     </div>
     ${weak.length?`<div class="weak"><b>${t('rep_weak')}</b> ${weak.map(([c])=>catLabel(c)).join(' · ')}.<br>${t('rep_weak2')}</div>`:`<div class="weak" style="border-color:var(--mint);background:rgba(94,234,212,.07)"><b>${t('rep_solid')}</b> ${t('rep_solid2')}</div>`}
     ${recoCard()}
-    <div class="card" style="margin-top:16px"><div class="field"><label>🤖 ${t('rep_ai_t')}</label><div id="repAI" class="repai">${t('rep_ai_loading')}</div></div></div>
+    <div class="card aicard" style="margin-top:16px"><div class="field"><label>🤖 ${t('rep_ai_t')}</label><div id="repAI" class="repai">${t('rep_ai_loading')}</div></div></div>
     <div class="card" style="margin-top:16px"><div class="field"><label>${t('rep_detail')}</label><div style="font-family:var(--mono)">${qlist}</div></div></div>
     <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap"><button class="primary" onclick="switchMode('exam')">${t('rep_new')}</button><button onclick="switchMode('stats')">${t('rep_prog')}</button><button class="ghost" onclick="switchMode('practice')">${t('rep_prac')}</button></div>`;
   $('#gridv').classList.remove('examrun');$('#ovReport').classList.add('show');
@@ -6995,7 +7009,7 @@ function renderReport(a){
 }
 async function loadAIRecommendation(a){
   const el=$('#repAI');if(!el)return;
-  const endpoint=(()=>{try{return localStorage.getItem('ai_endpoint');}catch{return null;}})();
+  const endpoint=aiEp();
   if(!endpoint){el.textContent=t('rep_ai_off');return;}
   const byCat={};Object.entries(a.byCat).forEach(([k,o])=>byCat[catLabel(k)]=o);
   try{
@@ -7086,7 +7100,7 @@ function renderLock(mode,msg){
     const s=getSession();
     box.innerHTML=`<div class="lockpend">⏳</div><div class="lockh">${t('lock_pending_t')}</div>
       <div class="mnote" style="text-align:center">${t('lock_pending')}${s?`<br><b>${escv(s.email)}</b>`:''}</div>
-      ${PAY_LINK?`<div class="mrow"><a href="${PAY_LINK}" target="_blank" rel="noopener"><button class="primary">${t('lock_pay')}</button></a></div>`:''}
+      ${PAY_LINK&&!ACADEMIC?`<div class="mrow"><a href="${PAY_LINK}" target="_blank" rel="noopener"><button class="primary">${t('lock_pay')}</button></a></div>`:''}
       <div class="mrow"><button class="primary" onclick="recheckApproval()">${t('lock_recheck')}</button>
       <button class="ghost" onclick="cloudLogout()">${t('acct_signout')}</button></div>
       <div class="syncst" id="cStatus"></div>`;
@@ -7343,6 +7357,7 @@ window.addEventListener('load',async()=>{
   await loadLang();await initUser();        // user bucket first: state/stats are per-user
   await load();await loadStats();
   try{const th=await store.get('delab:theme');if(th==='light'){document.documentElement.setAttribute('data-theme','light');$('#themeBtn').textContent='☀️';}}catch(e){}
+  document.body.classList.toggle('ed-academic',ACADEMIC);
   setLang(lang);renderXP();renderRail();switchMode('home');
   if(await handleOAuthCallback())return;   // Google sign-in redirect (PKCE) handles its own gate
   await gate();                             // access lock: registered + approved users only
