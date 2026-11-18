@@ -6708,7 +6708,7 @@ async function ai(modeAi){const e=cur,panel=$('#tutor');panel.classList.add('sho
                 third party, contrary to RNF02), no billing link, no AI-graded open interviews.
    Pick it with ?edition=academic | ?edition=full (remembered per browser), or set
    DEFAULT_EDITION in the `proyecto-grado` branch for a dedicated deploy. */
-const DEFAULT_EDITION='full';
+const DEFAULT_EDITION='academic';
 const EDITION=(()=>{try{const q=new URLSearchParams(location.search).get('edition');
   if(q==='academic'||q==='full'){localStorage.setItem('delab:edition',q);return q;}
   return localStorage.getItem('delab:edition')||DEFAULT_EDITION;}catch(e){return DEFAULT_EDITION;}})();
