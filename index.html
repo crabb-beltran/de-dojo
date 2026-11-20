@@ -7262,7 +7262,7 @@ async function cloudLogin(kind){
   if(pass.length<8){cloudStatus('err',t('acct_pass_short'));return;}
   cloudStatus('','…');
   let r;
-  try{r=await sbFetch(kind==='signup'?'/auth/v1/signup':'/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password:pass})});}
+  try{r=await sbFetch(kind==='signup'?'/auth/v1/signup?redirect_to='+encodeURIComponent(location.origin+location.pathname+location.search):'/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password:pass})});}
   catch(e){cloudStatus('err',t('acct_off'));return;}
   if(kind==='signup'&&r.ok&&r.data&&!r.data.access_token){cloudStatus('ok',t('acct_confirm'));return;} // email confirmation flow
   if(!r.ok||!r.data||!r.data.access_token){
