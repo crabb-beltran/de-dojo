@@ -99,8 +99,9 @@ with the same verified email, so password users keep their history.
 3. **Supabase → Authentication → Providers → Google**: paste Client ID and
    Client secret, enable.
 4. **Supabase → Authentication → URL Configuration**: *Site URL* = the
-   production URL (Cloudflare Pages); *Redirect URLs* = that URL, the GitHub
-   Pages URL and `http://localhost:8000` for local testing.
+   production URL (GitHub Pages, e.g. `https://crabb-beltran.github.io/de-dojo/?edition=academic`);
+   *Redirect URLs* = `https://crabb-beltran.github.io/de-dojo/**`, any Cloudflare
+   Pages URL you use and `http://localhost:8000` for local testing.
 5. In `index.html` set `const AUTH_GOOGLE=true;` and push. The lock screen
    shows **Continuar con Google** above the email form.
 
@@ -205,7 +206,11 @@ Client-side hardening already shipped in `index.html`:
 Do these once in the **Supabase dashboard** (free, ~5 min) to complete the setup:
 
 - **Authentication → Providers → Email**: keep **Confirm email = ON** (blocks
-  unverified sign-ups from getting a session).
+  unverified sign-ups from getting a session). The app sends `redirect_to` on
+  sign-up so the confirmation link returns to the same URL/edition. Note: the
+  built-in SMTP allows only a few emails per hour; for bulk onboarding (e.g. the
+  Nov 2026 validation) either configure custom SMTP or temporarily turn
+  confirmation OFF — the admin `approved` gate still controls access.
 - **Authentication → Attack Protection**:
   - Enable **Leaked password protection** (rejects passwords found in the
     HaveIBeenPwned breach corpus).
@@ -224,7 +229,7 @@ jsDelivr publish the exact SRI hashes on each file's page — paste them in.
 
 ## Important limitation — content is public
 
-DE Dojo is a **static site**: the guide and all 151 exercises live in
+DE Dojo is a **static site**: the guide and all 189 exercises live in
 `index.html`, which anyone can view. The access gate protects the **experience
 and the cloud sync**, not the raw content. If you monetize, the real protection
 is to move premium content into Supabase tables behind the same `approved` RLS
