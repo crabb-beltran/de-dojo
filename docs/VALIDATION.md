@@ -12,7 +12,7 @@ plataforma (`v_attempts`, ver `ACCOUNTS.md`) más un formulario post-uso.
 4. Responde el formulario post-uso (abajo).
 
 Criterio de inclusión: profesional o estudiante avanzado de un rol de datos en Colombia.
-Meta: ≥ 15 participantes con al menos un simulacro completado.
+Meta: ≥ 15 participantes con al menos un simulacro completado (lograda: 8; ver Resultados).
 
 ## Formulario post-uso (Google Forms)
 
@@ -60,3 +60,30 @@ Referencia: 68 = promedio de la industria.
 | Valoración ≥ 4 en ítem 14 | ≥ 80 % | Formulario 14 |
 | Retroalimentación < 2 s | 100 % de corridas una vez cargado el motor | `exec_ms` en `v_attempts` |
 | Exactitud de calificación | ≥ 90 % frente a revisión manual | Muestra de 20 intentos revisados a mano |
+
+## Resultados (20–22 nov 2026)
+
+Muestra: 8 usuarios externos (U1–U8) + prueba alfa del autor (reportada aparte); cuenta del tutor excluida.
+
+| Indicador | Meta | Resultado | Estado |
+|---|---|---|---|
+| Participantes con ≥ 1 simulacro | ≥ 15 | 8 (11 simulacros) | No cumplido — suficiente para fines formativos (Nielsen y Landauer, 1993) |
+| Puntaje SUS medio | ≥ 68 | 94,1 (mediana 96,3 · DE 6,9 · mín. 82,5) | Cumplido |
+| Valoración ≥ 4 en ítem 14 | ≥ 80 % | 100 % (todos 5) | Cumplido |
+| Retroalimentación < 2 s | 100 % con motor cargado | 76/77 corridas (98,7 %); la excepción incluye la carga de Pyodide · p50 2 ms · p95 33 ms | Cumplido |
+| Exactitud de calificación | ≥ 90 % | No medida: la telemetría no guarda el código; verificada en CI con 103/103 soluciones de referencia | Limitación |
+
+Telemetría: 104 intentos (49 práctica: 30 SQL + 19 Python · 55 examen); 21 de 23 fallos de código con diagnóstico (91 %);
+9/9 pares usuario–ejercicio con fallo en práctica terminaron resueltos; 6 de 8 usuarios usaron pistas (21 pistas, 9/12 intentos con pista exitosos).
+
+```mermaid
+xychart-beta
+  title "SUS por participante (U1–U8; referencia 68)"
+  x-axis [U1, U2, U3, U4, U5, U6, U7, U8]
+  y-axis "SUS" 0 --> 100
+  bar [100, 100, 95, 82.5, 100, 92.5, 85, 97.5]
+  line [68, 68, 68, 68, 68, 68, 68, 68]
+```
+
+Mejoras pedidas (preguntas abiertas): más ejercicios ejecutables (series de tiempo, JSON anidado, cohortes, modelado dimensional),
+dialectos reales (PostgreSQL/DuckDB, dbt), planes de ejecución, exportar el reporte del examen y una ruta introductoria.

@@ -16,21 +16,23 @@ Engineering**. Combina dos cosas:
   temáticas, 82+ subtemas, 9 diagramas): SQL avanzado, Snowflake, dbt, AWS,
   modelado, arquitectura lakehouse, NoSQL, estadística, seguridad y tendencias.
 - Un **dojo de ejercicios ejecutables** con corrección automática por *test
-  cases* reales: **151 ejercicios** (38 SQL · 47 Python · 66 quiz) repartidos
-  en 20 categorías, con modos Práctica y Examen cronometrado.
+  cases* reales: **189 ejercicios** (50 SQL · 53 Python · 76 quiz · 10 abiertas)
+  repartidos en 17 categorías, con modos Práctica, Examen cronometrado y Stats.
+  Los **103 ejecutables** (SQL + Python) son el objeto evaluable del proyecto de
+  grado UNAD (edición académica, §4.1).
 
-Todo es una **página estática de un solo archivo** (`index.html`, ~640 KB) que
+Todo es una **página estática de un solo archivo** (`index.html`, ~930 KB, ~9.900 líneas) que
 se despliega gratis en GitHub Pages. El SQL y el Python **se ejecutan en el
 navegador del usuario** (WebAssembly), sin backend obligatorio.
 
 | Aspecto | Valor |
 |---|---|
 | Tipo | SPA estática de un solo archivo, sin framework ni build step |
-| Ejercicios | 151 (38 SQL · 47 Python · 66 quiz) · 20 categorías |
+| Ejercicios | 189 (50 SQL · 53 Python · 76 quiz · 10 abiertas IA) · 17 categorías; edición académica: 179 (sin abiertas) |
 | Guía | 21 secciones `<h2>` · 82 subsecciones `<h3>` · bilingüe ES/EN |
 | Ejecución | SQL vía `sql.js` (SQLite WASM) · Python vía Pyodide · en el cliente |
-| Persistencia | localStorage + sync opcional a Supabase (Postgres) |
-| Hosting | GitHub Pages (gratis) · CI en GitHub Actions |
+| Persistencia | localStorage + sync a Supabase (Postgres, RLS) · telemetría por intento + vista `v_attempts` |
+| Hosting | GitHub Pages (producción, gratis) · Cloudflare Pages documentado como alternativa · CI en GitHub Actions |
 | Tutor IA | Opcional, vía Cloudflare Worker (la API key nunca toca el cliente) |
 
 ---
@@ -86,8 +88,9 @@ mindmap
 
 ```
 de-dojo/
-├── index.html                 ← LA APP COMPLETA (UI + lógica + guía + 151 ejercicios)
+├── index.html                 ← LA APP COMPLETA (UI + lógica + guía + 189 ejercicios)
 ├── README.md                  ← visión general, features, cómo correr
+├── CHANGELOG.md               ← versiones (1.0.0 base · 1.1.x incremento TRL5)
 ├── LICENSE                    ← MIT
 │
 ├── assets/                    ← branding e íconos
@@ -100,6 +103,7 @@ de-dojo/
 │   ├── ARCHITECTURE.md            (este archivo)
 │   ├── ACCOUNTS.md               setup de cuentas, aprobación y cobro (Supabase)
 │   ├── AUTHORING.md              cómo añadir ejercicios al array EX
+│   ├── VALIDATION.md             protocolo de validación con usuarios (SUS + telemetría)
 │   └── assets/guide-01..09.jpg   diagramas embebidos en la guía
 │
 ├── workers/ai-tutor/          ← proxy serverless del tutor IA (opcional)
@@ -113,7 +117,7 @@ de-dojo/
 │   └── package.json              deps de dev (sql.js, node-html-parser)
 │
 └── .github/workflows/
-    ├── validate.yml              CI: valida los 151 ejercicios en cada push
+    ├── validate.yml              CI: valida los 189 ejercicios en cada push
     └── pages.yml                 CD: despliega a GitHub Pages al mergear a main
 ```
 
@@ -123,12 +127,12 @@ Aunque es un solo archivo, internamente está organizado en bloques claros:
 
 ```mermaid
 flowchart TB
-  subgraph HTML["index.html (~7.200 líneas)"]
+  subgraph HTML["index.html (~9.900 líneas)"]
     A["&lt;head&gt; · meta, favicons, Open Graph"]
     B["&lt;style&gt; · design tokens, temas claro/oscuro, layout"]
     C["&lt;body&gt; · barra superior, vistas (home/guía/práctica/examen/stats)"]
     D["Lock screen + modal de cuenta"]
-    E["&lt;script&gt; #1 · datos: EX (151 ejercicios), EN, T (i18n), CAT"]
+    E["&lt;script&gt; #1 · datos: EX (189 ejercicios), EN, T (i18n), CAT"]
     F["&lt;script&gt; #2 · lógica: estado, grading, cuentas, i18n, render"]
     G["Bloque GUÍA · HTML embebido + GUIDE_EN (overlay de traducción)"]
   end
@@ -157,7 +161,7 @@ flowchart LR
   end
 
   subgraph ext["Servicios externos (opcionales)"]
-    pages["Cloudflare Pages · GitHub Pages<br/>sirven el archivo"]
+    pages["GitHub Pages<br/>sirve el archivo"]
     sb[("Supabase<br/>Postgres + Auth")]
     cf["Cloudflare Worker<br/>proxy tutor IA"]
     anth["API Gemini"]
@@ -170,35 +174,147 @@ flowchart LR
   app --> pyo
   app --> ls
   app -->|login y sync REST| sb
-  app -->|hint / review| cf --> anth
+  app -.->|hint / review<br/>solo edición full| cf --> anth
 ```
 
-### Flujo de un ejercicio (Práctica)
+### 4.1 Componentes internos y su interacción
+
+Dentro de `index.html` la lógica se organiza en módulos funcionales (no hay
+bundler: son grupos de funciones sobre un estado global compartido). El
+diagrama muestra quién llama a quién en un ciclo completo de uso.
+
+```mermaid
+flowchart TB
+  subgraph UI["Vistas (switchMode)"]
+    home["Inicio"]
+    guide["Guía ES/EN"]
+    prac["Práctica<br/>open · renderWork"]
+    exam["Examen<br/>startExam · examSubmit · finishExam"]
+    stats["Stats<br/>renderStats · telemetryCard"]
+  end
+
+  subgraph ENG["Motores de ejecución (WASM)"]
+    sqle["ensureSQL → runSQL<br/>sql.js"]
+    pye["ensurePy → runPy<br/>Pyodide"]
+  end
+
+  subgraph GRADE["Calificación"]
+    rows["rowsEq · datasets ocultos"]
+    asserts["asserts Python ocultos"]
+  end
+
+  subgraph LEARN["Apoyo al aprendizaje (solo Práctica)"]
+    hint["showHint · featureList · skeleton<br/>pistas 1/3 → 3/3"]
+    diag["diagSQL · diagPy · pyErrDiag<br/>diagnóstico determinista"]
+    ref["refBox<br/>solución tras aprobar o 2 fallos"]
+  end
+
+  subgraph TEL["Telemetría"]
+    log["logAttempt → stats.attempts"]
+    csv["exportAttempts → CSV"]
+  end
+
+  subgraph PERS["Persistencia y cuentas"]
+    store["save · saveStats<br/>localStorage por bucket"]
+    sync["cloudAutoSync · cloudPull<br/>mergeProgress"]
+    auth["gate · completeLogin<br/>refreshApproval"]
+  end
+
+  ed{{"EDITION<br/>academic | full"}}
+  sb[("Supabase<br/>Auth · profiles · progress")]
+  ai["Worker IA (Gemini)"]
+
+  prac -->|Run tests| sqle & pye
+  exam -->|Enviar| sqle & pye
+  sqle --> rows
+  pye --> asserts
+  rows -->|detalle por caso| diag
+  asserts -->|excepción / valor| diag
+  prac --> hint
+  diag --> ref
+  rows & asserts -->|resultado + exec_ms| log
+  exam -->|envío / omisión| log
+  log --> store
+  store --> sync <-->|REST + JWT| sb
+  auth <-->|/auth/v1| sb
+  stats --> log
+  stats --> csv
+  ed -.oculta tutor, cobro<br/>y preguntas abiertas.-> prac
+  ed -.aiEp() = null.-> ai
+  prac -.edición full.-> ai
+```
+
+| Módulo | Responsabilidad | Entradas → Salidas |
+|---|---|---|
+| Vistas | Navegación y render de cada modo | acción del usuario → llamada al motor |
+| Motores | Ejecutar código del usuario y referencia en el sandbox WASM | código + datasets → filas / resultado de asserts + `exec_ms` |
+| Calificación | Comparar set-based (orden solo si la tarea lo exige) sobre 1+ datasets ocultos | filas usuario vs referencia → PASS/FAIL por caso |
+| Apoyo al aprendizaje | Pistas derivadas de la solución de referencia, diagnóstico y solución condicionada | detalle del fallo → mensaje explicativo |
+| Telemetría | Un evento compacto por intento, sin guardar el código | resultado + contexto → `stats.attempts` |
+| Persistencia | Guardar local, sincronizar y combinar entre dispositivos | estado → `progress.data` (JSONB, RLS) |
+| Cuentas | Sesión, aprobación del admin y OAuth PKCE | credenciales → JWT + `approved` |
+| Edición | Recortar la superficie visible sin tocar el motor | `?edition=` / `DEFAULT_EDITION` → UI y banco filtrados |
+
+### 4.2 Flujo de un intento en Práctica
 
 ```mermaid
 sequenceDiagram
+  autonumber
   participant U as Usuario
-  participant App as App (JS)
+  participant App as App (Práctica)
   participant Eng as Motor (sql.js / Pyodide)
+  participant L as Apoyo al aprendizaje
+  participant T as Telemetría
+  participant S as Store + Sync
+  participant SB as Supabase
   U->>App: abre ejercicio
-  App->>App: startTimer() · renderProblem() · muestra fuentes
-  U->>App: escribe solución · "Run tests"
-  App->>Eng: siembra datasets + ejecuta código del usuario
-  App->>Eng: ejecuta la solución de referencia
-  Eng-->>App: filas resultado (usuario vs referencia)
-  App->>App: rowsEq() compara sobre 1+ datasets ocultos
-  alt todos los datasets coinciden
-    App->>U: ✓ PASS · award(XP) · desbloquea siguiente dificultad
-  else difieren
-    App->>U: ✗ FAIL · muestra tu salida vs esperada (consola estilo terminal)
+  App->>App: open(): reinicia pistas, fallos, reloj · startTimer()
+  opt usuario pide ayuda
+    U->>L: Pista n/3
+    L-->>U: 1 concepto · 2 construcciones · 3 esqueleto enmascarado
   end
+  U->>App: escribe solución · Run tests
+  App->>Eng: siembra datasets ocultos · ejecuta usuario + referencia
+  Eng-->>App: filas / asserts · exec_ms
+  App->>App: rowsEq() por dataset
+  alt todos los casos pasan
+    App-->>U: ✓ PASS · XP · desbloqueo · solución de referencia
+  else falla algún caso
+    App->>L: diagSQL() / diagPy()
+    L-->>U: ✗ FAIL · diagnóstico + salida vs esperada
+    opt segundo fallo
+      L-->>U: ofrece solución de referencia
+    end
+  end
+  App->>T: logAttempt(m='p', ok, p/n, err, ms, x, h)
+  T->>S: saveStats() en localStorage
+  S->>SB: push debounced (~4 s) · RLS user_id = auth.uid()
 ```
 
-La corrección es **set-based** (compara conjuntos de filas, sensible al orden
-solo cuando la tarea pide `ORDER BY`) y se evalúa contra **varios datasets
-ocultos** para que no baste con hardcodear la salida de muestra.
+### 4.3 Flujo de un simulacro (Examen)
 
-### Apoyo al aprendizaje y telemetría (incremento 2026, TRL5)
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as Usuario
+  participant X as Examen
+  participant Eng as Motor
+  participant T as Telemetría
+  participant St as Stats
+  U->>X: configura categorías, dificultad y N preguntas
+  X->>X: startExam(): muestra aleatoria · reloj global · sin pistas ni IA
+  loop por cada pregunta
+    U->>X: responde · Enviar (o Saltar)
+    X->>Eng: ejecuta y califica (mismo motor que Práctica)
+    Eng-->>X: correcto / incorrecto + tiempo
+    X->>T: logAttempt(m='e', …) · examSkip registra skip
+  end
+  X->>X: finishExam(): marca no respondidas · agrega por categoría y dificultad
+  X->>St: stats.history.unshift(resultado) · saveStats() · sync
+  X-->>U: renderReport(): puntaje · % por categoría y dificultad · brechas · tiempo
+```
+
+### 4.4 Apoyo al aprendizaje y telemetría (incremento 2026, TRL5)
 
 Capa **aditiva** sobre el motor: no cambia cómo se califica un ejercicio.
 
@@ -226,6 +342,48 @@ Esquema de un intento (claves cortas para no inflar el JSONB):
 
 `mergeProgress()` une los intentos de varios dispositivos sin duplicar (`ts|id|m`) y conserva los últimos 2000.
 
+#### Pipeline de telemetría hasta el análisis
+
+```mermaid
+flowchart LR
+  a["Intento<br/>(Práctica o Examen)"] --> b["logAttempt()<br/>evento compacto, sin código"]
+  b --> c[("localStorage<br/>stats.attempts ≤ 2000")]
+  c -->|cloudAutoSync| d[("progress.data JSONB<br/>RLS por user_id")]
+  d --> e["vista v_attempts<br/>security_invoker = on"]
+  e --> f["KPIs SQL<br/>(ACCOUNTS.md)"]
+  e --> g["Validación TRL5<br/>(VALIDATION.md)"]
+  c --> h["Stats → CSV<br/>exportAttempts()"]
+```
+
+`v_attempts` desanida `data->'stats'->'attempts'` a filas
+(`user_id, ts, exercise_id, category, kind, diff, mode, ok, passed, total,
+diag, time_on_task_ms, exec_ms, hints`). Al ser `security_invoker`, un usuario
+autenticado solo ve sus propios eventos; el análisis agregado se hace con el
+rol de servicio desde el panel de Supabase.
+
+### 4.5 Ediciones: una base de código, dos vistas
+
+```mermaid
+flowchart LR
+  q["?edition=academic|full"] --> ls[("localStorage<br/>delab:edition")]
+  def["DEFAULT_EDITION<br/>main = full · proyecto-grado = academic"] --> ed
+  ls --> ed{{EDITION}}
+  ed -->|full| F["Todo: tutor IA, cobro,<br/>preguntas abiertas + incremento TRL5"]
+  ed -->|academic| A["Alcance del proyecto de grado:<br/>SQL/Python ejecutable, pistas, diagnóstico,<br/>examen + reporte, telemetría, cuentas"]
+  A -.-> r1["EX sin kind='open'"]
+  A -.-> r2["aiEp() = null → el código no sale del navegador"]
+  A -.-> r3["CSS body.ed-academic oculta #hint, #review, .aicard"]
+```
+
+| Rama | Edición por defecto | Uso |
+|---|---|---|
+| `main` | `full` | Producción (GitHub Pages) |
+| `proyecto-grado` | `academic` | Difiere de `main` en una línea (`DEFAULT_EDITION`) |
+| `release/v1-baseline` | — | Línea base 1.0.0 congelada, previa al incremento |
+
+Ambas ediciones ejecutan exactamente el mismo motor de calificación: la edición
+solo recorta la superficie visible.
+
 ---
 
 ## 5. Modelo de datos y persistencia
@@ -252,7 +410,8 @@ flowchart TB
 - **Offline-first:** localStorage es la fuente de verdad; la nube es respaldo.
 - **Merge que solo crece:** al sincronizar, `solved` se une, `xp` toma el
   máximo y el historial se deduplica → dos dispositivos nunca se borran entre sí.
-- **`state`** = `{ solved, xp, streak, lastDay }` · **`stats`** = `{ history[] }`.
+- **`state`** = `{ solved, xp, streak, lastDay }` · **`stats`** = `{ history[], attempts[] }`.
+- **`attempts`** se combina por `ts|id|m` (sin duplicados) y conserva los últimos 2000 (§4.4).
 
 ---
 
@@ -334,7 +493,7 @@ flowchart LR
 
 | Subsistema | Función(es) | Qué hace |
 |---|---|---|
-| Datos de ejercicios | `EX[]`, `S()` | Array con los 151 ejercicios; `S()` define tablas fuente |
+| Datos de ejercicios | `EX[]`, `S()` | Array con los 189 ejercicios; `S()` define tablas fuente |
 | Grading SQL | `runSQL()`, `rowsEq()`, `runStmts()` | Ejecuta, compara set-based sobre datasets ocultos, soporta DML/DDL con `verify` |
 | Grading Python | `runPy()`, `ensurePy()` | Corre código + tests en Pyodide; auto-carga sqlite3/pandas |
 | Consola | `sqlTable()`, `barChart()`, `term()`, `escv()` | Salida estilo terminal + tabla + gráfico; escapa XSS |
@@ -343,7 +502,11 @@ flowchart LR
 | i18n | `t()`, `fld()`, `applyGuideLang()`, `GUIDE_EN` | Diccionario UI + overlay ejercicios + overlay guía |
 | Cuentas / gate | `gate()`, `cloudLogin()`, `refreshApproval()` | Login, aprobación, sync, buckets por usuario |
 | Persistencia | `save()`, `load()`, `store`, `mergeProgress()` | localStorage + sync Supabase con merge grow-only |
-| Tutor IA | `ai()` | Llama **solo** al Worker (sin fallback directo); respuesta con `textContent` (seguro) |
+| Tutor IA | `ai()`, `aiEp()` | Llama **solo** al Worker (sin fallback directo); respuesta con `textContent` (seguro); `aiEp()` devuelve `null` en edición académica |
+| Apoyo al aprendizaje | `showHint()`, `featureList()`, `skeleton()`, `diagSQL()`, `diagPy()`, `refBox()` | Pistas 3 niveles, diagnóstico determinista, solución condicionada |
+| Telemetría | `logAttempt()`, `telemetryCard()`, `exportAttempts()` | Evento por intento, resumen en Stats y CSV |
+| Examen | `startExam()`, `examSubmit()`, `examSkip()`, `finishExam()`, `renderReport()` | Simulacro sin ayudas y reporte por categoría/dificultad |
+| Edición | `EDITION`, `ACADEMIC`, `DEFAULT_EDITION` | Selección `academic`/`full` sin bifurcar el código |
 
 ---
 
@@ -354,9 +517,9 @@ flowchart LR
 | **CSP** | `<meta>` Content-Security-Policy: `connect-src` limita a Supabase + Worker + CDNs (un script inyectado no exfiltra a un host arbitrario), `object-src 'none'`, `base-uri 'self'`. `script-src` mantiene `'unsafe-inline'/'unsafe-eval'/'wasm-unsafe-eval'` porque los handlers inline y los runtimes WASM lo exigen |
 | XSS | Todo resultado de SQL/Python y nombres de usuario pasan por `escv()` (escapa `& < >`); la respuesta del tutor usa `textContent`, nunca `innerHTML`; las pistas estáticas y el diagnóstico solo interpolan contenido del ejercicio (autoría propia) y escapan todo lo derivado del código o de errores |
 | Secretos | La app nunca contiene la API key de IA (vive en el Worker); **el tutor solo va vía Worker, sin fallback directo a la API del modelo**; la anon key de Supabase es pública por diseño — la protección real es RLS |
-| Acceso | Login obligatorio + flag `approved` verificado en servidor vía RLS; contraseña mínima de 8 |
+| Acceso | Login obligatorio + flag `approved` verificado en servidor vía RLS; contraseña mínima de 8; `EXECUTE` revocado a `public/anon/authenticated` sobre las funciones de trigger `handle_new_user()` y `rls_auto_enable()` (hallazgo del asesor de Supabase) |
 | Aislamiento | Buckets de progreso por usuario; invitado y cuenta nunca se mezclan |
-| Ejecución de código | El código del usuario corre en el sandbox WASM de su propio navegador (sql.js/Pyodide), no en un servidor |
+| Ejecución de código | El código del usuario corre en el sandbox WASM de su propio navegador (sql.js/Pyodide), no en un servidor; la telemetría no almacena el código |
 | **Pendiente** | El contenido es público (sitio estático); SRI en scripts de CDN; CAPTCHA + leaked-password en Supabase — ver [`ACCOUNTS.md`](./ACCOUNTS.md#security-hardening-checklist) |
 
 ---

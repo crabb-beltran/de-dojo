@@ -2,7 +2,7 @@
 
 All exercises live in the `EX` array inside `index.html` (`<script>` block). Adding one = appending one object. No build step.
 
-Three `kind`s: `sql`, `python`, `quiz`. Shared fields:
+Four `kind`s: `sql`, `python`, `quiz` and `open` (free-text interview question graded by the AI tutor; full edition only — the academic edition drops it from the bank). Shared fields:
 
 ```js
 {

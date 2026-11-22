@@ -17,13 +17,24 @@ A browser-based training platform to **practice and self-assess Data Engineering
 - **Progressive unlock** — within each category, medium exercises stay locked until all easy ones are solved, and hard until all medium are. Keeps the difficulty curve honest.
 - **Shuffled quiz options** — the correct answer is randomized per attempt (no "always A"), with ✓/✗ marks on each option after grading.
 
-> **151 exercises across 20 categories** (38 SQL · 47 Python · 66 quiz),
+> **189 exercises across 17 categories** (50 SQL · 53 Python · 76 quiz · 10 AI-graded open questions),
 > bilingual ES/EN, with the category order prioritizing the highest-signal
-> job-market tracks: Advanced SQL, Snowflake, dbt and Python.
+> job-market tracks: Advanced SQL, Snowflake, dbt and Python. The 103 executable
+> SQL/Python exercises are the assessable scope of the academic edition.
+
+### Learning support & telemetry (v1.1, TRL5 increment)
+- **3-level progressive hints** derived from the reference solution (concept → constructs → masked skeleton).
+- **Deterministic error diagnosis** per failed test case (SQL: syntax, missing column/table, extra/missing rows, order, values · Python: exception type, return type, partial results) and the reference solution after a pass or two failures.
+- **Execution time** (ms) on every run.
+- **Per-attempt telemetry** synced with progress, exportable to CSV from *Stats*, queryable through the `v_attempts` view.
+
+**Validation (Nov 2026, 8 external users from data roles):** mean SUS 94.1/100 · 100% would recommend · 91% of failed code runs diagnosed · 98.7% of runs with feedback < 2 s. Protocol in [docs/VALIDATION.md](docs/VALIDATION.md).
 
 ## Documentation
 
-- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — full technical reference: tech stack & languages, repo structure, and **8 Mermaid diagrams** (execution model, exercise-grading flow, persistence & sync, auth/approval state machine, i18n remap, CI/CD). Start here to understand how it works.
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — full technical reference: tech stack & languages, repo structure, and **12 Mermaid diagrams** (execution model, internal component interaction, practice attempt and exam sequences, telemetry pipeline, editions, persistence & sync, auth/approval state machine, i18n remap, CI/CD). Start here to understand how it works.
+- **[docs/VALIDATION.md](docs/VALIDATION.md)** — TRL5 user-validation protocol, post-use form (SUS) and indicators.
+- **[CHANGELOG.md](CHANGELOG.md)** — versions (1.0.0 baseline · 1.1.x TRL5 increment).
 - **[docs/ACCOUNTS.md](docs/ACCOUNTS.md)** — user accounts, the admin approval gate and billing (Supabase setup + SQL).
 - **[docs/AUTHORING.md](docs/AUTHORING.md)** — how to add exercises to the `EX` array (no build step).
 - **[workers/ai-tutor/README.md](workers/ai-tutor/README.md)** — the optional serverless AI-tutor proxy.
@@ -123,16 +134,16 @@ Point the app at it with `localStorage.setItem('ai_endpoint', '<worker-url>')`.
 
 ## Deploy
 
-**Cloudflare Pages (primary).** Connect the repo in Cloudflare → Workers & Pages → Create → Pages → *Connect to Git*; framework preset **None**, build command **empty**, output directory **`/`**. Every push to `main` redeploys. Then add the Pages URL to Supabase → Authentication → URL Configuration (see `docs/ACCOUNTS.md`).
+**GitHub Pages (production).** Pushing to `main` triggers `.github/workflows/pages.yml` (**Settings → Pages → Source: GitHub Actions**). Live: <https://crabb-beltran.github.io/de-dojo/> · academic edition: <https://crabb-beltran.github.io/de-dojo/?edition=academic>.
 
-**GitHub Pages (kept as fallback).** Pushing to `main` also triggers `.github/workflows/pages.yml`. Enable it in **Settings → Pages → Source: GitHub Actions**. Live URL: `https://<user>.github.io/<repo>/`.
+**Cloudflare Pages (documented alternative).** Connect the repo in Cloudflare → Workers & Pages → Create → Pages → *Connect to Git*; framework preset **None**, build command **empty**, output directory **`/`**. Useful for private repos or per-branch previews (e.g. `proyecto-grado`). Add its URL to Supabase → Authentication → URL Configuration (see `docs/ACCOUNTS.md`).
 
 **Versions and editions.** One codebase, two views, nothing removed:
 
 | Branch / URL | Edition | What it shows |
 |---|---|---|
 | `main` (production) | `full` | Everything: AI tutor, billing link, open interview questions, plus the TRL5 increment |
-| `proyecto-grado` (Cloudflare branch deploy) | `academic` | Scope of the UNAD graduation project: executable SQL/Python practice, progressive hints, diagnosis, exam + gap report, telemetry, accounts. No AI tutor (sends code to a third party), no billing, no AI-graded open questions |
+| `proyecto-grado` | `academic` | Scope of the UNAD graduation project: executable SQL/Python practice, progressive hints, diagnosis, exam + gap report, telemetry, accounts. No AI tutor (sends code to a third party), no billing, no AI-graded open questions |
 | `release/v1-baseline` | — | Frozen snapshot from before the 2026 increment |
 
 Any deploy can switch views with `?edition=academic` or `?edition=full`; the choice is remembered per browser. `proyecto-grado` differs from `main` by one line (`DEFAULT_EDITION`), so rebasing it is trivial.
@@ -152,7 +163,7 @@ Any deploy can switch views with `?edition=academic` or `?edition=full`; the cho
 
 ## Tech
 
-Vanilla JS · CodeMirror · sql.js (SQLite WASM) · Pyodide · GitHub Pages. No framework, no build step.
+Vanilla JS · CodeMirror · sql.js (SQLite WASM) · Pyodide · Supabase (Auth + Postgres/RLS, REST without SDK) · GitHub Pages · GitHub Actions. No framework, no build step.
 
 ## License
 
